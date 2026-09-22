@@ -18,7 +18,7 @@ class BatchController extends Controller
             ->where('branch_id', $branchId)
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->whereHas('item', fn ($q) => $q->where('name', 'like', $term)->orWhere('sku', 'like', $term));
+                $query->whereHas('item', fn ($q) => $q->where('name', 'ilike', $term)->orWhere('sku', 'ilike', $term));
             })
             ->with(['item', 'sourceMovement'])
             ->latest('received_at')

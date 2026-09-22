@@ -26,7 +26,7 @@ class ItemController extends Controller
         $items = Item::query()
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('sku', 'like', $term));
+                $query->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('sku', 'ilike', $term));
             })
             ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
             ->orderBy('name')
@@ -147,7 +147,7 @@ class ItemController extends Controller
 
         $items = Item::query()
             ->where('is_active', true)
-            ->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('sku', 'like', $term))
+            ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('sku', 'ilike', $term))
             ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
             ->limit(10)
             ->get()

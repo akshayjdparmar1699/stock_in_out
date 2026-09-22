@@ -48,7 +48,7 @@ class PurchaseController extends Controller
             ->with('supplier')
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->whereHas('supplier', fn ($q) => $q->where('name', 'like', $term)->orWhere('phone', 'like', $term));
+                $query->whereHas('supplier', fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term));
             })
             ->when($from && $to, fn ($q) => $q->whereBetween('purchase_date', [$from, $to]))
             ->latest('purchase_date')

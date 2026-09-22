@@ -27,7 +27,7 @@ class CustomerController extends Controller
             ->when($status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('phone', 'like', $term));
+                $query->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term));
             })
             ->orderBy('name')
             ->paginate(PerPagePreference::get())
@@ -108,7 +108,7 @@ class CustomerController extends Controller
 
         $customers = Customer::query()
             ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
-            ->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('phone', 'like', $term))
+            ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term))
             ->orderBy('name')
             ->limit(10)
             ->get(['id', 'name', 'phone', 'email', 'address', 'opening_balance', 'is_active'])

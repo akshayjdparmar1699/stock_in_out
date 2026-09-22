@@ -18,7 +18,7 @@ class SupplierController extends Controller
         $suppliers = Supplier::query()
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('phone', 'like', $term));
+                $query->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term));
             })
             ->orderBy('name')
             ->paginate(PerPagePreference::get())
@@ -73,7 +73,7 @@ class SupplierController extends Controller
 
         $suppliers = Supplier::query()
             ->where('is_active', true)
-            ->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('phone', 'like', $term))
+            ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term))
             ->orderBy('name')
             ->limit(10)
             ->get(['id', 'name', 'phone', 'address'])

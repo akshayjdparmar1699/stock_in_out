@@ -26,7 +26,7 @@ class StaffMemberController extends Controller
             ->when($status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->where('name', 'like', $term);
+                $query->where('name', 'ilike', $term);
             })
             ->orderByRaw("type = 'partner' desc")
             ->orderBy('name')

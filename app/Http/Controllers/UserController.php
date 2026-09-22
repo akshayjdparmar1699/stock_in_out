@@ -16,7 +16,7 @@ class UserController extends Controller
             ->with('branch')
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->where(fn ($q) => $q->where('name', 'like', $term)->orWhere('email', 'like', $term));
+                $query->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('email', 'ilike', $term));
             })
             ->orderBy('name')
             ->paginate(PerPagePreference::get())

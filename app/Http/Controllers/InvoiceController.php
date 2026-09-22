@@ -54,7 +54,7 @@ class InvoiceController extends Controller
             ->with('customer')
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->whereHas('customer', fn ($q) => $q->where('name', 'like', $term)->orWhere('phone', 'like', $term));
+                $query->whereHas('customer', fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term));
             })
             ->when($from && $to, fn ($q) => $q->whereBetween('invoice_date', [$from, $to]))
             ->latest('invoice_date')

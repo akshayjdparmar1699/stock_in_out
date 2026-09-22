@@ -13,8 +13,11 @@ FROM php:8.3-apache
 RUN apt-get update && apt-get install -y \
         libpq-dev libzip-dev libpng-dev unzip git \
     && docker-php-ext-install pdo pdo_pgsql pgsql bcmath gd zip \
+    && docker-php-ext-enable opcache \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
+
+COPY docker/opcache.ini /usr/local/etc/php/conf.d/99-opcache.ini
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

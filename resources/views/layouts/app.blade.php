@@ -81,19 +81,35 @@
                             </button>
                         </div>
 
-                        <div class="px-1 mb-3">
-                            <p class="text-sm font-medium text-gray-800">{{ Auth::user()->name }}</p>
-                            <p class="text-xs text-gray-400">{{ Auth::user()->email }}</p>
-                        </div>
-                        <a href="{{ route('profile.edit') }}" class="block px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100">
-                            {{ __('Profile') }}
-                        </a>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100">
-                                {{ __('Log Out') }}
+                        <div x-data="{ open: false }" class="relative">
+                            <button type="button" @click="open = !open" class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 text-left">
+                                <span class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-semibold shrink-0">
+                                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-sm font-medium text-gray-800 truncate">{{ Auth::user()->name }}</span>
+                                    <span class="block text-xs text-gray-400 truncate">{{ Auth::user()->email }}</span>
+                                </span>
+                                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 9l3.75 6" transform="rotate(180 12 12)" />
+                                </svg>
                             </button>
-                        </form>
+
+                            <div x-show="open" @click.outside="open = false"
+                                    x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
+                                    class="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-100 rounded-lg shadow-lg overflow-hidden"
+                                    style="display: none;">
+                                <a href="{{ route('profile.edit') }}" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                                    {{ __('Profile') }}
+                                </a>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                                        {{ __('Log Out') }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

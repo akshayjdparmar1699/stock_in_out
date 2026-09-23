@@ -217,9 +217,25 @@
                                 <span>{{ __('Subtotal') }}</span>
                                 <span x-text="'₹' + subtotal.toFixed(2)"></span>
                             </div>
-                            <div class="flex justify-between items-center text-sm text-gray-600">
+                            <div class="flex flex-wrap justify-between items-center gap-y-1 text-sm text-gray-600"
+                                x-effect="if (discountType === 'percentage') { discount = Math.round(subtotal * (discountPercent || 0) / 100 * 100) / 100 }">
                                 <label for="discount">{{ __('Discount') }}</label>
-                                <input id="discount" name="discount" type="number" step="0.01" min="0" x-model.number="discount" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <div class="flex items-center gap-2">
+                                    <div class="inline-flex rounded-md border border-gray-300 overflow-hidden text-xs">
+                                        <button type="button" @click="discountType = 'amount'"
+                                            class="px-2 py-1" :class="discountType === 'amount' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'">₹</button>
+                                        <button type="button" @click="discountType = 'percentage'"
+                                            class="px-2 py-1 border-l border-gray-300" :class="discountType === 'percentage' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'">%</button>
+                                    </div>
+                                    <template x-if="discountType === 'percentage'">
+                                        <input type="number" step="0.01" min="0" max="100" x-model.number="discountPercent" placeholder="0"
+                                            class="w-14 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </template>
+                                    <input id="discount" name="discount" type="number" step="0.01" min="0" x-model.number="discount"
+                                        :readonly="discountType === 'percentage'"
+                                        :class="discountType === 'percentage' ? 'bg-gray-100 text-gray-500' : ''"
+                                        class="w-24 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                </div>
                             </div>
                             <div class="flex justify-between items-center text-sm text-gray-600">
                                 <label for="tax">{{ __('Tax') }}</label>
@@ -240,9 +256,25 @@
                                 </label>
                             </div>
 
-                            <div class="flex justify-between items-center text-sm pt-2 border-t" :class="dueAfterBill > 0 ? 'text-red-600' : 'text-green-600'">
-                                <span class="font-medium">{{ __('Customer balance after this bill') }}</span>
-                                <span class="font-semibold" x-text="(dueAfterBill < 0 ? '₹' + Math.abs(dueAfterBill).toFixed(2) + ' CR' : '₹' + dueAfterBill.toFixed(2))"></span>
+                            <div class="pt-2 border-t space-y-1" x-show="selectedCustomer">
+                                <div class="flex justify-between items-center text-sm text-gray-500">
+                                    <span>{{ __('Previous Due') }}</span>
+                                    <span x-text="((selectedCustomer && selectedCustomer.due) || 0) < 0
+                                        ? '₹' + Math.abs((selectedCustomer && selectedCustomer.due) || 0).toFixed(2) + ' CR'
+                                        : '₹' + ((selectedCustomer && selectedCustomer.due) || 0).toFixed(2)"></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm text-gray-500">
+                                    <span>{{ __('This Bill') }}</span>
+                                    <span x-text="'₹' + total.toFixed(2)"></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm text-gray-500">
+                                    <span>{{ __('Payment Now') }}</span>
+                                    <span x-text="'₹' + (paidAmount || 0).toFixed(2)"></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm font-semibold pt-1 border-t" :class="dueAfterBill > 0 ? 'text-red-600' : 'text-green-600'">
+                                    <span x-text="dueAfterBill > 0 ? '{{ __('Balance Due') }}' : '{{ __('Settled / In Credit') }}'"></span>
+                                    <span x-text="(dueAfterBill < 0 ? '₹' + Math.abs(dueAfterBill).toFixed(2) + ' CR' : '₹' + dueAfterBill.toFixed(2))"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -280,6 +312,8 @@
                 },
 
                 discount: 0,
+                discountType: 'amount',
+                discountPercent: 0,
                 tax: 0,
                 paidAmount: 0,
 

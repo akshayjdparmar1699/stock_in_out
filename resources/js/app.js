@@ -87,11 +87,45 @@ document.addEventListener('submit', (e) => {
     }
 });
 
-// Same bar for ordinary link-driven navigation (sidebar links, "Edit",
-// "View", etc.) — but not for links another handler already
-// intercepted (AJAX pagination, the eye-toggle button, etc.), which
-// we detect via e.defaultPrevented since those run first on the way
-// up to this document-level listener.
+// A small rotating/morphing square, centered over the whole screen —
+// used for ordinary link-driven navigation (sidebar links, period
+// filter tabs like Today/This Week, "Edit", "View", etc.) instead of
+// the top bar, which is easy to miss on a phone. Injected once.
+let cubeLoaderStyleInjected = false;
+function ensureCubeLoaderStyles() {
+    if (cubeLoaderStyleInjected) return;
+    cubeLoaderStyleInjected = true;
+    const style = document.createElement('style');
+    style.textContent = `
+        #page-loading-overlay { position: fixed; inset: 0; z-index: 9998; display: none;
+            align-items: center; justify-content: center; background: rgba(255,255,255,.55); }
+        #page-loading-overlay .cube-loader { width: 32px; height: 32px; background: #4f46e5;
+            animation: cube-loader-spin 1.1s infinite cubic-bezier(.6,.2,.4,.8); }
+        @keyframes cube-loader-spin {
+            0%   { transform: rotate(0deg) scale(1); border-radius: 15%; }
+            50%  { transform: rotate(180deg) scale(.75); border-radius: 50%; }
+            100% { transform: rotate(360deg) scale(1); border-radius: 15%; }
+        }`;
+    document.head.appendChild(style);
+}
+
+function showCubeLoader() {
+    ensureCubeLoaderStyles();
+    let overlay = document.getElementById('page-loading-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'page-loading-overlay';
+        overlay.innerHTML = '<div class="cube-loader"></div>';
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+}
+
+window.addEventListener('pageshow', () => {
+    const overlay = document.getElementById('page-loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+});
+
 document.addEventListener('click', (e) => {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 
@@ -102,7 +136,7 @@ document.addEventListener('click', (e) => {
     if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
     if (link.dataset.noProgress !== undefined) return;
 
-    showPageProgress();
+    showCubeLoader();
 });
 
 /**

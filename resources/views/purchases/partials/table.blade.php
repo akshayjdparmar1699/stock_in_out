@@ -13,7 +13,7 @@
         <tbody class="divide-y divide-gray-100">
             @forelse ($purchases as $purchase)
                 <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{{ route('purchases.show', $purchase) }}'">
-                    <td class="px-6 py-4 text-sm font-medium text-gray-800">{{ $purchase->purchase_number }}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-indigo-700 hover:underline">{{ $purchase->purchase_number }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $purchase->purchase_date->format('d M Y') }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $purchase->supplier->name }}</td>
                     <td class="px-6 py-4 text-sm text-gray-700">₹{{ number_format($purchase->total, 2) }}</td>

@@ -105,10 +105,19 @@
             <td class="label">Paid</td>
             <td class="value">₹{{ number_format($invoice->paid_amount, 2) }}</td>
         </tr>
+        @php
+            $previousDue = $customerDue - ($invoice->total - $invoice->paid_amount);
+        @endphp
         <tr>
-            <td class="label">Balance Due</td>
-            <td class="value {{ $invoice->balanceDue() > 0 ? 'balance-due' : 'balance-paid' }}">
-                ₹{{ number_format($invoice->balanceDue(), 2) }}
+            <td class="label" style="border-top:1px solid #d1d5db;padding-top:8px;">Previous Due</td>
+            <td class="value {{ $previousDue > 0 ? 'balance-due' : ($previousDue < 0 ? 'balance-paid' : '') }}" style="border-top:1px solid #d1d5db;padding-top:8px;">
+                ₹{{ number_format(abs($previousDue), 2) }}{{ $previousDue < 0 ? ' CR' : '' }}
+            </td>
+        </tr>
+        <tr class="grand">
+            <td class="label">{{ $customerDue > 0 ? 'Balance Due' : 'Settled / In Credit' }}</td>
+            <td class="value {{ $customerDue > 0 ? 'balance-due' : 'balance-paid' }}">
+                ₹{{ number_format(abs($customerDue), 2) }}{{ $customerDue < 0 ? ' CR' : '' }}
             </td>
         </tr>
     </table>

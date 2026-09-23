@@ -256,6 +256,12 @@
                                 </label>
                             </div>
 
+                            <div x-show="dueAfterBill < -0.004" style="display: none;"
+                                class="bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-xs text-amber-800">
+                                ⚠️ {{ __('Paid Amount is') }} <span class="font-semibold" x-text="'₹' + Math.abs(dueAfterBill).toFixed(2)"></span>
+                                {{ __('more than what this customer actually owes — they will end up in credit. Double-check the amount if this was a mistake.') }}
+                            </div>
+
                             <div class="pt-2 border-t space-y-1" x-show="selectedCustomer">
                                 <div class="flex justify-between items-center text-sm text-gray-500">
                                     <span>{{ __('Previous Due') }}</span>

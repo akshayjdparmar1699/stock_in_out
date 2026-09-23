@@ -45,12 +45,12 @@
 
                 <div class="flex justify-between mb-8">
                     <div>
-                        <div class="text-lg font-semibold text-gray-800">{{ config('app.name') }}</div>
-                        <div class="text-sm text-gray-500">{{ $invoice->branch->name }}</div>
+                        <div class="text-lg font-semibold text-gray-800">{{ $invoice->branch->name }}</div>
                         <div class="text-sm text-gray-500">{{ $invoice->branch->address }}</div>
                         <div class="text-sm text-gray-500">{{ $invoice->branch->phone }}</div>
                     </div>
                     <div class="text-right">
+                        <div class="text-xs font-semibold tracking-wide text-indigo-600 uppercase mb-1">{{ __('Invoice') }}</div>
                         <div class="text-sm text-gray-500">{{ __('Invoice #') }}</div>
                         <div class="font-medium text-gray-800">{{ $invoice->invoice_number }}</div>
                         <div class="text-sm text-gray-500 mt-2">{{ __('Date') }}</div>
@@ -58,41 +58,16 @@
                     </div>
                 </div>
 
-                <div class="mb-8 flex justify-between items-start">
-                    <div>
-                        <div class="text-sm text-gray-500">{{ __('Bill To') }}</div>
-                        <div class="font-medium text-gray-800">{{ $invoice->customer->name }}</div>
-                        <div class="text-sm text-gray-500">{{ $invoice->customer->phone }}</div>
-                        @if ($invoice->customer->address)
-                            <div class="text-sm text-gray-500">{{ $invoice->customer->address }}</div>
-                        @endif
-                        @if ($invoice->customer->gst_number)
-                            <div class="text-sm text-gray-500">{{ __('GSTIN') }}: {{ $invoice->customer->gst_number }}</div>
-                        @endif
-                    </div>
-                    @php
-                        $previousDue = $customerDue - ($invoice->total - $invoice->paid_amount);
-                    @endphp
-                    <div class="text-right text-sm space-y-0.5">
-                        <div class="flex justify-between gap-6 text-gray-500">
-                            <span>{{ __('Previous Due') }}</span>
-                            <span class="{{ $previousDue > 0 ? 'text-red-600' : ($previousDue < 0 ? 'text-green-600' : 'text-gray-700') }}">
-                                ₹{{ number_format(abs($previousDue), 2) }}{{ $previousDue < 0 ? ' CR' : '' }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between gap-6 text-gray-500">
-                            <span>{{ __('This Bill') }}</span>
-                            <span class="text-gray-700">₹{{ number_format($invoice->total, 2) }}</span>
-                        </div>
-                        <div class="flex justify-between gap-6 text-gray-500">
-                            <span>{{ __('Payment Received') }}</span>
-                            <span class="text-gray-700">₹{{ number_format($invoice->paid_amount, 2) }}</span>
-                        </div>
-                        <div class="flex justify-between gap-6 font-semibold pt-1 border-t {{ $customerDue > 0 ? 'text-red-600' : 'text-green-600' }}">
-                            <span>{{ $customerDue > 0 ? __('Balance Due') : __('Settled / In Credit') }}</span>
-                            <span>₹{{ number_format(abs($customerDue), 2) }}{{ $customerDue < 0 ? ' CR' : '' }}</span>
-                        </div>
-                    </div>
+                <div class="mb-8">
+                    <div class="text-sm text-gray-500">{{ __('Bill To') }}</div>
+                    <div class="font-medium text-gray-800">{{ $invoice->customer->name }}</div>
+                    <div class="text-sm text-gray-500">{{ $invoice->customer->phone }}</div>
+                    @if ($invoice->customer->address)
+                        <div class="text-sm text-gray-500">{{ $invoice->customer->address }}</div>
+                    @endif
+                    @if ($invoice->customer->gst_number)
+                        <div class="text-sm text-gray-500">{{ __('GSTIN') }}: {{ $invoice->customer->gst_number }}</div>
+                    @endif
                 </div>
 
                 <div class="overflow-x-auto mb-6">
@@ -118,8 +93,11 @@
                     </table>
                 </div>
 
+                @php
+                    $previousDue = $customerDue - ($invoice->total - $invoice->paid_amount);
+                @endphp
                 <div class="flex justify-end">
-                    <div class="w-64 space-y-1">
+                    <div class="w-72 space-y-1">
                         <div class="flex justify-between text-sm text-gray-600">
                             <span>{{ __('Subtotal') }}</span>
                             <span>₹{{ number_format($invoice->subtotal, 2) }}</span>
@@ -140,9 +118,16 @@
                             <span>{{ __('Paid') }}</span>
                             <span>₹{{ number_format($invoice->paid_amount, 2) }}</span>
                         </div>
-                        <div class="flex justify-between text-sm font-medium {{ $invoice->total - $invoice->paid_amount > 0 ? 'text-red-600' : 'text-green-600' }}">
-                            <span>{{ __('Balance Due') }}</span>
-                            <span>₹{{ number_format($invoice->total - $invoice->paid_amount, 2) }}</span>
+
+                        <div class="flex justify-between text-sm text-gray-500 border-t pt-1 mt-1">
+                            <span>{{ __('Previous Due') }}</span>
+                            <span class="{{ $previousDue > 0 ? 'text-red-600' : ($previousDue < 0 ? 'text-green-600' : 'text-gray-700') }}">
+                                ₹{{ number_format(abs($previousDue), 2) }}{{ $previousDue < 0 ? ' CR' : '' }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between text-base font-semibold {{ $customerDue > 0 ? 'text-red-600' : 'text-green-600' }}">
+                            <span>{{ $customerDue > 0 ? __('Balance Due') : __('Settled / In Credit') }}</span>
+                            <span>₹{{ number_format(abs($customerDue), 2) }}{{ $customerDue < 0 ? ' CR' : '' }}</span>
                         </div>
                     </div>
                 </div>

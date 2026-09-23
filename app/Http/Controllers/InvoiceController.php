@@ -257,7 +257,10 @@ class InvoiceController extends Controller
 
     private function renderPdf(Invoice $invoice)
     {
-        return Pdf::loadView('invoices.pdf', ['invoice' => $invoice])->setPaper('a4');
+        return Pdf::loadView('invoices.pdf', [
+            'invoice' => $invoice,
+            'customerDue' => $invoice->customer->dueAmount(),
+        ])->setPaper('a4');
     }
 
     public function storePayment(StoreInvoicePaymentRequest $request, Invoice $invoice): RedirectResponse

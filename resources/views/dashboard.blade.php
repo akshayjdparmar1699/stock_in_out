@@ -183,12 +183,14 @@
                 },
                 async load(fetchUrl, historyUrl) {
                     this.loading = true;
+                    window.showAjaxSpinner(this.$refs.content);
                     try {
                         const res = await fetch(fetchUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                         this.$refs.content.innerHTML = await res.text();
                         if (historyUrl) window.history.replaceState({}, '', historyUrl);
                     } finally {
                         this.loading = false;
+                        window.hideAjaxSpinner(this.$refs.content);
                     }
                 },
             };

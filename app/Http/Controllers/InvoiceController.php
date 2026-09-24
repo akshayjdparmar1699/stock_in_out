@@ -17,7 +17,6 @@ use App\Services\BranchContext;
 use App\Services\PerPagePreference;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -237,19 +236,6 @@ class InvoiceController extends Controller
 
     public function pdf(Invoice $invoice): Response
     {
-        $invoice->load(['customer', 'branch', 'items.item']);
-
-        return $this->renderPdf($invoice)->stream("{$invoice->invoice_number}.pdf");
-    }
-
-    /**
-     * Publicly reachable (signed URL, no login) so the customer can open it
-     * straight from the WhatsApp message.
-     */
-    public function sharedPdf(Request $request, Invoice $invoice): Response
-    {
-        abort_unless($request->hasValidSignature(), 403);
-
         $invoice->load(['customer', 'branch', 'items.item']);
 
         return $this->renderPdf($invoice)->stream("{$invoice->invoice_number}.pdf");

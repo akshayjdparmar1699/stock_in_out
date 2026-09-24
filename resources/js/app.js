@@ -121,6 +121,14 @@ function showCubeLoader() {
     overlay.style.display = 'flex';
 }
 
+function hideCubeLoader() {
+    const overlay = document.getElementById('page-loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+window.showCubeLoader = showCubeLoader;
+window.hideCubeLoader = hideCubeLoader;
+
 window.addEventListener('pageshow', () => {
     const overlay = document.getElementById('page-loading-overlay');
     if (overlay) overlay.style.display = 'none';
@@ -225,11 +233,21 @@ async function fetchPdfFile(url, filename) {
     return new File([await res.blob()], filename, { type: 'application/pdf' });
 }
 
-// Saves the PDF via a blob URL instead of navigating to it, so it keeps
-// working inside an installed PWA where a plain link would go blank.
+// Saves the PDF on the device. Prefers handing the file straight to the
+// native share sheet's "Save to Files" (avoids iOS Safari just navigating
+// to the raw blob: URL and showing that in the address bar instead of
+// actually saving anything); falls back to a blob-URL download link,
+// which desktop browsers save silently without any of that showing.
 window.downloadPdf = async function (url, filename) {
+    showCubeLoader();
     try {
         const file = await fetchPdfFile(url, filename);
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file] });
+            return;
+        }
+
         const objectUrl = URL.createObjectURL(file);
         const link = document.createElement('a');
         link.href = objectUrl;
@@ -239,7 +257,9 @@ window.downloadPdf = async function (url, filename) {
         link.remove();
         setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
     } catch (err) {
-        window.open(url, '_blank');
+        if (err.name !== 'AbortError') window.open(url, '_blank');
+    } finally {
+        hideCubeLoader();
     }
 };
 
@@ -248,11 +268,12 @@ window.downloadPdf = async function (url, filename) {
  * (WhatsApp, Mail, Files, AirDrop, etc. on mobile; whatever the OS offers
  * on desktop) — this is what lets an iPhone user pick WhatsApp themselves
  * and actually attach the bill, instead of just a downloaded file with
- * nowhere to send it from. Falls back to a text+link share, then to a
+ * nowhere to send it from. Falls back to a text-only share, then to a
  * generic (no-recipient) WhatsApp Web compose, if file-sharing or the Web
  * Share API isn't available in the browser.
  */
 window.sharePdf = async function ({ url, filename, title = '', text = '' }) {
+    showCubeLoader();
     try {
         const file = await fetchPdfFile(url, filename);
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -261,6 +282,8 @@ window.sharePdf = async function ({ url, filename, title = '', text = '' }) {
         }
     } catch (err) {
         if (err.name === 'AbortError') return;
+    } finally {
+        hideCubeLoader();
     }
 
     if (navigator.share) {

@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\URL;
 
 class Invoice extends Model
 {
@@ -69,15 +68,6 @@ class Invoice extends Model
         return round((float) $this->total - (float) $this->paid_amount, 2);
     }
 
-    /**
-     * A signed, no-login-required link to this invoice's PDF, so it can be
-     * opened straight from a WhatsApp message.
-     */
-    public function sharedPdfUrl(): string
-    {
-        return URL::signedRoute('invoices.shared-pdf', ['invoice' => $this->id]);
-    }
-
     public function whatsappMessage(): string
     {
         return <<<TEXT
@@ -86,9 +76,6 @@ class Invoice extends Model
         Your bill from {$this->branch->name} is ready:
         Invoice: {$this->invoice_number}
         Date: {$this->invoice_date->format('d M Y')}
-
-        View / download your bill (PDF):
-        {$this->sharedPdfUrl()}
 
         Total: ₹{$this->formattedTotal()}
         Paid: ₹{$this->formattedPaid()}

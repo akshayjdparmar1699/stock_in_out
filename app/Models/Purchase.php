@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\URL;
 
 class Purchase extends Model
 {
@@ -69,15 +68,6 @@ class Purchase extends Model
         return round((float) $this->total - (float) $this->paid_amount, 2);
     }
 
-    /**
-     * A signed, no-login-required link to this purchase's PDF, so it can be
-     * opened straight from a shared WhatsApp/other-app message.
-     */
-    public function sharedPdfUrl(): string
-    {
-        return URL::signedRoute('purchases.shared-pdf', ['purchase' => $this->id]);
-    }
-
     public function shareMessage(): string
     {
         return <<<TEXT
@@ -85,9 +75,6 @@ class Purchase extends Model
         Branch: {$this->branch->name}
         Purchase: {$this->purchase_number}
         Date: {$this->purchase_date->format('d M Y')}
-
-        View / download (PDF):
-        {$this->sharedPdfUrl()}
 
         Total: ₹{$this->formattedTotal()}
         Paid: ₹{$this->formattedPaid()}

@@ -258,11 +258,23 @@ class PurchaseController extends Controller
         return redirect()->route('purchases.show', $purchase)->with('status', 'Payment recorded.');
     }
 
+    /**
+     * Based on the highest existing sequence number, not the row count —
+     * a deleted purchase leaves a gap, and counting rows would eventually
+     * regenerate a number that's still in use by one that survived.
+     */
     private function nextPurchaseNumber(int $branchId): string
     {
         $branchCode = str_pad((string) $branchId, 2, '0', STR_PAD_LEFT);
-        $count = Purchase::query()->where('branch_id', $branchId)->count() + 1;
+        $prefix = "PUR-B{$branchCode}-";
 
-        return "PUR-B{$branchCode}-".str_pad((string) $count, 5, '0', STR_PAD_LEFT);
+        $nextSequence = Purchase::query()
+            ->where('branch_id', $branchId)
+            ->where('purchase_number', 'like', "{$prefix}%")
+            ->pluck('purchase_number')
+            ->map(fn (string $number) => (int) substr($number, strlen($prefix)))
+            ->max() + 1;
+
+        return $prefix.str_pad((string) $nextSequence, 5, '0', STR_PAD_LEFT);
     }
 }

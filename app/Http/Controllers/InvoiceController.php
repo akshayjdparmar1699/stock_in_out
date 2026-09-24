@@ -324,11 +324,23 @@ class InvoiceController extends Controller
         return redirect()->route('invoices.show', $invoice)->with('status', 'Payment recorded.');
     }
 
+    /**
+     * Based on the highest existing sequence number, not the row count —
+     * a deleted invoice leaves a gap, and counting rows would eventually
+     * regenerate a number that's still in use by one that survived.
+     */
     private function nextInvoiceNumber(int $branchId): string
     {
         $branchCode = str_pad((string) $branchId, 2, '0', STR_PAD_LEFT);
-        $count = Invoice::query()->where('branch_id', $branchId)->count() + 1;
+        $prefix = "INV-B{$branchCode}-";
 
-        return "INV-B{$branchCode}-".str_pad((string) $count, 5, '0', STR_PAD_LEFT);
+        $nextSequence = Invoice::query()
+            ->where('branch_id', $branchId)
+            ->where('invoice_number', 'like', "{$prefix}%")
+            ->pluck('invoice_number')
+            ->map(fn (string $number) => (int) substr($number, strlen($prefix)))
+            ->max() + 1;
+
+        return $prefix.str_pad((string) $nextSequence, 5, '0', STR_PAD_LEFT);
     }
 }

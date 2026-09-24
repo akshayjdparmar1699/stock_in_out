@@ -214,24 +214,65 @@ window.listTable = function () {
 window.showAjaxSpinner = showAjaxSpinner;
 window.hideAjaxSpinner = hideAjaxSpinner;
 
+// Fetches a PDF route as a real File object (not a navigation), which is
+// what lets us hand it to the share sheet or trigger a download without
+// ever leaving the page — inside an installed iPhone PWA, navigating the
+// tab straight to a PDF URL renders a blank screen (the standalone
+// WKWebView has no built-in PDF viewer the way Safari itself does).
+async function fetchPdfFile(url, filename) {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error(`Failed to fetch PDF (${res.status})`);
+    return new File([await res.blob()], filename, { type: 'application/pdf' });
+}
+
+// Saves the PDF via a blob URL instead of navigating to it, so it keeps
+// working inside an installed PWA where a plain link would go blank.
+window.downloadPdf = async function (url, filename) {
+    try {
+        const file = await fetchPdfFile(url, filename);
+        const objectUrl = URL.createObjectURL(file);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+    } catch (err) {
+        window.open(url, '_blank');
+    }
+};
+
 /**
- * Opens the device's native share sheet (WhatsApp, Mail, Files, etc. on
- * mobile; whatever the OS offers on desktop) instead of a WhatsApp-only
- * deep link — this is what lets an iPhone user pick WhatsApp themselves,
- * since a plain PDF download there never surfaces a share option.
- * Falls back to a generic (no-recipient) WhatsApp Web compose when the
- * Web Share API isn't available in the browser.
+ * Shares the actual PDF file through the device's native share sheet
+ * (WhatsApp, Mail, Files, AirDrop, etc. on mobile; whatever the OS offers
+ * on desktop) — this is what lets an iPhone user pick WhatsApp themselves
+ * and actually attach the bill, instead of just a downloaded file with
+ * nowhere to send it from. Falls back to a text+link share, then to a
+ * generic (no-recipient) WhatsApp Web compose, if file-sharing or the Web
+ * Share API isn't available in the browser.
  */
-window.shareDocument = async function ({ title = '', text = '', url = '' }) {
+window.sharePdf = async function ({ url, filename, title = '', text = '' }) {
+    try {
+        const file = await fetchPdfFile(url, filename);
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title, text });
+            return;
+        }
+    } catch (err) {
+        if (err.name === 'AbortError') return;
+    }
+
     if (navigator.share) {
         try {
-            await navigator.share({ title, text, url });
+            await navigator.share({ title, text });
             return;
         } catch (err) {
             if (err.name === 'AbortError') return;
         }
     }
-    window.open(`https://wa.me/?text=${encodeURIComponent([text, url].filter(Boolean).join('\n\n'))}`, '_blank');
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 };
 
 Alpine.start();

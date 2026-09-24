@@ -117,10 +117,22 @@
                 <div class="bg-white overflow-hidden shadow-sm rounded-lg" x-data="dashboardWidget('followup')">
                     <div class="px-5 py-4 border-b font-medium text-gray-700">
                         {{ __('Customers to Follow Up') }}
-                        <span class="text-xs font-normal text-gray-400">{{ __('(no purchase in the last 7 days)') }}</span>
+                        <span class="text-xs font-normal text-gray-400">{{ __('(no purchase in the last 3 days)') }}</span>
                     </div>
                     <div x-ref="content" :class="loading && 'opacity-50'">
                         @include('dashboard.partials.followup')
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6">
+                <div class="bg-white overflow-hidden shadow-sm rounded-lg" x-data="dashboardWidget('over-limit')">
+                    <div class="px-5 py-4 border-b font-medium text-gray-700">
+                        {{ __('Customers Over Credit Limit') }}
+                        <span class="text-xs font-normal text-gray-400">{{ __('(time to collect payment)') }}</span>
+                    </div>
+                    <div x-ref="content" :class="loading && 'opacity-50'">
+                        @include('dashboard.partials.over-limit')
                     </div>
                 </div>
             </div>

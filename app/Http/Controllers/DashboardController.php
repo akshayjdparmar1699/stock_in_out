@@ -62,6 +62,9 @@ class DashboardController extends Controller
                 'followup' => view('dashboard.partials.followup', [
                     'followUpCustomers' => $this->paginateCollection($this->buildFollowUpCustomers($branch, $branchId), $request, 'followup_page'),
                 ]),
+                'over-limit' => view('dashboard.partials.over-limit', [
+                    'overLimitCustomers' => $this->paginateCollection($this->buildOverLimitCustomers($branch, $branchId), $request, 'over_limit_page'),
+                ]),
                 'expenses' => view('dashboard.partials.expenses', [
                     'recentExpenses' => Expense::query()->where('branch_id', $branchId)->with(['staffMember', 'user'])
                         ->latest('expense_date')->latest('id')
@@ -122,6 +125,8 @@ class DashboardController extends Controller
 
         $followUpCustomers = $this->paginateCollection($this->buildFollowUpCustomers($branch, $branchId), $request, 'followup_page');
 
+        $overLimitCustomers = $this->paginateCollection($this->buildOverLimitCustomers($branch, $branchId), $request, 'over_limit_page');
+
         $customerDueTotal = Customer::query()
             ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
             ->get()
@@ -168,6 +173,7 @@ class DashboardController extends Controller
             'lowStockItems' => $lowStockItems,
             'lowStockAdminUrl' => $lowStockAdminUrl,
             'followUpCustomers' => $followUpCustomers,
+            'overLimitCustomers' => $overLimitCustomers,
             'customerDueTotal' => $customerDueTotal,
             'supplierDueTotal' => $supplierDueTotal,
             'totalUpad' => $totalUpad,
@@ -200,13 +206,38 @@ class DashboardController extends Controller
                 'customer' => $customer,
                 'last_date' => $customer->invoices->first()?->invoice_date,
             ])
-            ->filter(fn (array $row) => $row['last_date'] !== null && $row['last_date']->lt(now()->subDays(7)))
+            ->filter(fn (array $row) => $row['last_date'] !== null && $row['last_date']->lt(now()->subDays(3)))
             ->sortBy('last_date')
             ->values()
             ->map(fn (array $row) => [
                 'customer' => $row['customer'],
                 'last_date' => $row['last_date'],
                 'whatsapp_url' => AdminAlertService::inactiveCustomerUrl($branch, $row['customer'], $row['last_date']->format('d M Y')),
+            ]);
+    }
+
+    private function buildOverLimitCustomers(?Branch $branch, int $branchId)
+    {
+        if (! $branch) {
+            return collect();
+        }
+
+        return Customer::query()
+            ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
+            ->where('is_active', true)
+            ->where('credit_limit', '>', 0)
+            ->get()
+            ->filter(fn (Customer $customer) => $customer->isOverCreditLimit())
+            ->map(fn (Customer $customer) => [
+                'customer' => $customer,
+                'due' => $customer->dueAmount(),
+            ])
+            ->sortByDesc('due')
+            ->values()
+            ->map(fn (array $row) => [
+                'customer' => $row['customer'],
+                'due' => $row['due'],
+                'whatsapp_url' => AdminAlertService::creditLimitUrl($branch, $row['customer'], $row['due'], (float) $row['customer']->credit_limit),
             ]);
     }
 

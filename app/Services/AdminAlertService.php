@@ -36,7 +36,15 @@ class AdminAlertService
             ? "Last purchase: {$lastPurchaseDate}."
             : 'No purchase on record.';
 
-        $message = "Customer alert ({$branch->name}):\n{$customer->name} ({$customer->phone}) has not purchased in the last 7 days. {$lastPurchaseLine}";
+        $message = "Customer alert ({$branch->name}):\n{$customer->name} ({$customer->phone}) has not purchased in the last 3 days. {$lastPurchaseLine}";
+
+        return self::url($message);
+    }
+
+    public static function creditLimitUrl(Branch $branch, Customer $customer, float $due, float $limit): string
+    {
+        $message = "Credit limit alert ({$branch->name}):\n{$customer->name} ({$customer->phone}) owes ₹".number_format($due, 2)
+            .", over their ₹".number_format($limit, 2)." limit. Time to collect payment.";
 
         return self::url($message);
     }

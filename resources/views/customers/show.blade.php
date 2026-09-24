@@ -1,8 +1,15 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $customer->name }}</h2>
-            <p class="text-sm text-gray-500">{{ $customer->phone }}</p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $customer->name }}</h2>
+                <p class="text-sm text-gray-500">{{ $customer->phone }}</p>
+            </div>
+            <a href="{{ route('customers.statement-pdf', $customer) }}" target="_blank"
+                onclick="event.preventDefault(); window.downloadPdf(this.href, {{ \Illuminate\Support\Js::from($customer->name.' - Statement.pdf') }})"
+                class="inline-flex items-center px-3 sm:px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50 self-start">
+                {{ __('Download Statement PDF') }}
+            </a>
         </div>
     </x-slot>
 

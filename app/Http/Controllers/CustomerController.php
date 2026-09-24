@@ -8,9 +8,12 @@ use App\Models\Branch;
 use App\Models\Customer;
 use App\Services\BranchContext;
 use App\Services\PerPagePreference;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -69,6 +72,38 @@ class CustomerController extends Controller
 
     public function show(Customer $customer): View
     {
+        return view('customers.show', [
+            'customer' => $customer,
+            'entries' => $this->buildLedger($customer)->reverse()->values(),
+            'due' => $customer->dueAmount(),
+        ]);
+    }
+
+    public function statementPdf(Customer $customer): Response
+    {
+        $entries = $this->buildLedger($customer);
+        $months = $entries->groupBy(fn (array $entry) => $entry['date']->format('F Y'));
+
+        return Pdf::loadView('customers.statement-pdf', [
+            'customer' => $customer,
+            'months' => $months,
+            'openingBalance' => (float) $customer->opening_balance,
+            'totalDebit' => $entries->where('type', 'billed')->sum('amount'),
+            'totalCredit' => $entries->where('type', 'received')->sum('amount'),
+            'due' => $customer->dueAmount(),
+            'entryCount' => $entries->count(),
+            'fromDate' => $entries->first()['date'] ?? now(),
+            'toDate' => $entries->last()['date'] ?? now(),
+        ])->setPaper('a4')->stream("{$customer->name} - Statement.pdf");
+    }
+
+    /**
+     * Every invoice (debit — billed to the customer) and invoice payment
+     * (credit — received from them) as one running-balance timeline,
+     * oldest first, starting from their opening balance.
+     */
+    private function buildLedger(Customer $customer): Collection
+    {
         $invoices = $customer->invoices()->with('payments')->orderBy('created_at')->get();
 
         $entries = collect();
@@ -95,21 +130,13 @@ class CustomerController extends Controller
 
         $balance = (float) $customer->opening_balance;
 
-        $entries = $entries->sortBy('date')->values()
+        return $entries->sortBy('date')->values()
             ->map(function (array $entry) use (&$balance) {
                 $balance += $entry['type'] === 'billed' ? $entry['amount'] : -$entry['amount'];
                 $entry['balance_after'] = round($balance, 2);
 
                 return $entry;
-            })
-            ->reverse()
-            ->values();
-
-        return view('customers.show', [
-            'customer' => $customer,
-            'entries' => $entries,
-            'due' => $customer->dueAmount(),
-        ]);
+            });
     }
 
     public function edit(Customer $customer): View

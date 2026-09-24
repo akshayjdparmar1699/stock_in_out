@@ -67,6 +67,51 @@ class CustomerController extends Controller
         return redirect()->route('customers.index')->with('status', "Customer \"{$customer->name}\" added.");
     }
 
+    public function show(Customer $customer): View
+    {
+        $invoices = $customer->invoices()->with('payments')->orderBy('created_at')->get();
+
+        $entries = collect();
+
+        foreach ($invoices as $invoice) {
+            $entries->push([
+                'date' => $invoice->created_at,
+                'type' => 'billed',
+                'label' => "Invoice {$invoice->invoice_number}",
+                'amount' => (float) $invoice->total,
+                'url' => route('invoices.show', $invoice),
+            ]);
+
+            foreach ($invoice->payments as $payment) {
+                $entries->push([
+                    'date' => $payment->created_at,
+                    'type' => 'received',
+                    'label' => $payment->note ? "Payment ({$payment->note})" : "Payment for {$invoice->invoice_number}",
+                    'amount' => (float) $payment->amount,
+                    'url' => route('invoices.show', $invoice),
+                ]);
+            }
+        }
+
+        $balance = (float) $customer->opening_balance;
+
+        $entries = $entries->sortBy('date')->values()
+            ->map(function (array $entry) use (&$balance) {
+                $balance += $entry['type'] === 'billed' ? $entry['amount'] : -$entry['amount'];
+                $entry['balance_after'] = round($balance, 2);
+
+                return $entry;
+            })
+            ->reverse()
+            ->values();
+
+        return view('customers.show', [
+            'customer' => $customer,
+            'entries' => $entries,
+            'due' => $customer->dueAmount(),
+        ]);
+    }
+
     public function edit(Customer $customer): View
     {
         $customer->load('branches');

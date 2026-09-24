@@ -41,14 +41,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
     Route::patch('/customers/{customer}/toggle-active', [CustomerController::class, 'toggleActive'])->name('customers.toggle-active');
-    Route::resource('customers', CustomerController::class)->except(['show']);
+    Route::resource('customers', CustomerController::class);
 
     Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
     Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])->name('invoices.payments.store');
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
 
     Route::get('/suppliers/search', [SupplierController::class, 'search'])->name('suppliers.search');
-    Route::resource('suppliers', SupplierController::class)->except(['show', 'destroy']);
+    Route::resource('suppliers', SupplierController::class)->except(['destroy']);
 
     Route::resource('purchases', PurchaseController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
     Route::post('/purchases/{purchase}/payments', [PurchaseController::class, 'storePayment'])->name('purchases.payments.store');

@@ -18,7 +18,9 @@
             @forelse ($customers as $customer)
                 @php $due = $customer->dueAmount(); @endphp
                 <tr>
-                    <td class="px-6 py-4 text-sm text-gray-800">{{ $customer->name }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-800">
+                        <a href="{{ route('customers.show', $customer) }}" class="text-indigo-700 hover:underline font-medium">{{ $customer->name }}</a>
+                    </td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $customer->phone }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $customer->address ?? '—' }}</td>
                     @if (Auth::user()->isAdmin())

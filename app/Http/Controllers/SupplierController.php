@@ -52,6 +52,51 @@ class SupplierController extends Controller
         return redirect()->route('suppliers.index')->with('status', "Supplier \"{$supplier->name}\" added.");
     }
 
+    public function show(Supplier $supplier): View
+    {
+        $purchases = $supplier->purchases()->with('payments')->orderBy('created_at')->get();
+
+        $entries = collect();
+
+        foreach ($purchases as $purchase) {
+            $entries->push([
+                'date' => $purchase->created_at,
+                'type' => 'billed',
+                'label' => "Purchase {$purchase->purchase_number}",
+                'amount' => (float) $purchase->total,
+                'url' => route('purchases.show', $purchase),
+            ]);
+
+            foreach ($purchase->payments as $payment) {
+                $entries->push([
+                    'date' => $payment->created_at,
+                    'type' => 'paid',
+                    'label' => $payment->note ? "Payment ({$payment->note})" : "Payment for {$purchase->purchase_number}",
+                    'amount' => (float) $payment->amount,
+                    'url' => route('purchases.show', $purchase),
+                ]);
+            }
+        }
+
+        $balance = (float) $supplier->opening_balance;
+
+        $entries = $entries->sortBy('date')->values()
+            ->map(function (array $entry) use (&$balance) {
+                $balance += $entry['type'] === 'billed' ? $entry['amount'] : -$entry['amount'];
+                $entry['balance_after'] = round($balance, 2);
+
+                return $entry;
+            })
+            ->reverse()
+            ->values();
+
+        return view('suppliers.show', [
+            'supplier' => $supplier,
+            'entries' => $entries,
+            'due' => $supplier->dueAmount(),
+        ]);
+    }
+
     public function edit(Supplier $supplier): View
     {
         return view('suppliers.edit', ['supplier' => $supplier]);

@@ -21,6 +21,15 @@
         </div>
     </x-slot>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.prefetchPdf?.(
+                {{ \Illuminate\Support\Js::from(route('invoices.pdf', $invoice)) }},
+                {{ \Illuminate\Support\Js::from($invoice->invoice_number.'.pdf') }}
+            );
+        });
+    </script>
+
     <div class="py-12">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 

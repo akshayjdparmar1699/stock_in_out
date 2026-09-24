@@ -227,11 +227,34 @@ window.hideAjaxSpinner = hideAjaxSpinner;
 // ever leaving the page — inside an installed iPhone PWA, navigating the
 // tab straight to a PDF URL renders a blank screen (the standalone
 // WKWebView has no built-in PDF viewer the way Safari itself does).
-async function fetchPdfFile(url, filename) {
-    const res = await fetch(url, { credentials: 'same-origin' });
-    if (!res.ok) throw new Error(`Failed to fetch PDF (${res.status})`);
-    return new File([await res.blob()], filename, { type: 'application/pdf' });
+//
+// Cached per URL and kicked off as soon as the page loads (see
+// window.prefetchPdf), rather than only when Share/Download is tapped.
+// navigator.share() only counts as "triggered by the user" if it runs
+// with no real async gap after the click — awaiting a slow network
+// fetch first (Render's free tier is not fast) burns through that
+// window, so the very first tap silently does nothing and only the
+// second tap (now warmed up) shows the share sheet. Prefetching means
+// the file is usually already sitting in the cache by the time someone
+// taps Share, so the await afterwards resolves immediately instead of
+// waiting on the network.
+const pdfFileCache = new Map();
+function fetchPdfFile(url, filename) {
+    if (!pdfFileCache.has(url)) {
+        const promise = (async () => {
+            const res = await fetch(url, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error(`Failed to fetch PDF (${res.status})`);
+            return new File([await res.blob()], filename, { type: 'application/pdf' });
+        })();
+        promise.catch(() => pdfFileCache.delete(url));
+        pdfFileCache.set(url, promise);
+    }
+    return pdfFileCache.get(url);
 }
+
+window.prefetchPdf = function (url, filename) {
+    fetchPdfFile(url, filename).catch(() => {});
+};
 
 // Saves the PDF on the device. Prefers handing the file straight to the
 // native share sheet's "Save to Files" (avoids iOS Safari just navigating

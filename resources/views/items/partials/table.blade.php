@@ -17,7 +17,7 @@
                     <td class="px-6 py-4 text-sm font-medium text-indigo-700 hover:underline">{{ $item->name }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $item->sku }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">₹{{ number_format($item->selling_price, 2) }}</td>
-                    <td class="px-6 py-4 text-sm {{ $qty <= $item->low_stock_threshold ? 'text-red-600 font-medium' : 'text-gray-700' }}">
+                    <td class="px-6 py-4 text-sm {{ $qty <= $item->low_stock_threshold ? 'text-red-600 font-medium' : 'text-green-600 font-medium' }}">
                         {{ $qty }} {{ $item->unit }}
                     </td>
                     <td class="px-6 py-4 text-right text-sm">

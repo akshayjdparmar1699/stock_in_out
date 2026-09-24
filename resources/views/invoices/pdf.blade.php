@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <title>{{ $invoice->invoice_number }}</title>
     <style>
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; margin: 0; padding: 30px; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; margin: 0; padding: 20px; }
+        .invoice-box { border: 1.5px solid #1f2937; padding: 24px; }
         .header { display: flex; justify-content: space-between; margin-bottom: 24px; }
         .header h1 { font-size: 20px; margin: 0 0 4px 0; }
         .header .branch { color: #4b5563; }
@@ -13,8 +14,9 @@
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .info-table td { vertical-align: top; padding-bottom: 16px; }
         .info-label { color: #6b7280; font-size: 10px; text-transform: uppercase; margin-bottom: 2px; }
-        .items-table th { background: #f3f4f6; text-align: left; padding: 8px; font-size: 10px; text-transform: uppercase; color: #6b7280; }
-        .items-table td { padding: 8px; border-bottom: 1px solid #e5e7eb; }
+        .items-table { border: 1px solid #9ca3af; }
+        .items-table th { background: #f3f4f6; text-align: left; padding: 8px; font-size: 10px; text-transform: uppercase; color: #6b7280; border: 1px solid #9ca3af; }
+        .items-table td { padding: 8px; border: 1px solid #d1d5db; }
         .items-table .num { text-align: right; }
         .totals { width: 260px; float: right; margin-top: 16px; }
         .totals td { padding: 4px 8px; }
@@ -34,6 +36,7 @@
     </style>
 </head>
 <body>
+    <div class="invoice-box">
     <div class="header">
         <div>
             <h1>{{ $invoice->branch->name }}</h1>
@@ -151,5 +154,6 @@
     @endif
 
     <div class="footer">Thank you for your business!</div>
+    </div>
 </body>
 </html>

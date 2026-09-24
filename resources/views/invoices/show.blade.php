@@ -51,7 +51,7 @@
                 </div>
             @endif
 
-            <div class="bg-white shadow-sm rounded-lg p-8">
+            <div class="bg-white shadow-sm rounded-lg border border-gray-300 p-8">
 
                 <div class="flex justify-between mb-8">
                     <div>
@@ -81,22 +81,22 @@
                 </div>
 
                 <div class="overflow-x-auto mb-6">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="w-full border border-gray-300 border-collapse">
                         <thead>
-                            <tr>
-                                <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Item') }}</th>
-                                <th class="py-2 text-right text-xs font-medium text-gray-500 uppercase">{{ __('Qty') }}</th>
-                                <th class="py-2 text-right text-xs font-medium text-gray-500 uppercase">{{ __('Rate') }}</th>
-                                <th class="py-2 text-right text-xs font-medium text-gray-500 uppercase">{{ __('Amount') }}</th>
+                            <tr class="bg-gray-50">
+                                <th class="border border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Item') }}</th>
+                                <th class="border border-gray-300 px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">{{ __('Qty') }}</th>
+                                <th class="border border-gray-300 px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">{{ __('Rate') }}</th>
+                                <th class="border border-gray-300 px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">{{ __('Amount') }}</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
+                        <tbody>
                             @foreach ($invoice->items as $line)
                                 <tr>
-                                    <td class="py-2 text-sm text-gray-800">{{ $line->item->name }}</td>
-                                    <td class="py-2 text-sm text-gray-600 text-right">{{ $line->quantity }} {{ $line->item->unit }}</td>
-                                    <td class="py-2 text-sm text-gray-600 text-right">₹{{ number_format($line->unit_price, 2) }}</td>
-                                    <td class="py-2 text-sm text-gray-800 text-right">₹{{ number_format($line->total, 2) }}</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-sm text-gray-800">{{ $line->item->name }}</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-sm text-gray-600 text-right">{{ $line->quantity }} {{ $line->item->unit }}</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-sm text-gray-600 text-right">₹{{ number_format($line->unit_price, 2) }}</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-sm text-gray-800 text-right">₹{{ number_format($line->total, 2) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

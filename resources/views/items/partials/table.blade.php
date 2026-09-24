@@ -13,7 +13,7 @@
         <tbody class="divide-y divide-gray-100">
             @forelse ($items as $item)
                 @php $qty = $item->stocks->first()->quantity ?? 0; @endphp
-                <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{{ route('items.show', $item) }}'">
+                <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.showCubeLoader(); window.location='{{ route('items.show', $item) }}'">
                     <td class="px-6 py-4 text-sm font-medium text-indigo-700 hover:underline">{{ $item->name }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $item->sku }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">₹{{ number_format($item->selling_price, 2) }}</td>

@@ -25,7 +25,7 @@
             <form method="POST" action="{{ route('branches.switch') }}">
                 @csrf
                 <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 px-1">{{ __('Branch') }}</label>
-                <select name="branch_id" onchange="this.form.submit()" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <select name="branch_id" onchange="window.showCubeLoader(); this.form.submit()" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
                     @foreach (\App\Models\Branch::orderBy('name')->get() as $branch)
                         <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>
                             {{ $branch->name }}

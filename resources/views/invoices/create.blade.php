@@ -162,11 +162,11 @@
                                     <th class="py-2 text-right text-xs font-medium text-gray-500 uppercase w-28">{{ __('Qty') }}</th>
                                     <th class="py-2 text-right text-xs font-medium text-gray-500 uppercase w-32">{{ __('Rate') }}</th>
                                     <th class="py-2 text-right text-xs font-medium text-gray-500 uppercase w-32">{{ __('Amount') }}</th>
-                                    <th class="w-10"></th>
+                                    <th class="w-16"></th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <template x-for="(line, index) in lines" :key="line.item_id">
+                                <template x-for="(line, index) in lines" :key="line.id">
                                     <tr>
                                         <td class="py-2 text-sm text-gray-800">
                                             <span x-text="line.name"></span>
@@ -194,7 +194,8 @@
                                             </div>
                                         </td>
                                         <td class="py-2 text-right text-sm text-gray-800" x-text="'₹' + (line.quantity * line.unit_price).toFixed(2)"></td>
-                                        <td class="py-2 text-right">
+                                        <td class="py-2 text-right whitespace-nowrap">
+                                            <button type="button" class="text-green-600 hover:text-green-800 mr-2" title="{{ __('Add this item again at a different price') }}" @click="duplicateLine(line)">+</button>
                                             <button type="button" class="text-red-500 hover:text-red-700" @click="lines.splice(index, 1)">&times;</button>
                                         </td>
                                     </tr>
@@ -320,6 +321,7 @@
                 itemQuery: '',
                 itemResults: [],
                 lines: [],
+                nextLineId: 1,
 
                 selectFromDropdown(event) {
                     const id = parseInt(event.target.value, 10);
@@ -400,6 +402,7 @@
                         return;
                     }
                     this.lines.push({
+                        id: this.nextLineId++,
                         item_id: item.id,
                         name: item.name,
                         unit: item.unit,
@@ -409,6 +412,17 @@
                     });
                     this.itemQuery = '';
                     this.itemResults = [];
+                },
+                duplicateLine(line) {
+                    this.lines.push({
+                        id: this.nextLineId++,
+                        item_id: line.item_id,
+                        name: line.name,
+                        unit: line.unit,
+                        stock: line.stock,
+                        quantity: 1,
+                        unit_price: line.unit_price,
+                    });
                 },
             }
         }

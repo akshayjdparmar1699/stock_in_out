@@ -117,12 +117,17 @@ class InvoiceController extends Controller
                 ->get()
                 ->keyBy('item_id');
 
+            // Tracks stock left as lines are validated, so two lines for the
+            // same item (e.g. the same material billed at two different
+            // prices) are checked against their combined quantity rather
+            // than each one independently against the original total.
+            $remaining = $stocks->map(fn (ItemStock $stock) => (float) $stock->quantity);
+
             $subtotal = 0;
             $lines = [];
 
             foreach ($data['items'] as $line) {
-                $stock = $stocks->get($line['item_id']);
-                $available = $stock?->quantity ?? 0;
+                $available = $remaining->get($line['item_id'], 0.0);
 
                 if ($available < $line['quantity']) {
                     $item = Item::find($line['item_id']);
@@ -130,6 +135,8 @@ class InvoiceController extends Controller
                         'items' => "Not enough stock for \"{$item?->name}\". Available: {$available} {$item?->unit}.",
                     ]);
                 }
+
+                $remaining[$line['item_id']] = $available - (float) $line['quantity'];
 
                 $lineTotal = round($line['quantity'] * $line['unit_price'], 2);
                 $subtotal += $lineTotal;

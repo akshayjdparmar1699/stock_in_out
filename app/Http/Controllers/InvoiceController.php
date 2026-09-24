@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreInvoicePaymentRequest;
 use App\Http\Requests\StoreInvoiceRequest;
+use App\Http\Requests\UpdateInvoiceRequest;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
@@ -98,55 +99,12 @@ class InvoiceController extends Controller
         $branchId = BranchContext::id();
         $data = $request->validated();
 
-        $belongsToBranch = Customer::query()
-            ->where('id', $data['customer_id'])
-            ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
-            ->exists();
-
-        if (! $belongsToBranch) {
-            throw ValidationException::withMessages([
-                'customer_id' => 'This customer does not belong to the current branch.',
-            ]);
-        }
+        $this->assertCustomerInBranch($data['customer_id'], $branchId);
 
         $invoice = DB::transaction(function () use ($data, $branchId) {
-            $stocks = ItemStock::query()
-                ->where('branch_id', $branchId)
-                ->whereIn('item_id', collect($data['items'])->pluck('item_id'))
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('item_id');
-
-            // Tracks stock left as lines are validated, so two lines for the
-            // same item (e.g. the same material billed at two different
-            // prices) are checked against their combined quantity rather
-            // than each one independently against the original total.
-            $remaining = $stocks->map(fn (ItemStock $stock) => (float) $stock->quantity);
-
-            $subtotal = 0;
-            $lines = [];
-
-            foreach ($data['items'] as $line) {
-                $available = $remaining->get($line['item_id'], 0.0);
-
-                if ($available < $line['quantity']) {
-                    $item = Item::find($line['item_id']);
-                    throw ValidationException::withMessages([
-                        'items' => "Not enough stock for \"{$item?->name}\". Available: {$available} {$item?->unit}.",
-                    ]);
-                }
-
-                $remaining[$line['item_id']] = $available - (float) $line['quantity'];
-
-                $lineTotal = round($line['quantity'] * $line['unit_price'], 2);
-                $subtotal += $lineTotal;
-                $lines[] = $line + ['total' => $lineTotal];
-            }
-
             $discount = (float) ($data['discount'] ?? 0);
             $tax = (float) ($data['tax'] ?? 0);
             $transportation = (float) ($data['transportation'] ?? 0);
-            $total = round($subtotal - $discount + $tax + $transportation, 2);
             $paidAmount = (float) ($data['paid_amount'] ?? 0);
 
             $invoice = Invoice::create([
@@ -155,34 +113,24 @@ class InvoiceController extends Controller
                 'customer_id' => $data['customer_id'],
                 'user_id' => auth()->id(),
                 'invoice_date' => $data['invoice_date'],
-                'subtotal' => $subtotal,
+                'subtotal' => 0,
                 'discount' => $discount,
                 'tax' => $tax,
                 'transportation' => $transportation,
-                'total' => $total,
+                'total' => 0,
                 'paid_amount' => $paidAmount,
-                'status' => $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid'),
+                'status' => 'unpaid',
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            foreach ($lines as $line) {
-                $invoice->items()->create($line);
+            $subtotal = $this->applyLines($invoice, $branchId, $data['items']);
+            $total = round($subtotal - $discount + $tax + $transportation, 2);
 
-                $stocks->get($line['item_id'])->decrement('quantity', $line['quantity']);
-
-                $movement = StockMovement::create([
-                    'branch_id' => $branchId,
-                    'item_id' => $line['item_id'],
-                    'user_id' => auth()->id(),
-                    'type' => 'out',
-                    'quantity' => $line['quantity'],
-                    'reason' => "Sale - Invoice {$invoice->invoice_number}",
-                    'reference_type' => Invoice::class,
-                    'reference_id' => $invoice->id,
-                ]);
-
-                $this->allocateFromBatches($branchId, $line['item_id'], (float) $line['quantity'], $movement->id);
-            }
+            $invoice->update([
+                'subtotal' => $subtotal,
+                'total' => $total,
+                'status' => $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid'),
+            ]);
 
             if ($paidAmount > 0) {
                 InvoicePayment::create([
@@ -197,6 +145,198 @@ class InvoiceController extends Controller
         });
 
         return redirect()->route('invoices.show', $invoice)->with('status', "Invoice {$invoice->invoice_number} created.");
+    }
+
+    public function edit(Invoice $invoice): View
+    {
+        $invoice->load('items.item', 'customer');
+
+        $alreadyOnInvoice = $invoice->items->keyBy('item_id');
+
+        $items = Item::query()
+            ->where('is_active', true)
+            ->with(['stocks' => fn ($q) => $q->where('branch_id', $invoice->branch_id)])
+            ->orderBy('name')
+            ->get()
+            ->map(function (Item $item) use ($alreadyOnInvoice) {
+                $onThisInvoice = (float) ($alreadyOnInvoice->get($item->id)?->quantity ?? 0);
+
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'sku' => $item->sku,
+                    'unit' => $item->unit,
+                    'selling_price' => (float) $item->selling_price,
+                    // What would be available if this invoice's own current
+                    // lines were released back to stock first — otherwise
+                    // editing a line down to the same quantity it already
+                    // has would look like it's short on stock.
+                    'stock' => (float) ($item->stocks->first()->quantity ?? 0) + $onThisInvoice,
+                ];
+            });
+
+        $itemsById = $items->keyBy('id');
+
+        $initialLines = $invoice->items->map(fn ($line) => [
+            'id' => $line->id,
+            'item_id' => $line->item_id,
+            'name' => $line->item->name,
+            'unit' => $line->item->unit,
+            'stock' => $itemsById->get($line->item_id)['stock'] ?? 0,
+            'quantity' => (float) $line->quantity,
+            'unit_price' => (float) $line->unit_price,
+        ])->values();
+
+        $selectedCustomer = [
+            'id' => $invoice->customer->id,
+            'name' => $invoice->customer->name,
+            'phone' => $invoice->customer->phone,
+            'address' => $invoice->customer->address,
+            'due' => $invoice->customer->dueAmount(),
+        ];
+
+        return view('invoices.edit', [
+            'invoice' => $invoice,
+            'items' => $items,
+            'initialLines' => $initialLines,
+            'selectedCustomer' => $selectedCustomer,
+        ]);
+    }
+
+    public function update(UpdateInvoiceRequest $request, Invoice $invoice): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $this->assertCustomerInBranch($data['customer_id'], $invoice->branch_id);
+
+        DB::transaction(function () use ($data, $invoice) {
+            $this->reverseStockEffects($invoice);
+
+            $discount = (float) ($data['discount'] ?? 0);
+            $tax = (float) ($data['tax'] ?? 0);
+            $transportation = (float) ($data['transportation'] ?? 0);
+
+            $subtotal = $this->applyLines($invoice, $invoice->branch_id, $data['items']);
+            $total = round($subtotal - $discount + $tax + $transportation, 2);
+
+            $invoice->update([
+                'customer_id' => $data['customer_id'],
+                'invoice_date' => $data['invoice_date'],
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'tax' => $tax,
+                'transportation' => $transportation,
+                'total' => $total,
+                'status' => $invoice->paid_amount >= $total ? 'paid' : ($invoice->paid_amount > 0 ? 'partial' : 'unpaid'),
+                'notes' => $data['notes'] ?? null,
+            ]);
+        });
+
+        return redirect()->route('invoices.show', $invoice)->with('status', "Invoice {$invoice->invoice_number} updated.");
+    }
+
+    private function assertCustomerInBranch(int $customerId, int $branchId): void
+    {
+        $belongsToBranch = Customer::query()
+            ->where('id', $customerId)
+            ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
+            ->exists();
+
+        if (! $belongsToBranch) {
+            throw ValidationException::withMessages([
+                'customer_id' => 'This customer does not belong to the current branch.',
+            ]);
+        }
+    }
+
+    /**
+     * Validates stock for each line (tracking a running remainder so two
+     * lines for the same item are checked against their combined quantity),
+     * then creates the invoice_items, decrements stock, and records the
+     * stock-out movement + FIFO batch allocation for each. Returns the
+     * subtotal. Assumes $invoice already exists (has an id) and currently
+     * has no items — for an edit, call reverseStockEffects() first.
+     */
+    private function applyLines(Invoice $invoice, int $branchId, array $items): float
+    {
+        $stocks = ItemStock::query()
+            ->where('branch_id', $branchId)
+            ->whereIn('item_id', collect($items)->pluck('item_id'))
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('item_id');
+
+        $remaining = $stocks->map(fn (ItemStock $stock) => (float) $stock->quantity);
+
+        $subtotal = 0;
+        $lines = [];
+
+        foreach ($items as $line) {
+            $available = $remaining->get($line['item_id'], 0.0);
+
+            if ($available < $line['quantity']) {
+                $item = Item::find($line['item_id']);
+                throw ValidationException::withMessages([
+                    'items' => "Not enough stock for \"{$item?->name}\". Available: {$available} {$item?->unit}.",
+                ]);
+            }
+
+            $remaining[$line['item_id']] = $available - (float) $line['quantity'];
+
+            $lineTotal = round($line['quantity'] * $line['unit_price'], 2);
+            $subtotal += $lineTotal;
+            $lines[] = $line + ['total' => $lineTotal];
+        }
+
+        foreach ($lines as $line) {
+            $invoice->items()->create($line);
+
+            $stocks->get($line['item_id'])->decrement('quantity', $line['quantity']);
+
+            $movement = StockMovement::create([
+                'branch_id' => $branchId,
+                'item_id' => $line['item_id'],
+                'user_id' => auth()->id(),
+                'type' => 'out',
+                'quantity' => $line['quantity'],
+                'reason' => "Sale - Invoice {$invoice->invoice_number}",
+                'reference_type' => Invoice::class,
+                'reference_id' => $invoice->id,
+            ]);
+
+            $this->allocateFromBatches($branchId, $line['item_id'], (float) $line['quantity'], $movement->id);
+        }
+
+        return $subtotal;
+    }
+
+    /**
+     * Undoes applyLines(): restores the stock and FIFO batches this
+     * invoice's current lines consumed, and removes those lines. Used by
+     * both destroy() and update() (which re-applies fresh lines right after).
+     */
+    private function reverseStockEffects(Invoice $invoice): void
+    {
+        $movements = StockMovement::query()
+            ->where('reference_type', Invoice::class)
+            ->where('reference_id', $invoice->id)
+            ->with('batchAllocations')
+            ->get();
+
+        foreach ($movements as $movement) {
+            foreach ($movement->batchAllocations as $allocation) {
+                StockBatch::whereKey($allocation->stock_batch_id)->increment('quantity_remaining', $allocation->quantity);
+            }
+
+            ItemStock::query()
+                ->where('branch_id', $invoice->branch_id)
+                ->where('item_id', $movement->item_id)
+                ->increment('quantity', $movement->quantity);
+
+            $movement->delete();
+        }
+
+        $invoice->items()->delete();
     }
 
     /**
@@ -263,25 +403,7 @@ class InvoiceController extends Controller
     public function destroy(Invoice $invoice): RedirectResponse
     {
         DB::transaction(function () use ($invoice) {
-            $movements = StockMovement::query()
-                ->where('reference_type', Invoice::class)
-                ->where('reference_id', $invoice->id)
-                ->with('batchAllocations')
-                ->get();
-
-            foreach ($movements as $movement) {
-                foreach ($movement->batchAllocations as $allocation) {
-                    StockBatch::whereKey($allocation->stock_batch_id)->increment('quantity_remaining', $allocation->quantity);
-                }
-
-                ItemStock::query()
-                    ->where('branch_id', $invoice->branch_id)
-                    ->where('item_id', $movement->item_id)
-                    ->increment('quantity', $movement->quantity);
-
-                $movement->delete();
-            }
-
+            $this->reverseStockEffects($invoice);
             $invoice->delete();
         });
 

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCustomerPaymentRequest;
 use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\InvoicePayment;
 use App\Services\BranchContext;
 use App\Services\PerPagePreference;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -14,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -95,6 +98,53 @@ class CustomerController extends Controller
             'fromDate' => $entries->first()['date'] ?? now(),
             'toDate' => $entries->last()['date'] ?? now(),
         ])->setPaper('a4')->stream("{$customer->name} - Statement.pdf");
+    }
+
+    /**
+     * Records one payment from the customer against their oldest
+     * outstanding invoices first (a payment larger than one invoice's own
+     * balance rolls over onto the next), so it isn't tied to a single
+     * invoice the way "Record a Payment" on an invoice's own page is.
+     */
+    public function storePayment(StoreCustomerPaymentRequest $request, Customer $customer): RedirectResponse
+    {
+        $data = $request->validated();
+        $remaining = (float) $data['amount'];
+
+        DB::transaction(function () use ($customer, $data, &$remaining) {
+            $invoices = $customer->invoices()
+                ->whereColumn('paid_amount', '<', 'total')
+                ->orderBy('invoice_date')
+                ->orderBy('created_at')
+                ->get();
+
+            foreach ($invoices as $invoice) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                $due = round((float) $invoice->total - (float) $invoice->paid_amount, 2);
+                $apply = min($due, $remaining);
+
+                InvoicePayment::create([
+                    'invoice_id' => $invoice->id,
+                    'user_id' => auth()->id(),
+                    'amount' => $apply,
+                    'note' => $data['note'] ?? null,
+                ]);
+
+                $invoice->increment('paid_amount', $apply);
+                $invoice->refresh();
+                $invoice->update([
+                    'status' => $invoice->paid_amount >= $invoice->total ? 'paid' : ($invoice->paid_amount > 0 ? 'partial' : 'unpaid'),
+                ]);
+
+                $remaining -= $apply;
+            }
+        });
+
+        return redirect()->route('customers.show', $customer)
+            ->with('status', "Payment of ₹".number_format($data['amount'], 2)." recorded for \"{$customer->name}\".");
     }
 
     /**

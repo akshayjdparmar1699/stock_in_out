@@ -46,6 +46,13 @@
                         <x-input-error :messages="$errors->get('opening_balance')" class="mt-2" />
                     </div>
 
+                    <div>
+                        <x-input-label for="credit_limit" :value="__('Credit Limit (optional)')" />
+                        <x-text-input id="credit_limit" name="credit_limit" type="number" step="0.01" min="0" class="mt-1 block w-full" :value="old('credit_limit', 0)" placeholder="0.00" />
+                        <p class="text-xs text-gray-400 mt-1">{{ __("Get a reminder once this customer's due crosses this amount. Leave 0 for no limit.") }}</p>
+                        <x-input-error :messages="$errors->get('credit_limit')" class="mt-2" />
+                    </div>
+
                     @if (Auth::user()->isAdmin())
                         <div>
                             <x-input-label :value="__('Belongs to Branch(es)')" />

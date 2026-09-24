@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\InvoicePayment;
+use App\Services\AdminAlertService;
 use App\Services\BranchContext;
 use App\Services\PerPagePreference;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -55,6 +56,7 @@ class CustomerController extends Controller
     {
         $data = $request->validated();
         $data['opening_balance'] = $data['opening_balance'] ?? 0;
+        $data['credit_limit'] = $data['credit_limit'] ?? 0;
         $branchIds = $data['branch_ids'] ?? null;
         unset($data['branch_ids']);
 
@@ -75,10 +77,16 @@ class CustomerController extends Controller
 
     public function show(Customer $customer): View
     {
+        $due = $customer->dueAmount();
+        $branch = BranchContext::current();
+
         return view('customers.show', [
             'customer' => $customer,
             'entries' => $this->buildLedger($customer)->reverse()->values(),
-            'due' => $customer->dueAmount(),
+            'due' => $due,
+            'creditLimitAdminUrl' => ($branch && $customer->isOverCreditLimit())
+                ? AdminAlertService::creditLimitUrl($branch, $customer, $due, (float) $customer->credit_limit)
+                : null,
         ]);
     }
 
@@ -200,6 +208,7 @@ class CustomerController extends Controller
     {
         $data = $request->validated();
         $data['opening_balance'] = $data['opening_balance'] ?? 0;
+        $data['credit_limit'] = $data['credit_limit'] ?? 0;
         $branchIds = $data['branch_ids'] ?? null;
         unset($data['branch_ids']);
 

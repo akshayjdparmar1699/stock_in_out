@@ -20,6 +20,7 @@ class StoreCustomerRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:255'],
             'gst_number' => ['nullable', 'string', 'max:30'],
             'opening_balance' => ['nullable', 'numeric', 'min:0'],
+            'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer', 'exists:branches,id'],
         ];

@@ -18,6 +18,7 @@ class Customer extends Model
         'address',
         'gst_number',
         'opening_balance',
+        'credit_limit',
         'is_active',
     ];
 
@@ -25,6 +26,7 @@ class Customer extends Model
     {
         return [
             'opening_balance' => 'decimal:2',
+            'credit_limit' => 'decimal:2',
             'is_active' => 'boolean',
         ];
     }
@@ -50,5 +52,15 @@ class Customer extends Model
         $paid = (float) $this->invoices()->sum('paid_amount');
 
         return round((float) $this->opening_balance + $invoiced - $paid, 2);
+    }
+
+    /**
+     * True when a credit limit is set for this customer and their current
+     * due has crossed it — a nudge to collect payment before extending
+     * them any more credit.
+     */
+    public function isOverCreditLimit(): bool
+    {
+        return (float) $this->credit_limit > 0 && $this->dueAmount() > (float) $this->credit_limit;
     }
 }

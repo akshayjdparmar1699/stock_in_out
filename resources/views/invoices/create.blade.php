@@ -154,54 +154,64 @@
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto" x-show="lines.length > 0">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead>
-                                <tr>
-                                    <th class="py-2 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Item') }}</th>
-                                    <th class="py-2 text-right text-xs font-medium text-gray-500 uppercase w-28">{{ __('Qty') }}</th>
-                                    <th class="py-2 text-right text-xs font-medium text-gray-500 uppercase w-32">{{ __('Rate') }}</th>
-                                    <th class="py-2 text-right text-xs font-medium text-gray-500 uppercase w-32">{{ __('Amount') }}</th>
-                                    <th class="w-16"></th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <template x-for="(line, index) in lines" :key="line.id">
-                                    <tr>
-                                        <td class="py-2 text-sm text-gray-800">
-                                            <span x-text="line.name"></span>
-                                            <div class="text-xs text-gray-400" x-text="'In stock: ' + line.stock + ' ' + line.unit"></div>
-                                            <input type="hidden" :name="`items[${index}][item_id]`" :value="line.item_id">
-                                        </td>
-                                        <td class="py-2 text-right">
-                                            <div class="inline-flex items-stretch rounded-md border border-gray-300 overflow-hidden">
-                                                <button type="button" @click="adjust(line, 'quantity', -1, 0.01, line.stock)"
-                                                    class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-r border-gray-300 shrink-0">&minus;</button>
-                                                <input type="number" step="0.01" min="0.01" :max="line.stock" x-model.number="line.quantity"
-                                                    :name="`items[${index}][quantity]`" class="no-spinner w-14 text-center border-0 focus:ring-0">
-                                                <button type="button" @click="adjust(line, 'quantity', 1, 0.01, line.stock)"
-                                                    class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-l border-gray-300 shrink-0">+</button>
-                                            </div>
-                                        </td>
-                                        <td class="py-2 text-right">
-                                            <div class="inline-flex items-stretch rounded-md border border-gray-300 overflow-hidden">
-                                                <button type="button" @click="adjust(line, 'unit_price', -1, 0)"
-                                                    class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-r border-gray-300 shrink-0">&minus;</button>
-                                                <input type="number" step="0.01" min="0" x-model.number="line.unit_price"
-                                                    :name="`items[${index}][unit_price]`" class="no-spinner w-16 text-center border-0 focus:ring-0">
-                                                <button type="button" @click="adjust(line, 'unit_price', 1, 0)"
-                                                    class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-l border-gray-300 shrink-0">+</button>
-                                            </div>
-                                        </td>
-                                        <td class="py-2 text-right text-sm text-gray-800" x-text="'₹' + (line.quantity * line.unit_price).toFixed(2)"></td>
-                                        <td class="py-2 text-right whitespace-nowrap">
-                                            <button type="button" class="text-green-600 hover:text-green-800 mr-2" title="{{ __('Add this item again at a different price') }}" @click="duplicateLine(line)">+</button>
-                                            <button type="button" class="text-red-500 hover:text-red-700" @click="lines.splice(index, 1)">&times;</button>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                    <div x-show="lines.length > 0" class="space-y-2">
+                        <div class="hidden sm:grid sm:grid-cols-[1fr_7.5rem_8rem_7rem_5.5rem] sm:gap-3 px-1 pb-1 text-xs font-medium text-gray-500 uppercase border-b border-gray-200">
+                            <div>{{ __('Item') }}</div>
+                            <div class="text-right">{{ __('Qty') }}</div>
+                            <div class="text-right">{{ __('Rate') }}</div>
+                            <div class="text-right">{{ __('Amount') }}</div>
+                            <div></div>
+                        </div>
+
+                        <template x-for="(line, index) in lines" :key="line.id">
+                            <div class="rounded-lg border border-gray-200 p-3 sm:p-0 sm:py-3 sm:border-0 sm:border-b sm:border-gray-100 sm:rounded-none sm:grid sm:grid-cols-[1fr_7.5rem_8rem_7rem_5.5rem] sm:gap-3 sm:items-center">
+                                <div class="min-w-0 mb-3 sm:mb-0">
+                                    <div class="text-sm font-medium text-gray-800 truncate" x-text="line.name"></div>
+                                    <div class="text-xs text-gray-400" x-text="'In stock: ' + line.stock + ' ' + line.unit"></div>
+                                    <input type="hidden" :name="`items[${index}][item_id]`" :value="line.item_id">
+                                </div>
+
+                                <div class="flex flex-wrap items-end gap-3 sm:contents">
+                                    <div>
+                                        <div class="text-xs text-gray-400 mb-1 sm:hidden">{{ __('Qty') }}</div>
+                                        <div class="inline-flex items-stretch rounded-md border border-gray-300 overflow-hidden">
+                                            <button type="button" @click="adjust(line, 'quantity', -1, 0.01, line.stock)"
+                                                class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-r border-gray-300 shrink-0">&minus;</button>
+                                            <input type="number" step="0.01" min="0.01" :max="line.stock" x-model.number="line.quantity"
+                                                :name="`items[${index}][quantity]`" class="no-spinner w-14 text-center border-0 focus:ring-0">
+                                            <button type="button" @click="adjust(line, 'quantity', 1, 0.01, line.stock)"
+                                                class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-l border-gray-300 shrink-0">+</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-gray-400 mb-1 sm:hidden">{{ __('Rate') }}</div>
+                                        <div class="inline-flex items-stretch rounded-md border border-gray-300 overflow-hidden">
+                                            <button type="button" @click="adjust(line, 'unit_price', -1, 0)"
+                                                class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-r border-gray-300 shrink-0">&minus;</button>
+                                            <input type="number" step="0.01" min="0" x-model.number="line.unit_price"
+                                                :name="`items[${index}][unit_price]`" class="no-spinner w-16 text-center border-0 focus:ring-0">
+                                            <button type="button" @click="adjust(line, 'unit_price', 1, 0)"
+                                                class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-l border-gray-300 shrink-0">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="ml-auto sm:ml-0 sm:text-right">
+                                        <div class="text-xs text-gray-400 mb-1 sm:hidden">{{ __('Amount') }}</div>
+                                        <div class="text-sm font-semibold text-gray-800 sm:font-normal" x-text="'₹' + (line.quantity * line.unit_price).toFixed(2)"></div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-gray-100 sm:mt-0 sm:pt-0 sm:border-t-0">
+                                    <button type="button" @click="duplicateLine(line)" title="{{ __('Add this item again at a different price') }}"
+                                        class="w-9 h-9 flex items-center justify-center rounded-full bg-green-50 text-green-600 hover:bg-green-100 shrink-0">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                                    </button>
+                                    <button type="button" @click="lines.splice(index, 1)" title="{{ __('Remove') }}"
+                                        class="w-9 h-9 flex items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100 shrink-0">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
                     </div>
 
                     <p class="text-sm text-gray-400" x-show="lines.length === 0">{{ __('No items added yet.') }}</p>

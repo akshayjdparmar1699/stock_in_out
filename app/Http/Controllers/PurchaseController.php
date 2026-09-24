@@ -161,6 +161,7 @@ class PurchaseController extends Controller
         return view('purchases.show', [
             'purchase' => $purchase,
             'supplierDue' => $purchase->supplier->dueAmount(),
+            'shareMessage' => $purchase->shareMessage(),
         ]);
     }
 
@@ -168,10 +169,28 @@ class PurchaseController extends Controller
     {
         $purchase->load(['supplier', 'branch', 'items.item']);
 
+        return $this->renderPdf($purchase)->stream("{$purchase->purchase_number}.pdf");
+    }
+
+    /**
+     * Publicly reachable (signed URL, no login) so a shared link opens
+     * straight from a WhatsApp/other-app message.
+     */
+    public function sharedPdf(Request $request, Purchase $purchase): Response
+    {
+        abort_unless($request->hasValidSignature(), 403);
+
+        $purchase->load(['supplier', 'branch', 'items.item']);
+
+        return $this->renderPdf($purchase)->stream("{$purchase->purchase_number}.pdf");
+    }
+
+    private function renderPdf(Purchase $purchase)
+    {
         return Pdf::loadView('purchases.pdf', [
             'purchase' => $purchase,
             'supplierDue' => $purchase->supplier->dueAmount(),
-        ])->setPaper('a4')->stream("{$purchase->purchase_number}.pdf");
+        ])->setPaper('a4');
     }
 
     public function storePayment(StorePurchasePaymentRequest $request, Purchase $purchase): RedirectResponse

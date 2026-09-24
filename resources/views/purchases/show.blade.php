@@ -3,6 +3,12 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 class="font-semibold text-lg sm:text-xl text-gray-800 leading-tight truncate">{{ __('Purchase') }} {{ $purchase->purchase_number }}</h2>
             <div class="flex flex-wrap gap-2 print:hidden">
+                <button type="button"
+                    onclick="window.shareDocument({ title: {{ \Illuminate\Support\Js::from(__('Purchase').' '.$purchase->purchase_number) }}, text: {{ \Illuminate\Support\Js::from($shareMessage) }} })"
+                    class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">
+                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.933 2.185 2.25 2.25 0 00-3.933-2.185zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>
+                    <span>{{ __('Share') }}</span>
+                </button>
                 <a href="{{ route('purchases.pdf', $purchase) }}" target="_blank" class="inline-flex items-center px-3 sm:px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50">
                     {{ __('Download PDF') }}
                 </a>

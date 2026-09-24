@@ -24,6 +24,10 @@ Route::get('/invoices/{invoice}/shared-pdf', [InvoiceController::class, 'sharedP
     ->name('invoices.shared-pdf')
     ->middleware('signed');
 
+Route::get('/purchases/{purchase}/shared-pdf', [PurchaseController::class, 'sharedPdf'])
+    ->name('purchases.shared-pdf')
+    ->middleware('signed');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 

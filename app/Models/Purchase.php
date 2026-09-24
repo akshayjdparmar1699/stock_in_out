@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\URL;
 
 class Purchase extends Model
 {
@@ -66,5 +67,46 @@ class Purchase extends Model
     public function balanceDue(): float
     {
         return round((float) $this->total - (float) $this->paid_amount, 2);
+    }
+
+    /**
+     * A signed, no-login-required link to this purchase's PDF, so it can be
+     * opened straight from a shared WhatsApp/other-app message.
+     */
+    public function sharedPdfUrl(): string
+    {
+        return URL::signedRoute('purchases.shared-pdf', ['purchase' => $this->id]);
+    }
+
+    public function shareMessage(): string
+    {
+        return <<<TEXT
+        Purchase from {$this->supplier->name}
+        Branch: {$this->branch->name}
+        Purchase: {$this->purchase_number}
+        Date: {$this->purchase_date->format('d M Y')}
+
+        View / download (PDF):
+        {$this->sharedPdfUrl()}
+
+        Total: ₹{$this->formattedTotal()}
+        Paid: ₹{$this->formattedPaid()}
+        Balance Due: ₹{$this->formattedBalance()}
+        TEXT;
+    }
+
+    private function formattedTotal(): string
+    {
+        return number_format((float) $this->total, 2);
+    }
+
+    private function formattedPaid(): string
+    {
+        return number_format((float) $this->paid_amount, 2);
+    }
+
+    private function formattedBalance(): string
+    {
+        return number_format($this->balanceDue(), 2);
     }
 }

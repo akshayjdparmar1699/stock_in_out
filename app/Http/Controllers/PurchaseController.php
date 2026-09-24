@@ -12,8 +12,10 @@ use App\Models\StockBatch;
 use App\Models\StockMovement;
 use App\Services\BranchContext;
 use App\Services\PerPagePreference;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -160,6 +162,16 @@ class PurchaseController extends Controller
             'purchase' => $purchase,
             'supplierDue' => $purchase->supplier->dueAmount(),
         ]);
+    }
+
+    public function pdf(Purchase $purchase): Response
+    {
+        $purchase->load(['supplier', 'branch', 'items.item']);
+
+        return Pdf::loadView('purchases.pdf', [
+            'purchase' => $purchase,
+            'supplierDue' => $purchase->supplier->dueAmount(),
+        ])->setPaper('a4')->stream("{$purchase->purchase_number}.pdf");
     }
 
     public function storePayment(StorePurchasePaymentRequest $request, Purchase $purchase): RedirectResponse

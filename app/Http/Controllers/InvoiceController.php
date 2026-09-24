@@ -227,7 +227,7 @@ class InvoiceController extends Controller
         return view('invoices.show', [
             'invoice' => $invoice,
             'customerDue' => $invoice->customer->dueAmount(),
-            'whatsappUrl' => $invoice->customer->whatsappUrl($invoice->whatsappMessage()),
+            'shareMessage' => $invoice->whatsappMessage(),
             'lowStockLines' => $lowStockLines,
             'lowStockAdminUrl' => $lowStockLines->isNotEmpty()
                 ? AdminAlertService::lowStockUrl($invoice->branch, $lowStockLines)

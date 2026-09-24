@@ -56,6 +56,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('purchases', PurchaseController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('/purchases/{purchase}/payments', [PurchaseController::class, 'storePayment'])->name('purchases.payments.store');
+    Route::get('/purchases/{purchase}/pdf', [PurchaseController::class, 'pdf'])->name('purchases.pdf');
 
     Route::patch('/staff/{staffMember}/toggle-active', [StaffMemberController::class, 'toggleActive'])->name('staff.toggle-active');
     Route::resource('staff', StaffMemberController::class)->except(['show', 'destroy'])->parameters(['staff' => 'staffMember']);

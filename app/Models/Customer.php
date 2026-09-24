@@ -51,36 +51,4 @@ class Customer extends Model
 
         return round((float) $this->opening_balance + $invoiced - $paid, 2);
     }
-
-    public function whatsappNumber(): ?string
-    {
-        if (! $this->phone) {
-            return null;
-        }
-
-        $digits = preg_replace('/\D+/', '', $this->phone);
-
-        if (strlen($digits) === 10) {
-            $digits = '91'.$digits;
-        }
-
-        return $digits ?: null;
-    }
-
-    public function whatsappUrl(string $message = ''): ?string
-    {
-        $number = $this->whatsappNumber();
-
-        if (! $number) {
-            return null;
-        }
-
-        $url = "https://wa.me/{$number}";
-
-        if ($message !== '') {
-            $url .= '?text='.rawurlencode($message);
-        }
-
-        return $url;
-    }
 }

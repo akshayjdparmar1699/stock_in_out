@@ -1,6 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Purchase') }} {{ $purchase->purchase_number }}</h2>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="font-semibold text-lg sm:text-xl text-gray-800 leading-tight truncate">{{ __('Purchase') }} {{ $purchase->purchase_number }}</h2>
+            <div class="flex flex-wrap gap-2 print:hidden">
+                <a href="{{ route('purchases.pdf', $purchase) }}" target="_blank" class="inline-flex items-center px-3 sm:px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50">
+                    {{ __('Download PDF') }}
+                </a>
+                <button onclick="window.print()" class="inline-flex items-center px-3 sm:px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50">
+                    {{ __('Print') }}
+                </button>
+            </div>
+        </div>
     </x-slot>
 
     <div class="py-12">
@@ -20,24 +30,16 @@
                     </div>
                 </div>
 
-                <div class="mb-8 flex justify-between items-start">
-                    <div>
-                        <div class="text-sm text-gray-500">{{ __('Supplier') }}</div>
-                        <div class="font-medium text-gray-800">{{ $purchase->supplier->name }}</div>
-                        <div class="text-sm text-gray-500">{{ $purchase->supplier->phone }}</div>
-                        @if ($purchase->supplier->address)
-                            <div class="text-sm text-gray-500">{{ $purchase->supplier->address }}</div>
-                        @endif
-                        @if ($purchase->supplier->gst_number)
-                            <div class="text-sm text-gray-500">{{ __('GSTIN') }}: {{ $purchase->supplier->gst_number }}</div>
-                        @endif
-                    </div>
-                    <div class="text-right">
-                        <div class="text-sm text-gray-500">{{ __('Total we owe them') }}</div>
-                        <div class="font-semibold {{ $supplierDue > 0 ? 'text-red-600' : ($supplierDue < 0 ? 'text-green-600' : 'text-gray-800') }}">
-                            ₹{{ number_format(abs($supplierDue), 2) }}{{ $supplierDue < 0 ? ' CR' : '' }}
-                        </div>
-                    </div>
+                <div class="mb-8">
+                    <div class="text-sm text-gray-500">{{ __('Supplier') }}</div>
+                    <div class="font-medium text-gray-800">{{ $purchase->supplier->name }}</div>
+                    <div class="text-sm text-gray-500">{{ $purchase->supplier->phone }}</div>
+                    @if ($purchase->supplier->address)
+                        <div class="text-sm text-gray-500">{{ $purchase->supplier->address }}</div>
+                    @endif
+                    @if ($purchase->supplier->gst_number)
+                        <div class="text-sm text-gray-500">{{ __('GSTIN') }}: {{ $purchase->supplier->gst_number }}</div>
+                    @endif
                 </div>
 
                 <div class="overflow-x-auto mb-6">
@@ -63,8 +65,11 @@
                     </table>
                 </div>
 
+                @php
+                    $previousDue = $supplierDue - ($purchase->total - $purchase->paid_amount);
+                @endphp
                 <div class="flex justify-end">
-                    <div class="w-64 space-y-1">
+                    <div class="w-72 space-y-1">
                         <div class="flex justify-between text-sm text-gray-600">
                             <span>{{ __('Subtotal') }}</span>
                             <span>₹{{ number_format($purchase->subtotal, 2) }}</span>
@@ -85,9 +90,16 @@
                             <span>{{ __('Paid') }}</span>
                             <span>₹{{ number_format($purchase->paid_amount, 2) }}</span>
                         </div>
-                        <div class="flex justify-between text-sm font-medium {{ $purchase->balanceDue() > 0 ? 'text-red-600' : 'text-green-600' }}">
-                            <span>{{ __('Balance Due') }}</span>
-                            <span>₹{{ number_format($purchase->balanceDue(), 2) }}</span>
+
+                        <div class="flex justify-between text-sm text-gray-500 border-t pt-1 mt-1">
+                            <span>{{ __('Previous Due') }}</span>
+                            <span class="{{ $previousDue > 0 ? 'text-red-600' : ($previousDue < 0 ? 'text-green-600' : 'text-gray-700') }}">
+                                ₹{{ number_format(abs($previousDue), 2) }}{{ $previousDue < 0 ? ' CR' : '' }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between text-base font-semibold {{ $supplierDue > 0 ? 'text-red-600' : 'text-green-600' }}">
+                            <span>{{ $supplierDue > 0 ? __('Balance Due') : __('Settled / In Credit') }}</span>
+                            <span>₹{{ number_format(abs($supplierDue), 2) }}{{ $supplierDue < 0 ? ' CR' : '' }}</span>
                         </div>
                     </div>
                 </div>

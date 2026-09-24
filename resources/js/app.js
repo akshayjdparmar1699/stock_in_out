@@ -214,4 +214,24 @@ window.listTable = function () {
 window.showAjaxSpinner = showAjaxSpinner;
 window.hideAjaxSpinner = hideAjaxSpinner;
 
+/**
+ * Opens the device's native share sheet (WhatsApp, Mail, Files, etc. on
+ * mobile; whatever the OS offers on desktop) instead of a WhatsApp-only
+ * deep link — this is what lets an iPhone user pick WhatsApp themselves,
+ * since a plain PDF download there never surfaces a share option.
+ * Falls back to a generic (no-recipient) WhatsApp Web compose when the
+ * Web Share API isn't available in the browser.
+ */
+window.shareDocument = async function ({ title = '', text = '', url = '' }) {
+    if (navigator.share) {
+        try {
+            await navigator.share({ title, text, url });
+            return;
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+        }
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent([text, url].filter(Boolean).join('\n\n'))}`, '_blank');
+};
+
 Alpine.start();

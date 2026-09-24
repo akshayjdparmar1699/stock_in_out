@@ -145,7 +145,8 @@ class InvoiceController extends Controller
 
             $discount = (float) ($data['discount'] ?? 0);
             $tax = (float) ($data['tax'] ?? 0);
-            $total = round($subtotal - $discount + $tax, 2);
+            $transportation = (float) ($data['transportation'] ?? 0);
+            $total = round($subtotal - $discount + $tax + $transportation, 2);
             $paidAmount = (float) ($data['paid_amount'] ?? 0);
 
             $invoice = Invoice::create([
@@ -157,6 +158,7 @@ class InvoiceController extends Controller
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'tax' => $tax,
+                'transportation' => $transportation,
                 'total' => $total,
                 'paid_amount' => $paidAmount,
                 'status' => $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid'),

@@ -130,6 +130,10 @@
                             <span>{{ __('Tax') }}</span>
                             <span>+ ₹{{ number_format($invoice->tax, 2) }}</span>
                         </div>
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span>{{ __('Transportation') }}</span>
+                            <span>+ ₹{{ number_format($invoice->transportation, 2) }}</span>
+                        </div>
                         <div class="flex justify-between text-base font-semibold text-gray-900 border-t pt-1">
                             <span>{{ __('Total') }}</span>
                             <span>₹{{ number_format($invoice->total, 2) }}</span>

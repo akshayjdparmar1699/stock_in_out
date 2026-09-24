@@ -119,6 +119,12 @@
                 <td class="value">₹{{ number_format($invoice->tax, 2) }}</td>
             </tr>
         @endif
+        @if ($invoice->transportation > 0)
+            <tr>
+                <td class="label">Transportation</td>
+                <td class="value">₹{{ number_format($invoice->transportation, 2) }}</td>
+            </tr>
+        @endif
         <tr class="grand">
             <td class="label">Total</td>
             <td class="value">₹{{ number_format($invoice->total, 2) }}</td>

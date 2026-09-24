@@ -262,6 +262,10 @@
                                 <label for="tax">{{ __('Tax') }}</label>
                                 <input id="tax" name="tax" type="number" step="0.01" min="0" x-model.number="tax" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             </div>
+                            <div class="flex justify-between items-center text-sm text-gray-600">
+                                <label for="transportation">{{ __('Transportation') }}</label>
+                                <input id="transportation" name="transportation" type="number" step="0.01" min="0" x-model.number="transportation" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            </div>
                             <div class="flex justify-between items-center text-base font-semibold text-gray-900 border-t pt-2">
                                 <span>{{ __('Total') }}</span>
                                 <span x-text="'₹' + total.toFixed(2)"></span>
@@ -352,13 +356,14 @@
                 discountType: 'amount',
                 discountPercent: 0,
                 tax: 0,
+                transportation: 0,
                 paidAmount: 0,
 
                 get subtotal() {
                     return this.lines.reduce((sum, line) => sum + (line.quantity * line.unit_price), 0);
                 },
                 get total() {
-                    return Math.max(0, this.subtotal - (this.discount || 0) + (this.tax || 0));
+                    return Math.max(0, this.subtotal - (this.discount || 0) + (this.tax || 0) + (this.transportation || 0));
                 },
                 get dueAfterBill() {
                     const existing = (this.selectedCustomer && this.selectedCustomer.due) || 0;

@@ -20,6 +20,7 @@ class Invoice extends Model
         'subtotal',
         'discount',
         'tax',
+        'transportation',
         'total',
         'paid_amount',
         'status',
@@ -33,6 +34,7 @@ class Invoice extends Model
             'subtotal' => 'decimal:2',
             'discount' => 'decimal:2',
             'tax' => 'decimal:2',
+            'transportation' => 'decimal:2',
             'total' => 'decimal:2',
             'paid_amount' => 'decimal:2',
         ];

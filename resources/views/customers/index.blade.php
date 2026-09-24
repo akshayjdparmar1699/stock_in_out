@@ -8,7 +8,7 @@
         </div>
     </x-slot>
 
-    <div class="py-12" x-data="{ confirmOpen: false, confirmForm: null, confirmName: '', confirmActive: false }">
+    <div class="py-12" x-data="{ confirmOpen: false, confirmForm: null, confirmName: '', confirmActive: false, deleteOpen: false, deleteForm: null, deleteLabel: '' }">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -36,5 +36,6 @@
         </div>
 
         @include('customers.partials.status-confirm-modal')
+        @include('partials.delete-confirm-modal')
     </div>
 </x-app-layout>

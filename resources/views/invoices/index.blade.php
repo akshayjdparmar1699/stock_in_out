@@ -8,7 +8,7 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-12" x-data="{ deleteOpen: false, deleteForm: null, deleteLabel: '' }">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -44,5 +44,7 @@
                 </div>
             </div>
         </div>
+
+        @include('partials.delete-confirm-modal')
     </div>
 </x-app-layout>

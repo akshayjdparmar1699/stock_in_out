@@ -97,8 +97,18 @@
                 <div class="bg-white shadow-sm rounded-lg p-6 mb-6">
                     <h3 class="font-medium text-gray-700 mb-4">{{ __('2. Items Received') }}</h3>
 
+                    <div class="mb-3">
+                        <select class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            @change="selectFromDropdown($event)">
+                            <option value="">{{ __('-- Select an item --') }}</option>
+                            @foreach ($items as $item)
+                                <option value="{{ $item['id'] }}">{{ $item['name'] }} ({{ $item['unit'] }}) — {{ __('Current stock') }}: {{ rtrim(rtrim(number_format($item['stock'], 2), '0'), '.') }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div class="relative mb-4">
-                        <x-text-input type="text" class="w-full" placeholder="{{ __('Search item by name or SKU...') }}"
+                        <x-text-input type="text" class="w-full" placeholder="{{ __('...or search item by name or SKU') }}"
                             x-model="itemQuery" @input.debounce.300ms="searchItems()" autocomplete="off" />
 
                         <div class="absolute z-10 bg-white border border-gray-200 rounded-md shadow-md w-full mt-1 max-h-56 overflow-y-auto" x-show="itemResults.length > 0">
@@ -235,9 +245,18 @@
                 supplierError: '',
                 newSupplier: { name: '', phone: '', address: '', opening_balance: 0 },
 
+                allItems: @json($items),
                 itemQuery: '',
                 itemResults: [],
                 lines: [],
+
+                selectFromDropdown(event) {
+                    const id = parseInt(event.target.value, 10);
+                    event.target.value = '';
+                    if (!id) return;
+                    const item = this.allItems.find(i => i.id === id);
+                    if (item) this.addItem(item);
+                },
 
                 adjust(line, field, delta, min, max) {
                     let value = Math.round(((parseFloat(line[field]) || 0) + delta) * 100) / 100;

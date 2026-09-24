@@ -90,6 +90,19 @@ class CustomerController extends Controller
         return redirect()->route('customers.index')->with('status', "Customer \"{$customer->name}\" updated.");
     }
 
+    public function destroy(Customer $customer): RedirectResponse
+    {
+        if ($customer->invoices()->exists()) {
+            return back()
+                ->with('status', "Cannot delete \"{$customer->name}\": they have billing history. Mark them inactive instead.")
+                ->with('status_type', 'danger');
+        }
+
+        $customer->delete();
+
+        return redirect()->route('customers.index')->with('status', "Customer \"{$customer->name}\" deleted.");
+    }
+
     public function toggleActive(Customer $customer): RedirectResponse
     {
         $customer->update(['is_active' => ! $customer->is_active]);

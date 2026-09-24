@@ -74,7 +74,23 @@ class InvoiceController extends Controller
 
     public function create(): View
     {
-        return view('invoices.create');
+        $branchId = BranchContext::id();
+
+        $items = Item::query()
+            ->where('is_active', true)
+            ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Item $item) => [
+                'id' => $item->id,
+                'name' => $item->name,
+                'sku' => $item->sku,
+                'unit' => $item->unit,
+                'selling_price' => (float) $item->selling_price,
+                'stock' => (float) ($item->stocks->first()->quantity ?? 0),
+            ]);
+
+        return view('invoices.create', ['items' => $items]);
     }
 
     public function store(StoreInvoiceRequest $request): RedirectResponse
@@ -233,6 +249,34 @@ class InvoiceController extends Controller
                 ? AdminAlertService::lowStockUrl($invoice->branch, $lowStockLines)
                 : null,
         ]);
+    }
+
+    public function destroy(Invoice $invoice): RedirectResponse
+    {
+        DB::transaction(function () use ($invoice) {
+            $movements = StockMovement::query()
+                ->where('reference_type', Invoice::class)
+                ->where('reference_id', $invoice->id)
+                ->with('batchAllocations')
+                ->get();
+
+            foreach ($movements as $movement) {
+                foreach ($movement->batchAllocations as $allocation) {
+                    StockBatch::whereKey($allocation->stock_batch_id)->increment('quantity_remaining', $allocation->quantity);
+                }
+
+                ItemStock::query()
+                    ->where('branch_id', $invoice->branch_id)
+                    ->where('item_id', $movement->item_id)
+                    ->increment('quantity', $movement->quantity);
+
+                $movement->delete();
+            }
+
+            $invoice->delete();
+        });
+
+        return redirect()->route('invoices.index')->with('status', "Invoice {$invoice->invoice_number} deleted.");
     }
 
     public function pdf(Invoice $invoice): Response

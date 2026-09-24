@@ -67,7 +67,23 @@ class PurchaseController extends Controller
 
     public function create(): View
     {
-        return view('purchases.create');
+        $branchId = BranchContext::id();
+
+        $items = Item::query()
+            ->where('is_active', true)
+            ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Item $item) => [
+                'id' => $item->id,
+                'name' => $item->name,
+                'sku' => $item->sku,
+                'unit' => $item->unit,
+                'purchase_price' => (float) $item->purchase_price,
+                'stock' => (float) ($item->stocks->first()->quantity ?? 0),
+            ]);
+
+        return view('purchases.create', ['items' => $items]);
     }
 
     public function store(StorePurchaseRequest $request): RedirectResponse
@@ -170,6 +186,45 @@ class PurchaseController extends Controller
         $purchase->load(['supplier', 'branch', 'items.item']);
 
         return $this->renderPdf($purchase)->stream("{$purchase->purchase_number}.pdf");
+    }
+
+    public function destroy(Purchase $purchase): RedirectResponse
+    {
+        $movements = StockMovement::query()
+            ->where('reference_type', Purchase::class)
+            ->where('reference_id', $purchase->id)
+            ->with(['batch', 'item'])
+            ->get();
+
+        $alreadySold = [];
+        foreach ($movements as $movement) {
+            $batch = $movement->batch;
+            if ($batch && (float) $batch->quantity_remaining < (float) $batch->quantity_in) {
+                $sold = (float) $batch->quantity_in - (float) $batch->quantity_remaining;
+                $alreadySold[] = "{$movement->item?->name}: {$sold} {$movement->item?->unit} already sold";
+            }
+        }
+
+        if (! empty($alreadySold)) {
+            return back()
+                ->with('status', 'Cannot delete: '.implode(', ', $alreadySold).'. Remove those sales first.')
+                ->with('status_type', 'danger');
+        }
+
+        DB::transaction(function () use ($purchase, $movements) {
+            foreach ($movements as $movement) {
+                ItemStock::query()
+                    ->where('branch_id', $purchase->branch_id)
+                    ->where('item_id', $movement->item_id)
+                    ->decrement('quantity', $movement->quantity);
+
+                $movement->delete();
+            }
+
+            $purchase->delete();
+        });
+
+        return redirect()->route('purchases.index')->with('status', "Purchase {$purchase->purchase_number} deleted.");
     }
 
     private function renderPdf(Purchase $purchase)

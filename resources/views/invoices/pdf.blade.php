@@ -16,13 +16,20 @@
         .items-table th { background: #f3f4f6; text-align: left; padding: 8px; font-size: 10px; text-transform: uppercase; color: #6b7280; }
         .items-table td { padding: 8px; border-bottom: 1px solid #e5e7eb; }
         .items-table .num { text-align: right; }
-        .totals { width: 260px; margin-left: auto; margin-top: 16px; }
+        .totals { width: 260px; float: right; margin-top: 16px; }
         .totals td { padding: 4px 8px; }
         .totals .label { color: #4b5563; }
         .totals .value { text-align: right; }
         .totals .grand { font-size: 14px; font-weight: bold; border-top: 1px solid #d1d5db; }
         .balance-due { color: #dc2626; }
         .balance-paid { color: #16a34a; }
+        .payment-section { margin-top: 16px; }
+        .payment-qr { float: left; width: 150px; }
+        .payment-qr img { width: 110px; height: 110px; }
+        .payment-qr .qr-label { color: #6b7280; font-size: 9px; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 6px; }
+        .payment-qr .bank-details { margin-top: 6px; font-size: 10px; color: #4b5563; line-height: 1.5; }
+        .payment-qr .bank-details .bank-name { font-weight: bold; color: #1f2937; }
+        .clearfix { clear: both; }
         .footer { margin-top: 40px; text-align: center; color: #9ca3af; font-size: 10px; }
     </style>
 </head>
@@ -80,7 +87,19 @@
         </tbody>
     </table>
 
-    <table class="totals">
+    <div class="payment-section">
+        <div class="payment-qr">
+            <div class="qr-label">Scan &amp; Pay</div>
+            <img src="{{ 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/payment-qr.png'))) }}" alt="Payment QR">
+            <div class="bank-details">
+                <div class="bank-name">HDFC Bank</div>
+                <div>A/c No: 50200097420397</div>
+                <div>A/c Holder: Om Sai Aalubhandar</div>
+                <div>IFSC: HDFC0004196</div>
+            </div>
+        </div>
+
+        <table class="totals">
         <tr>
             <td class="label">Subtotal</td>
             <td class="value">₹{{ number_format($invoice->subtotal, 2) }}</td>
@@ -120,7 +139,9 @@
                 ₹{{ number_format(abs($customerDue), 2) }}{{ $customerDue < 0 ? ' CR' : '' }}
             </td>
         </tr>
-    </table>
+        </table>
+        <div class="clearfix"></div>
+    </div>
 
     @if ($invoice->notes)
         <div style="margin-top: 20px;">

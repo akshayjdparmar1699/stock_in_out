@@ -98,7 +98,7 @@
                             @foreach ($invoice->items as $line)
                                 <tr>
                                     <td class="border border-gray-300 px-3 py-2 text-sm text-gray-800">{{ $line->item->name }}</td>
-                                    <td class="border border-gray-300 px-3 py-2 text-sm text-gray-600 text-right">{{ $line->quantity }} {{ $line->item->unit }}</td>
+                                    <td class="border border-gray-300 px-3 py-2 text-sm text-gray-600 text-right">{{ $line->quantity }} {{ $line->displayUnit() }}</td>
                                     <td class="border border-gray-300 px-3 py-2 text-sm text-gray-600 text-right">₹{{ number_format($line->unit_price, 2) }}</td>
                                     <td class="border border-gray-300 px-3 py-2 text-sm text-gray-800 text-right">₹{{ number_format($line->total, 2) }}</td>
                                 </tr>

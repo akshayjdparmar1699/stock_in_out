@@ -14,6 +14,8 @@ class InvoiceItem extends Model
         'invoice_id',
         'item_id',
         'quantity',
+        'unit',
+        'base_quantity',
         'unit_price',
         'total',
     ];
@@ -22,9 +24,19 @@ class InvoiceItem extends Model
     {
         return [
             'quantity' => 'decimal:2',
+            'base_quantity' => 'decimal:4',
             'unit_price' => 'decimal:2',
             'total' => 'decimal:2',
         ];
+    }
+
+    /**
+     * The unit this line was actually billed in — falls back to the
+     * item's current unit for rows saved before per-line units existed.
+     */
+    public function displayUnit(): string
+    {
+        return $this->unit ?? $this->item->unit;
     }
 
     public function invoice(): BelongsTo

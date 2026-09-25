@@ -113,6 +113,10 @@
                                     <x-input-label :value="__('Already Due (if any)')" />
                                     <x-text-input type="number" step="0.01" min="0" class="w-full" x-model.number="newCustomer.opening_balance" placeholder="0.00" />
                                 </div>
+                                <div>
+                                    <x-input-label :value="__('Credit Limit (0 = no limit)')" />
+                                    <x-text-input type="number" step="0.01" min="0" class="w-full" x-model.number="newCustomer.credit_limit" placeholder="0.00" />
+                                </div>
                             </div>
                             <p class="text-sm text-red-600" x-show="customerError" x-text="customerError"></p>
                             <div class="flex gap-2">
@@ -167,19 +171,26 @@
                             <div class="rounded-lg border border-gray-200 p-3 sm:p-0 sm:py-3 sm:border-0 sm:border-b sm:border-gray-100 sm:rounded-none sm:grid sm:grid-cols-[1fr_7.5rem_8rem_7rem_5.5rem] sm:gap-3 sm:items-center">
                                 <div class="min-w-0 mb-3 sm:mb-0">
                                     <div class="text-sm font-medium text-gray-800 truncate" x-text="line.name"></div>
-                                    <div class="text-xs text-gray-400" x-text="'In stock: ' + line.stock + ' ' + line.unit"></div>
+                                    <div class="text-xs text-gray-400" x-text="'In stock: ' + availableStock(line) + ' ' + line.unit"></div>
+                                    <div class="mt-1 inline-flex rounded-md border border-gray-300 overflow-hidden text-xs" x-show="line.altUnit">
+                                        <button type="button" @click="setLineUnit(line, line.baseUnit)" class="px-2 py-0.5"
+                                            :class="line.unit === line.baseUnit ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'" x-text="line.baseUnit"></button>
+                                        <button type="button" @click="setLineUnit(line, line.altUnit)" class="px-2 py-0.5 border-l border-gray-300"
+                                            :class="line.unit === line.altUnit ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'" x-text="line.altUnit"></button>
+                                    </div>
                                     <input type="hidden" :name="`items[${index}][item_id]`" :value="line.item_id">
+                                    <input type="hidden" :name="`items[${index}][unit]`" :value="line.unit">
                                 </div>
 
                                 <div class="flex flex-wrap items-end gap-3 sm:contents">
                                     <div>
                                         <div class="text-xs text-gray-400 mb-1 sm:hidden">{{ __('Qty') }}</div>
                                         <div class="inline-flex items-stretch rounded-md border border-gray-300 overflow-hidden">
-                                            <button type="button" @click="adjust(line, 'quantity', -1, 0.01, line.stock)"
+                                            <button type="button" @click="adjust(line, 'quantity', -1, 0.01, availableStock(line))"
                                                 class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-r border-gray-300 shrink-0">&minus;</button>
-                                            <input type="number" step="0.01" min="0.01" :max="line.stock" x-model.number="line.quantity"
+                                            <input type="number" step="0.01" min="0.01" :max="availableStock(line)" x-model.number="line.quantity"
                                                 :name="`items[${index}][quantity]`" class="no-spinner w-14 text-center border-0 focus:ring-0">
-                                            <button type="button" @click="adjust(line, 'quantity', 1, 0.01, line.stock)"
+                                            <button type="button" @click="adjust(line, 'quantity', 1, 0.01, availableStock(line))"
                                                 class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-l border-gray-300 shrink-0">+</button>
                                         </div>
                                     </div>
@@ -188,7 +199,7 @@
                                         <div class="inline-flex items-stretch rounded-md border border-gray-300 overflow-hidden">
                                             <button type="button" @click="adjust(line, 'unit_price', -1, 0)"
                                                 class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-r border-gray-300 shrink-0">&minus;</button>
-                                            <input type="number" step="0.01" min="0" x-model.number="line.unit_price"
+                                            <input type="number" step="0.01" min="0" x-model.number="line.unit_price" placeholder="{{ __('Rate') }}"
                                                 :name="`items[${index}][unit_price]`" class="no-spinner w-16 text-center border-0 focus:ring-0">
                                             <button type="button" @click="adjust(line, 'unit_price', 1, 0)"
                                                 class="w-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 text-base border-l border-gray-300 shrink-0">+</button>
@@ -196,7 +207,7 @@
                                     </div>
                                     <div class="ml-auto sm:ml-0 sm:text-right">
                                         <div class="text-xs text-gray-400 mb-1 sm:hidden">{{ __('Amount') }}</div>
-                                        <div class="text-sm font-semibold text-gray-800 sm:font-normal" x-text="'₹' + (line.quantity * line.unit_price).toFixed(2)"></div>
+                                        <div class="text-sm font-semibold text-gray-800 sm:font-normal" x-text="'₹' + (line.quantity * (line.unit_price || 0)).toFixed(2)"></div>
                                     </div>
                                 </div>
 
@@ -329,7 +340,7 @@
                 selectedCustomer: null,
                 showCustomerForm: false,
                 customerError: '',
-                newCustomer: { name: '', phone: '', email: '', address: '', opening_balance: 0 },
+                newCustomer: { name: '', phone: '', email: '', address: '', opening_balance: 0, credit_limit: 0 },
 
                 allItems: @json($items),
                 itemQuery: '',
@@ -360,7 +371,7 @@
                 paidAmount: 0,
 
                 get subtotal() {
-                    return this.lines.reduce((sum, line) => sum + (line.quantity * line.unit_price), 0);
+                    return this.lines.reduce((sum, line) => sum + (line.quantity * (line.unit_price || 0)), 0);
                 },
                 get total() {
                     return Math.max(0, this.subtotal - (this.discount || 0) + (this.tax || 0) + (this.transportation || 0));
@@ -420,8 +431,11 @@
                         id: this.nextLineId++,
                         item_id: item.id,
                         name: item.name,
+                        baseUnit: item.unit,
+                        altUnit: item.alt_unit || null,
+                        altUnitRatio: item.alt_unit_ratio || null,
+                        baseStock: item.stock,
                         unit: item.unit,
-                        stock: item.stock,
                         quantity: 1,
                         unit_price: item.selling_price,
                     });
@@ -433,11 +447,27 @@
                         id: this.nextLineId++,
                         item_id: line.item_id,
                         name: line.name,
+                        baseUnit: line.baseUnit,
+                        altUnit: line.altUnit,
+                        altUnitRatio: line.altUnitRatio,
+                        baseStock: line.baseStock,
                         unit: line.unit,
-                        stock: line.stock,
                         quantity: 1,
                         unit_price: line.unit_price,
                     });
+                },
+                availableStock(line) {
+                    if (line.altUnit && line.altUnitRatio && line.unit === line.altUnit) {
+                        return Math.round(line.baseStock * line.altUnitRatio * 100) / 100;
+                    }
+                    return line.baseStock;
+                },
+                setLineUnit(line, unit) {
+                    if (line.unit === unit) return;
+                    line.unit = unit;
+                    line.unit_price = '';
+                    const max = this.availableStock(line);
+                    if (line.quantity > max) line.quantity = max;
                 },
             }
         }

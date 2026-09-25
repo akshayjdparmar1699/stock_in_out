@@ -87,6 +87,8 @@ class InvoiceController extends Controller
                 'name' => $item->name,
                 'sku' => $item->sku,
                 'unit' => $item->unit,
+                'alt_unit' => $item->alt_unit,
+                'alt_unit_ratio' => $item->alt_unit_ratio !== null ? (float) $item->alt_unit_ratio : null,
                 'selling_price' => (float) $item->selling_price,
                 'stock' => (float) ($item->stocks->first()->quantity ?? 0),
             ]);
@@ -151,7 +153,8 @@ class InvoiceController extends Controller
     {
         $invoice->load('items.item', 'customer');
 
-        $alreadyOnInvoice = $invoice->items->keyBy('item_id');
+        $alreadyOnInvoice = $invoice->items->groupBy('item_id')
+            ->map(fn ($lines) => $lines->sum('base_quantity'));
 
         $items = Item::query()
             ->where('is_active', true)
@@ -159,18 +162,22 @@ class InvoiceController extends Controller
             ->orderBy('name')
             ->get()
             ->map(function (Item $item) use ($alreadyOnInvoice) {
-                $onThisInvoice = (float) ($alreadyOnInvoice->get($item->id)?->quantity ?? 0);
+                $onThisInvoice = (float) ($alreadyOnInvoice->get($item->id) ?? 0);
 
                 return [
                     'id' => $item->id,
                     'name' => $item->name,
                     'sku' => $item->sku,
                     'unit' => $item->unit,
+                    'alt_unit' => $item->alt_unit,
+                    'alt_unit_ratio' => $item->alt_unit_ratio !== null ? (float) $item->alt_unit_ratio : null,
                     'selling_price' => (float) $item->selling_price,
-                    // What would be available if this invoice's own current
-                    // lines were released back to stock first — otherwise
-                    // editing a line down to the same quantity it already
-                    // has would look like it's short on stock.
+                    // What would be available (in the item's base unit) if
+                    // this invoice's own current lines were released back to
+                    // stock first — otherwise editing a line down to the same
+                    // quantity it already has would look like it's short on
+                    // stock. $onThisInvoice is already in base units since
+                    // that's what's stored/deducted from stock.
                     'stock' => (float) ($item->stocks->first()->quantity ?? 0) + $onThisInvoice,
                 ];
             });
@@ -181,7 +188,7 @@ class InvoiceController extends Controller
             'id' => $line->id,
             'item_id' => $line->item_id,
             'name' => $line->item->name,
-            'unit' => $line->item->unit,
+            'unit' => $line->displayUnit(),
             'stock' => $itemsById->get($line->item_id)['stock'] ?? 0,
             'quantity' => (float) $line->quantity,
             'unit_price' => (float) $line->unit_price,
@@ -259,12 +266,16 @@ class InvoiceController extends Controller
      */
     private function applyLines(Invoice $invoice, int $branchId, array $items): float
     {
+        $itemIds = collect($items)->pluck('item_id');
+
         $stocks = ItemStock::query()
             ->where('branch_id', $branchId)
-            ->whereIn('item_id', collect($items)->pluck('item_id'))
+            ->whereIn('item_id', $itemIds)
             ->lockForUpdate()
             ->get()
             ->keyBy('item_id');
+
+        $itemModels = Item::query()->whereIn('id', $itemIds)->get()->keyBy('id');
 
         $remaining = $stocks->map(fn (ItemStock $stock) => (float) $stock->quantity);
 
@@ -272,39 +283,56 @@ class InvoiceController extends Controller
         $lines = [];
 
         foreach ($items as $line) {
+            $item = $itemModels->get($line['item_id']);
+            $unit = $line['unit'] ?? $item->unit;
+
+            // A line billed in the item's alt unit (e.g. kg out of a bag)
+            // still deducts stock in the item's base/stock unit (the bag),
+            // so it's converted here via the item's configured ratio.
+            $isAltUnit = $item->hasAltUnit() && $unit === $item->alt_unit;
+            $baseQuantity = $isAltUnit
+                ? round((float) $line['quantity'] / (float) $item->alt_unit_ratio, 4)
+                : (float) $line['quantity'];
+
             $available = $remaining->get($line['item_id'], 0.0);
 
-            if ($available < $line['quantity']) {
-                $item = Item::find($line['item_id']);
+            if ($available < $baseQuantity) {
                 throw ValidationException::withMessages([
                     'items' => "Not enough stock for \"{$item?->name}\". Available: {$available} {$item?->unit}.",
                 ]);
             }
 
-            $remaining[$line['item_id']] = $available - (float) $line['quantity'];
+            $remaining[$line['item_id']] = $available - $baseQuantity;
 
             $lineTotal = round($line['quantity'] * $line['unit_price'], 2);
             $subtotal += $lineTotal;
-            $lines[] = $line + ['total' => $lineTotal];
+            $lines[] = [
+                'item_id' => $line['item_id'],
+                'quantity' => $line['quantity'],
+                'unit' => $unit,
+                'base_quantity' => $baseQuantity,
+                'unit_price' => $line['unit_price'],
+                'total' => $lineTotal,
+            ];
         }
 
         foreach ($lines as $line) {
             $invoice->items()->create($line);
 
-            $stocks->get($line['item_id'])->decrement('quantity', $line['quantity']);
+            $stocks->get($line['item_id'])->decrement('quantity', $line['base_quantity']);
 
             $movement = StockMovement::create([
                 'branch_id' => $branchId,
                 'item_id' => $line['item_id'],
                 'user_id' => auth()->id(),
                 'type' => 'out',
-                'quantity' => $line['quantity'],
+                'quantity' => $line['base_quantity'],
                 'reason' => "Sale - Invoice {$invoice->invoice_number}",
                 'reference_type' => Invoice::class,
                 'reference_id' => $invoice->id,
             ]);
 
-            $this->allocateFromBatches($branchId, $line['item_id'], (float) $line['quantity'], $movement->id);
+            $this->allocateFromBatches($branchId, $line['item_id'], (float) $line['base_quantity'], $movement->id);
         }
 
         return $subtotal;

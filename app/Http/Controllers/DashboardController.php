@@ -85,7 +85,7 @@ class DashboardController extends Controller
             ->join('items', 'items.id', '=', 'invoice_items.item_id')
             ->where('invoices.branch_id', $branchId)
             ->when($from, fn ($q) => $q->whereBetween('invoices.invoice_date', [$from, $to]))
-            ->selectRaw('COALESCE(SUM((invoice_items.unit_price - items.purchase_price) * invoice_items.quantity), 0) as profit')
+            ->selectRaw('COALESCE(SUM(invoice_items.total - (invoice_items.base_quantity * items.purchase_price)), 0) as profit')
             ->value('profit');
 
         $lowStockCount = $this->lowStockItemsQuery($branchId)->count();

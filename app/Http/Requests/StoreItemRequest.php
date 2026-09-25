@@ -17,6 +17,8 @@ class StoreItemRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['required', 'string', 'max:50', 'unique:items,sku'],
             'unit' => ['required', 'string', 'max:20'],
+            'alt_unit' => ['nullable', 'string', 'max:20'],
+            'alt_unit_ratio' => ['nullable', 'required_with:alt_unit', 'numeric', 'min:0.0001'],
             'description' => ['nullable', 'string'],
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],

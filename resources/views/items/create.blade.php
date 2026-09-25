@@ -47,6 +47,20 @@
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label for="alt_unit" :value="__('Alternate Selling Unit (optional)')" />
+                            <x-text-input id="alt_unit" name="alt_unit" type="text" placeholder="e.g. kg" class="mt-1 block w-full" :value="old('alt_unit')" />
+                            <x-input-error :messages="$errors->get('alt_unit')" class="mt-2" />
+                        </div>
+                        <div>
+                            <x-input-label for="alt_unit_ratio" :value="__('Conversion (1 unit = ? alt unit)')" />
+                            <x-text-input id="alt_unit_ratio" name="alt_unit_ratio" type="number" step="0.0001" min="0" placeholder="e.g. 50" class="mt-1 block w-full" :value="old('alt_unit_ratio')" />
+                            <x-input-error :messages="$errors->get('alt_unit_ratio')" class="mt-2" />
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 -mt-2">{{ __('Fill this only if this item is also sold in a different unit, e.g. a bag also sold loose in kg. Leave blank if not needed.') }}</p>
+
                     <div>
                         <x-input-label for="opening_quantity" :value="__('Opening Stock (for current branch)')" />
                         <x-text-input id="opening_quantity" name="opening_quantity" type="number" step="0.01" min="0" class="mt-1 block w-full" :value="old('opening_quantity', 0)" />

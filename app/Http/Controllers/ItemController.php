@@ -156,6 +156,8 @@ class ItemController extends Controller
                 'name' => $item->name,
                 'sku' => $item->sku,
                 'unit' => $item->unit,
+                'alt_unit' => $item->alt_unit,
+                'alt_unit_ratio' => $item->alt_unit_ratio !== null ? (float) $item->alt_unit_ratio : null,
                 'selling_price' => (float) $item->selling_price,
                 'purchase_price' => (float) $item->purchase_price,
                 'stock' => (float) ($item->stocks->first()->quantity ?? 0),

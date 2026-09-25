@@ -14,6 +14,8 @@ class Item extends Model
         'name',
         'sku',
         'unit',
+        'alt_unit',
+        'alt_unit_ratio',
         'description',
         'purchase_price',
         'selling_price',
@@ -24,10 +26,16 @@ class Item extends Model
     protected function casts(): array
     {
         return [
+            'alt_unit_ratio' => 'decimal:4',
             'purchase_price' => 'decimal:2',
             'selling_price' => 'decimal:2',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function hasAltUnit(): bool
+    {
+        return (bool) $this->alt_unit && (float) $this->alt_unit_ratio > 0;
     }
 
     public function stocks(): HasMany

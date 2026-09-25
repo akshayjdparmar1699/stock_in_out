@@ -82,7 +82,7 @@
             @foreach ($invoice->items as $line)
                 <tr>
                     <td>{{ $line->item->name }}</td>
-                    <td class="num">{{ rtrim(rtrim((string) $line->quantity, '0'), '.') }} {{ $line->item->unit }}</td>
+                    <td class="num">{{ rtrim(rtrim((string) $line->quantity, '0'), '.') }} {{ $line->displayUnit() }}</td>
                     <td class="num">₹{{ number_format($line->unit_price, 2) }}</td>
                     <td class="num">₹{{ number_format($line->total, 2) }}</td>
                 </tr>

@@ -28,6 +28,20 @@ window.promptPwaInstall = async function () {
     window.dispatchEvent(new Event('pwa-installed'));
 };
 
+// iOS Safari never fires beforeinstallprompt — there is no programmatic
+// install API there at all, only the manual Share > Add to Home Screen
+// flow — so the "Install App" button above can never appear on an
+// iPhone/iPad no matter how it's styled. This flags that case so the
+// nav can show instructions instead of a button that will just never
+// light up.
+window.isIosInstallable = (() => {
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone === true
+        || window.matchMedia('(display-mode: standalone)').matches;
+
+    return isIos && !isStandalone;
+})();
+
 /**
  * ---------------------------------------------------------------------
  * Global "something is happening" feedback, so a slow request (cold

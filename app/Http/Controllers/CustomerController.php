@@ -7,6 +7,7 @@ use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Services\AdminAlertService;
 use App\Services\BranchContext;
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -118,8 +120,9 @@ class CustomerController extends Controller
     {
         $data = $request->validated();
         $remaining = (float) $data['amount'];
+        $batchId = (string) Str::uuid();
 
-        DB::transaction(function () use ($customer, $data, &$remaining) {
+        DB::transaction(function () use ($customer, $data, &$remaining, $batchId) {
             $invoices = $customer->invoices()
                 ->whereColumn('paid_amount', '<', 'total')
                 ->orderBy('invoice_date')
@@ -139,6 +142,7 @@ class CustomerController extends Controller
                     'user_id' => auth()->id(),
                     'amount' => $apply,
                     'note' => $data['note'] ?? null,
+                    'batch_id' => $batchId,
                 ]);
 
                 $invoice->increment('paid_amount', $apply);
@@ -174,17 +178,34 @@ class CustomerController extends Controller
                 'amount' => (float) $invoice->total,
                 'url' => route('invoices.show', $invoice),
             ]);
-
-            foreach ($invoice->payments as $payment) {
-                $entries->push([
-                    'date' => $payment->created_at,
-                    'type' => 'received',
-                    'label' => $payment->note ? "Payment ({$payment->note})" : "Payment for {$invoice->invoice_number}",
-                    'amount' => (float) $payment->amount,
-                    'url' => route('invoices.show', $invoice),
-                ]);
-            }
         }
+
+        // A payment recorded from the customer's own page (not tied to one
+        // invoice) can land on several invoices at once via FIFO — grouped
+        // here by batch_id so it shows as the one amount actually handed
+        // over, not fragmented into one row per invoice it happened to
+        // cover. A plain invoice-level payment has no batch_id, so it's
+        // its own group of one.
+        $paymentRows = $invoices->flatMap(fn (Invoice $invoice) => $invoice->payments->map(fn (InvoicePayment $payment) => [
+            'payment' => $payment,
+            'invoice' => $invoice,
+        ]));
+
+        $paymentRows
+            ->groupBy(fn (array $row) => $row['payment']->batch_id ?: 'single-'.$row['payment']->id)
+            ->each(function (Collection $rows) use ($entries) {
+                $first = $rows->first();
+
+                $entries->push([
+                    'date' => $first['payment']->created_at,
+                    'type' => 'received',
+                    'label' => $first['payment']->note
+                        ? "Payment ({$first['payment']->note})"
+                        : "Payment for {$first['invoice']->invoice_number}",
+                    'amount' => (float) $rows->sum(fn (array $row) => (float) $row['payment']->amount),
+                    'url' => route('invoices.show', $first['invoice']),
+                ]);
+            });
 
         $balance = (float) $customer->opening_balance;
 

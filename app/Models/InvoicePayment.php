@@ -15,6 +15,7 @@ class InvoicePayment extends Model
         'user_id',
         'amount',
         'note',
+        'batch_id',
     ];
 
     protected function casts(): array

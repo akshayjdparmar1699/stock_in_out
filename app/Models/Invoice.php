@@ -72,6 +72,11 @@ class Invoice extends Model
 
     public function whatsappMessage(): string
     {
+        $customerDue = $this->customer->dueAmount();
+        $totalDueLine = $customerDue < 0
+            ? 'Total Balance Due: ₹'.number_format(abs($customerDue), 2).' (in credit)'
+            : 'Total Balance Due: ₹'.number_format($customerDue, 2);
+
         return <<<TEXT
         Hello {$this->customer->name},
 
@@ -81,7 +86,7 @@ class Invoice extends Model
 
         Total: ₹{$this->formattedTotal()}
         Paid: ₹{$this->formattedPaid()}
-        Balance Due: ₹{$this->formattedBalance()}
+        {$totalDueLine}
 
         Thank you for your business!
         TEXT;

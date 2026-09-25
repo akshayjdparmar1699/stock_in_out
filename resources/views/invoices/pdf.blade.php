@@ -6,10 +6,11 @@
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; margin: 0; padding: 20px; }
         .invoice-box { border: 1.5px solid #1f2937; padding: 24px; }
-        .header { display: flex; justify-content: space-between; margin-bottom: 24px; }
-        .header h1 { font-size: 20px; margin: 0 0 4px 0; }
+        .header-table { width: 100%; margin-top: 0; margin-bottom: 24px; }
+        .header-table td { vertical-align: top; padding: 0; }
+        .header h1 { font-size: 18px; margin: 0 0 4px 0; white-space: nowrap; }
         .header .branch { color: #4b5563; }
-        .header .invoice-meta { text-align: right; }
+        .header .invoice-meta { text-align: right; white-space: nowrap; }
         .invoice-title { font-size: 22px; font-weight: bold; color: #4f46e5; margin: 0 0 6px 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .info-table td { vertical-align: top; padding-bottom: 16px; }
@@ -37,22 +38,24 @@
 </head>
 <body>
     <div class="invoice-box">
-    <div class="header">
-        <div>
-            <h1>{{ $invoice->branch->name }}</h1>
-            @if ($invoice->branch->address)
-                <div class="branch">{{ $invoice->branch->address }}</div>
-            @endif
-            @if ($invoice->branch->phone)
-                <div class="branch">{{ $invoice->branch->phone }}</div>
-            @endif
-        </div>
-        <div class="invoice-meta">
-            <div class="invoice-title">INVOICE</div>
-            <div><strong>{{ $invoice->invoice_number }}</strong></div>
-            <div>{{ $invoice->invoice_date->format('d M Y') }}</div>
-        </div>
-    </div>
+    <table class="header-table">
+        <tr>
+            <td class="header">
+                <h1>{{ $invoice->branch->name }}</h1>
+                @if ($invoice->branch->address)
+                    <div class="branch">{{ $invoice->branch->address }}</div>
+                @endif
+                @if ($invoice->branch->phone)
+                    <div class="branch">{{ $invoice->branch->phone }}</div>
+                @endif
+            </td>
+            <td class="invoice-meta" style="width: 150px;">
+                <div class="invoice-title">INVOICE</div>
+                <div><strong>{{ $invoice->invoice_number }}</strong></div>
+                <div>{{ $invoice->invoice_date->format('d M Y') }}</div>
+            </td>
+        </tr>
+    </table>
 
     <table class="info-table">
         <tr>

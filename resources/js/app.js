@@ -28,6 +28,9 @@ window.promptPwaInstall = async function () {
     window.dispatchEvent(new Event('pwa-installed'));
 };
 
+window.isPwaStandalone = window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+
 // iOS Safari never fires beforeinstallprompt — there is no programmatic
 // install API there at all, only the manual Share > Add to Home Screen
 // flow — so the "Install App" button above can never appear on an
@@ -36,11 +39,48 @@ window.promptPwaInstall = async function () {
 // light up.
 window.isIosInstallable = (() => {
     const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-    const isStandalone = window.navigator.standalone === true
-        || window.matchMedia('(display-mode: standalone)').matches;
 
-    return isIos && !isStandalone;
+    return isIos && !window.isPwaStandalone;
 })();
+
+/**
+ * A proactive "install this app" popup — the nav's own Install button/hint
+ * is easy to miss tucked in a menu, so this surfaces it the moment the
+ * browser signals installability (or, on iOS, on load) and stays gone for
+ * good once dismissed or once the app is actually installed/opened
+ * standalone.
+ */
+window.pwaInstallBanner = function () {
+    return {
+        show: false,
+        isIos: window.isIosInstallable,
+
+        init() {
+            if (window.isPwaStandalone || localStorage.getItem('pwaInstallBannerDismissed')) {
+                return;
+            }
+
+            window.addEventListener('pwa-installable', () => { this.show = true; });
+            window.addEventListener('pwa-installed', () => { this.show = false; });
+
+            if (window.deferredInstallPrompt) {
+                this.show = true;
+            } else if (this.isIos) {
+                setTimeout(() => { this.show = true; }, 1500);
+            }
+        },
+
+        async install() {
+            await window.promptPwaInstall();
+            this.show = false;
+        },
+
+        dismiss() {
+            this.show = false;
+            localStorage.setItem('pwaInstallBannerDismissed', '1');
+        },
+    };
+};
 
 /**
  * ---------------------------------------------------------------------

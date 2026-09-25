@@ -167,5 +167,7 @@
                 </main>
             </div>
         </div>
+
+        @include('layouts.partials.pwa-install-banner')
     </body>
 </html>

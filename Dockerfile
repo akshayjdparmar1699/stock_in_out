@@ -25,6 +25,13 @@ WORKDIR /var/www/html
 COPY . .
 COPY --from=assets /app/public/build ./public/build
 
+# Belt-and-braces: the blanket COPY above has, on this service, sometimes
+# ended up without public/icons/* present in the built image (404s on
+# every icon at runtime despite the files being committed and correct in
+# git) — copying it again explicitly gives it its own cache layer keyed
+# to just this directory's contents, so it can't silently go missing.
+COPY public/icons ./public/icons
+
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \

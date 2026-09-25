@@ -6,14 +6,14 @@
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #1f2937; margin: 0; padding: 20px; }
         .invoice-box { border: 1.5px solid #1f2937; padding: 24px; }
-        .header-table { width: 100%; margin-top: 0; margin-bottom: 24px; }
-        .header-table td { vertical-align: top; padding: 0; }
-        .header h1 { font-size: 18px; margin: 0 0 4px 0; white-space: nowrap; }
-        .header .branch { color: #4b5563; }
-        .header .invoice-meta { text-align: right; white-space: nowrap; }
+        .brand-banner { border: 1.5px solid #1f2937; padding: 14px; text-align: center; margin-bottom: 0; }
+        .brand-banner h1 { font-size: 19px; margin: 0 0 4px 0; white-space: nowrap; }
+        .brand-banner .branch { color: #4b5563; }
+        .banner-divider { border-top: 1.5px solid #1f2937; margin-top: 16px; }
         .invoice-title { font-size: 22px; font-weight: bold; color: #4f46e5; margin: 0 0 6px 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .info-table td { vertical-align: top; padding-bottom: 16px; }
+        .info-table .invoice-meta { text-align: right; white-space: nowrap; }
         .info-label { color: #6b7280; font-size: 10px; text-transform: uppercase; margin-bottom: 2px; }
         .items-table { border: 1px solid #9ca3af; }
         .items-table th { background: #f3f4f6; text-align: left; padding: 8px; font-size: 10px; text-transform: uppercase; color: #6b7280; border: 1px solid #9ca3af; }
@@ -27,10 +27,10 @@
         .balance-due { color: #dc2626; }
         .balance-paid { color: #16a34a; }
         .payment-section { margin-top: 16px; }
-        .payment-qr { float: left; width: 150px; }
+        .payment-qr { float: left; width: 200px; }
         .payment-qr img { width: 110px; height: 110px; }
         .payment-qr .qr-label { color: #6b7280; font-size: 9px; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 6px; }
-        .payment-qr .bank-details { margin-top: 6px; font-size: 10px; color: #4b5563; line-height: 1.5; }
+        .payment-qr .bank-details { margin-top: 6px; font-size: 10px; color: #4b5563; line-height: 1.5; white-space: nowrap; }
         .payment-qr .bank-details .bank-name { font-weight: bold; color: #1f2937; }
         .clearfix { clear: both; }
         .footer { margin-top: 40px; text-align: center; color: #9ca3af; font-size: 10px; }
@@ -38,28 +38,20 @@
 </head>
 <body>
     <div class="invoice-box">
-    <table class="header-table">
-        <tr>
-            <td class="header">
-                <h1>{{ $invoice->branch->name }}</h1>
-                @if ($invoice->branch->address)
-                    <div class="branch">{{ $invoice->branch->address }}</div>
-                @endif
-                @if ($invoice->branch->phone)
-                    <div class="branch">{{ $invoice->branch->phone }}</div>
-                @endif
-            </td>
-            <td class="invoice-meta" style="width: 150px;">
-                <div class="invoice-title">INVOICE</div>
-                <div><strong>{{ $invoice->invoice_number }}</strong></div>
-                <div>{{ $invoice->invoice_date->format('d M Y') }}</div>
-            </td>
-        </tr>
-    </table>
+    <div class="brand-banner">
+        <h1>{{ $invoice->branch->name }}</h1>
+        @if ($invoice->branch->address)
+            <div class="branch">{{ $invoice->branch->address }}</div>
+        @endif
+        @if ($invoice->branch->phone)
+            <div class="branch">{{ $invoice->branch->phone }}</div>
+        @endif
+    </div>
+    <div class="banner-divider"></div>
 
     <table class="info-table">
         <tr>
-            <td>
+            <td style="width: 60%;">
                 <div class="info-label">Billed To</div>
                 <div><strong>{{ $invoice->customer->name }}</strong></div>
                 @if ($invoice->customer->phone)
@@ -68,6 +60,11 @@
                 @if ($invoice->customer->address)
                     <div>{{ $invoice->customer->address }}</div>
                 @endif
+            </td>
+            <td class="invoice-meta">
+                <div class="invoice-title">INVOICE</div>
+                <div><strong>{{ $invoice->invoice_number }}</strong></div>
+                <div>{{ $invoice->invoice_date->format('d M Y') }}</div>
             </td>
         </tr>
     </table>

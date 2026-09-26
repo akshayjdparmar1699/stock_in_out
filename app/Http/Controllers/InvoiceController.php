@@ -128,12 +128,6 @@ class InvoiceController extends Controller
             $subtotal = $this->applyLines($invoice, $branchId, $data['items']);
             $total = round($subtotal - $discount + $tax + $transportation, 2);
 
-            $invoice->update([
-                'subtotal' => $subtotal,
-                'total' => $total,
-                'status' => $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid'),
-            ]);
-
             if ($paidAmount > 0) {
                 InvoicePayment::create([
                     'invoice_id' => $invoice->id,
@@ -142,6 +136,35 @@ class InvoiceController extends Controller
                     'note' => 'Payment received at billing',
                 ]);
             }
+
+            // Any credit this customer is already holding (from a past
+            // payment that exceeded everything they owed at the time)
+            // auto-draws against what's still due on this new invoice,
+            // oldest credit first — they shouldn't have to remember to
+            // ask for it to be applied.
+            $customer = Customer::whereKey($data['customer_id'])->lockForUpdate()->first();
+            $stillDue = round($total - $paidAmount, 2);
+            $creditToApply = min((float) $customer->credit_balance, max(0, $stillDue));
+
+            if ($creditToApply > 0) {
+                InvoicePayment::create([
+                    'invoice_id' => $invoice->id,
+                    'user_id' => auth()->id(),
+                    'amount' => $creditToApply,
+                    'note' => 'Applied from customer credit balance',
+                    'from_credit_balance' => true,
+                ]);
+
+                $customer->decrement('credit_balance', $creditToApply);
+                $paidAmount = round($paidAmount + $creditToApply, 2);
+            }
+
+            $invoice->update([
+                'subtotal' => $subtotal,
+                'total' => $total,
+                'paid_amount' => $paidAmount,
+                'status' => $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid'),
+            ]);
 
             return $invoice;
         });
@@ -432,6 +455,15 @@ class InvoiceController extends Controller
     {
         DB::transaction(function () use ($invoice) {
             $this->reverseStockEffects($invoice);
+
+            // Any credit this invoice auto-drew from the customer's balance
+            // goes back to them — otherwise deleting the invoice would
+            // simply erase money they're still owed credit for.
+            $creditUsed = (float) $invoice->payments()->where('from_credit_balance', true)->sum('amount');
+            if ($creditUsed > 0) {
+                $invoice->customer()->increment('credit_balance', $creditUsed);
+            }
+
             $invoice->delete();
         });
 

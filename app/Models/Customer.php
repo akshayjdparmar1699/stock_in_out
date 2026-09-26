@@ -18,6 +18,7 @@ class Customer extends Model
         'address',
         'gst_number',
         'opening_balance',
+        'credit_balance',
         'credit_limit',
         'is_active',
     ];
@@ -26,6 +27,7 @@ class Customer extends Model
     {
         return [
             'opening_balance' => 'decimal:2',
+            'credit_balance' => 'decimal:2',
             'credit_limit' => 'decimal:2',
             'is_active' => 'boolean',
         ];
@@ -36,6 +38,11 @@ class Customer extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(InvoicePayment::class);
+    }
+
     public function branches(): BelongsToMany
     {
         return $this->belongsToMany(Branch::class);
@@ -43,15 +50,17 @@ class Customer extends Model
 
     /**
      * Total outstanding balance: opening due (set when the customer was
-     * created) plus whatever remains unpaid across all their invoices.
-     * A negative value means the customer is in credit.
+     * created) plus whatever remains unpaid across all their invoices,
+     * minus any credit balance they're currently holding (built up from a
+     * payment that exceeded everything they owed at the time). A negative
+     * value means the customer is in credit.
      */
     public function dueAmount(): float
     {
         $invoiced = (float) $this->invoices()->sum('total');
         $paid = (float) $this->invoices()->sum('paid_amount');
 
-        return round((float) $this->opening_balance + $invoiced - $paid, 2);
+        return round((float) $this->opening_balance + $invoiced - $paid - (float) $this->credit_balance, 2);
     }
 
     /**

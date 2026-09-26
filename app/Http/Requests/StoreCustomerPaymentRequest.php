@@ -13,20 +13,12 @@ class StoreCustomerPaymentRequest extends FormRequest
 
     public function rules(): array
     {
-        $due = $this->route('customer')->dueAmount();
-
         return [
-            'amount' => ['required', 'numeric', 'min:0.01', 'max:'.max($due, 0.01)],
+            // No upper cap: a payment larger than the current due is
+            // allowed on purpose — the excess becomes credit the customer
+            // can draw on for a future invoice instead of being rejected.
+            'amount' => ['required', 'numeric', 'min:0.01'],
             'note' => ['nullable', 'string', 'max:255'],
-        ];
-    }
-
-    public function messages(): array
-    {
-        $due = number_format($this->route('customer')->dueAmount(), 2);
-
-        return [
-            'amount.max' => "Payment cannot exceed the customer's current due (₹{$due}).",
         ];
     }
 }

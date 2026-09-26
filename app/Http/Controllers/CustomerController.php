@@ -115,6 +115,9 @@ class CustomerController extends Controller
      * outstanding invoices first (a payment larger than one invoice's own
      * balance rolls over onto the next), so it isn't tied to a single
      * invoice the way "Record a Payment" on an invoice's own page is.
+     * Anything left over after every invoice is fully paid settles their
+     * opening balance, and if it's still more than that, the rest becomes
+     * credit they can draw on for a future invoice.
      */
     public function storePayment(StoreCustomerPaymentRequest $request, Customer $customer): RedirectResponse
     {
@@ -153,6 +156,22 @@ class CustomerController extends Controller
 
                 $remaining -= $apply;
             }
+
+            // Nothing left owed on any invoice, but there's still money in
+            // hand — it isn't tied to any invoice, so it directly settles
+            // whatever's left of their opening balance and/or becomes
+            // credit for a future invoice to auto-draw on.
+            if ($remaining > 0) {
+                InvoicePayment::create([
+                    'customer_id' => $customer->id,
+                    'user_id' => auth()->id(),
+                    'amount' => $remaining,
+                    'note' => $data['note'] ?? null,
+                    'batch_id' => $batchId,
+                ]);
+
+                $customer->increment('credit_balance', $remaining);
+            }
         });
 
         return redirect()->route('customers.show', $customer)
@@ -185,15 +204,25 @@ class CustomerController extends Controller
         // here by batch_id so it shows as the one amount actually handed
         // over, not fragmented into one row per invoice it happened to
         // cover. A plain invoice-level payment has no batch_id, so it's
-        // its own group of one.
-        $paymentRows = $invoices->flatMap(fn (Invoice $invoice) => $invoice->payments->map(fn (InvoicePayment $payment) => [
-            'payment' => $payment,
-            'invoice' => $invoice,
-        ]));
+        // its own group of one. A row with from_credit_balance is skipped
+        // here — it's an invoice auto-drawing on credit that was already
+        // counted as received when that credit was built up, not new cash.
+        $paymentRows = $invoices->flatMap(fn (Invoice $invoice) => $invoice->payments
+            ->reject(fn (InvoicePayment $payment) => $payment->from_credit_balance)
+            ->map(fn (InvoicePayment $payment) => [
+                'payment' => $payment,
+                'invoice' => $invoice,
+            ]));
 
-        $paymentRows
+        // Money handed over that wasn't matched to any invoice at the time
+        // it was received — it settled the opening balance, or went
+        // straight to credit.
+        $unmatchedPayments = $customer->payments()->whereNull('invoice_id')->get()
+            ->map(fn (InvoicePayment $payment) => ['payment' => $payment, 'invoice' => null]);
+
+        $paymentRows->concat($unmatchedPayments)
             ->groupBy(fn (array $row) => $row['payment']->batch_id ?: 'single-'.$row['payment']->id)
-            ->each(function (Collection $rows) use ($entries) {
+            ->each(function (Collection $rows) use ($entries, $customer) {
                 $first = $rows->first();
 
                 $entries->push([
@@ -201,9 +230,9 @@ class CustomerController extends Controller
                     'type' => 'received',
                     'label' => $first['payment']->note
                         ? "Payment ({$first['payment']->note})"
-                        : "Payment for {$first['invoice']->invoice_number}",
+                        : ($first['invoice'] ? "Payment for {$first['invoice']->invoice_number}" : 'Payment'),
                     'amount' => (float) $rows->sum(fn (array $row) => (float) $row['payment']->amount),
-                    'url' => route('invoices.show', $first['invoice']),
+                    'url' => $first['invoice'] ? route('invoices.show', $first['invoice']) : route('customers.show', $customer),
                 ]);
             });
 

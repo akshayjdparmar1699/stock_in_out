@@ -45,22 +45,25 @@
             <div class="bg-white shadow-sm rounded-lg p-6">
                 <h3 class="font-medium text-gray-700 mb-4">{{ __('Record a Payment') }}</h3>
 
-                @if ($due > 0)
-                    <form method="POST" action="{{ route('customers.payments.store', $customer) }}" class="flex flex-wrap items-end gap-4">
-                        @csrf
-                        <div>
-                            <x-input-label for="amount" :value="__('Amount Received')" />
-                            <x-text-input id="amount" name="amount" type="number" step="0.01" min="0.01" max="{{ $due }}" class="mt-1 w-40" value="{{ old('amount') }}" required />
-                        </div>
-                        <div class="flex-1 min-w-[180px]">
-                            <x-input-label for="note" :value="__('Note (optional)')" />
-                            <x-text-input id="note" name="note" type="text" class="mt-1 w-full" value="{{ old('note') }}" placeholder="{{ __('e.g. Cash, UPI, part payment') }}" />
-                        </div>
-                        <x-primary-button>{{ __('Record Payment') }}</x-primary-button>
-                    </form>
-                    <p class="text-xs text-gray-400 mt-3">{{ __('Applied to their oldest outstanding invoices first.') }}</p>
-                @else
-                    <p class="text-sm text-green-600">{{ __('This customer has no outstanding due.') }}</p>
+                <form method="POST" action="{{ route('customers.payments.store', $customer) }}" class="flex flex-wrap items-end gap-4">
+                    @csrf
+                    <div>
+                        <x-input-label for="amount" :value="__('Amount Received')" />
+                        <x-text-input id="amount" name="amount" type="number" step="0.01" min="0.01" class="mt-1 w-40" value="{{ old('amount') }}" required />
+                    </div>
+                    <div class="flex-1 min-w-[180px]">
+                        <x-input-label for="note" :value="__('Note (optional)')" />
+                        <x-text-input id="note" name="note" type="text" class="mt-1 w-full" value="{{ old('note') }}" placeholder="{{ __('e.g. Cash, UPI, part payment') }}" />
+                    </div>
+                    <x-primary-button>{{ __('Record Payment') }}</x-primary-button>
+                </form>
+                <p class="text-xs text-gray-400 mt-3">
+                    {{ __('Applied to their oldest outstanding invoices first, then their opening balance. Paying more than they owe adds the extra as credit for their next bill.') }}
+                </p>
+                @if ($customer->credit_balance > 0)
+                    <p class="text-xs text-green-600 mt-1">
+                        {{ __('Credit available for their next invoice:') }} ₹{{ number_format($customer->credit_balance, 2) }}
+                    </p>
                 @endif
             </div>
 

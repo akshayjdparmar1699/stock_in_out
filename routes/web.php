@@ -50,6 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
 
     Route::get('/suppliers/search', [SupplierController::class, 'search'])->name('suppliers.search');
+    Route::post('/suppliers/{supplier}/payments', [SupplierController::class, 'storePayment'])->name('suppliers.payments.store');
     Route::resource('suppliers', SupplierController::class)->except(['destroy']);
 
     Route::resource('purchases', PurchaseController::class)->only(['index', 'create', 'store', 'show', 'destroy']);

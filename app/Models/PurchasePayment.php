@@ -12,21 +12,30 @@ class PurchasePayment extends Model
 
     protected $fillable = [
         'purchase_id',
+        'supplier_id',
         'user_id',
         'amount',
         'note',
+        'batch_id',
+        'from_credit_balance',
     ];
 
     protected function casts(): array
     {
         return [
             'amount' => 'decimal:2',
+            'from_credit_balance' => 'boolean',
         ];
     }
 
     public function purchase(): BelongsTo
     {
         return $this->belongsTo(Purchase::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     public function user(): BelongsTo

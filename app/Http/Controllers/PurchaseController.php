@@ -10,6 +10,7 @@ use App\Models\Purchase;
 use App\Models\PurchasePayment;
 use App\Models\StockBatch;
 use App\Models\StockMovement;
+use App\Models\Supplier;
 use App\Services\BranchContext;
 use App\Services\PerPagePreference;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -164,6 +165,31 @@ class PurchaseController extends Controller
                 ]);
             }
 
+            // Any credit we're already holding with this supplier (from a
+            // past payment that exceeded everything owed at the time)
+            // auto-draws against what's still due on this new purchase.
+            $supplier = Supplier::whereKey($data['supplier_id'])->lockForUpdate()->first();
+            $stillDue = round($total - $paidAmount, 2);
+            $creditToApply = min((float) $supplier->credit_balance, max(0, $stillDue));
+
+            if ($creditToApply > 0) {
+                PurchasePayment::create([
+                    'purchase_id' => $purchase->id,
+                    'user_id' => auth()->id(),
+                    'amount' => $creditToApply,
+                    'note' => 'Applied from supplier credit balance',
+                    'from_credit_balance' => true,
+                ]);
+
+                $supplier->decrement('credit_balance', $creditToApply);
+                $paidAmount = round($paidAmount + $creditToApply, 2);
+
+                $purchase->update([
+                    'paid_amount' => $paidAmount,
+                    'status' => $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid'),
+                ]);
+            }
+
             return $purchase;
         });
 
@@ -219,6 +245,14 @@ class PurchaseController extends Controller
                     ->decrement('quantity', $movement->quantity);
 
                 $movement->delete();
+            }
+
+            // Any credit this purchase auto-drew from the supplier's
+            // balance goes back to them — otherwise deleting the purchase
+            // would simply erase credit we still owe them for.
+            $creditUsed = (float) $purchase->payments()->where('from_credit_balance', true)->sum('amount');
+            if ($creditUsed > 0) {
+                $purchase->supplier()->increment('credit_balance', $creditUsed);
             }
 
             $purchase->delete();

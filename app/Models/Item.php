@@ -38,6 +38,15 @@ class Item extends Model
         return (bool) $this->alt_unit && (float) $this->alt_unit_ratio > 0;
     }
 
+    /**
+     * Converts a quantity already in this item's base/stock unit into its
+     * alt unit (e.g. bags -> kg), or null if no alt unit is configured.
+     */
+    public function altUnitQuantity(float|int $baseQuantity): ?float
+    {
+        return $this->hasAltUnit() ? round((float) $baseQuantity * (float) $this->alt_unit_ratio, 2) : null;
+    }
+
     public function stocks(): HasMany
     {
         return $this->hasMany(ItemStock::class);

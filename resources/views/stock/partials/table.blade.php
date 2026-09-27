@@ -23,7 +23,12 @@
                             {{ strtoupper($movement->type) }}
                         </span>
                     </td>
-                    <td class="px-6 py-3 text-sm text-gray-700">{{ $movement->quantity }} {{ $movement->item->unit }}</td>
+                    <td class="px-6 py-3 text-sm text-gray-700">
+                        {{ $movement->quantity }} {{ $movement->item->unit }}
+                        @if ($movement->item->hasAltUnit())
+                            <div class="text-xs text-gray-400">= {{ number_format($movement->item->altUnitQuantity($movement->quantity), 2) }} {{ $movement->item->alt_unit }}</div>
+                        @endif
+                    </td>
                     <td class="px-6 py-3 text-sm text-gray-500">{{ $movement->reason ?? '—' }}</td>
                     <td class="px-6 py-3 text-sm text-gray-500">{{ $movement->user->name ?? '—' }}</td>
                     <td class="px-6 py-3 text-sm text-right">

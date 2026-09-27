@@ -14,13 +14,30 @@
                 </p>
             </div>
 
-            <div class="bg-white shadow-sm rounded-lg p-6">
+            @php
+                $stockItemsMeta = $items->keyBy('id')->map(fn ($item) => [
+                    'alt_unit' => $item->alt_unit,
+                    'ratio' => $item->alt_unit_ratio !== null ? (float) $item->alt_unit_ratio : null,
+                    'unit' => $item->unit,
+                ]);
+            @endphp
+            <div class="bg-white shadow-sm rounded-lg p-6"
+                x-data="{
+                    itemId: '{{ old('item_id') }}',
+                    quantity: {{ old('quantity') ? (float) old('quantity') : 'null' }},
+                    itemsMeta: @json($stockItemsMeta),
+                    get meta() { return this.itemsMeta[this.itemId] ?? null; },
+                    get altTotal() {
+                        if (!this.meta || !this.meta.ratio || !this.quantity) return null;
+                        return Math.round(this.quantity * this.meta.ratio * 100) / 100;
+                    },
+                }">
                 <h3 class="font-medium text-gray-700 mb-4">{{ __('Manual Stock Adjustment') }}</h3>
                 <form method="POST" action="{{ route('stock.store') }}" class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
                     @csrf
                     <div class="sm:col-span-2">
                         <x-input-label for="item_id" :value="__('Item')" />
-                        <select id="item_id" name="item_id" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select id="item_id" name="item_id" required x-model="itemId" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">{{ __('Select item') }}</option>
                             @foreach ($items as $item)
                                 <option value="{{ $item->id }}" @selected(old('item_id') == $item->id)>{{ $item->name }} ({{ $item->sku }})</option>
@@ -30,7 +47,10 @@
                     </div>
                     <div>
                         <x-input-label for="quantity" :value="__('Quantity')" />
-                        <x-text-input id="quantity" name="quantity" type="number" step="0.01" min="0.01" class="mt-1 block w-full" :value="old('quantity')" required />
+                        <x-text-input id="quantity" name="quantity" type="number" step="0.01" min="0.01" x-model.number="quantity" class="mt-1 block w-full" :value="old('quantity')" required />
+                        <p class="text-xs text-gray-400 mt-1" x-show="altTotal !== null" style="display: none;">
+                            = <span x-text="altTotal"></span> <span x-text="meta && meta.alt_unit"></span>
+                        </p>
                         <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
                     </div>
                     <div>

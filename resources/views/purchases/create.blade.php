@@ -138,6 +138,7 @@
                                 <div class="min-w-0 mb-3 sm:mb-0">
                                     <div class="text-sm font-medium text-gray-800 truncate" x-text="line.name"></div>
                                     <div class="text-xs text-gray-400" x-text="'Current stock: ' + line.stock + ' ' + line.unit"></div>
+                                    <div class="text-xs text-gray-400" x-show="line.altUnitRatio" x-text="'= ' + (line.quantity * (line.altUnitRatio || 0)).toFixed(2) + ' ' + line.altUnit"></div>
                                     <input type="hidden" :name="`items[${index}][item_id]`" :value="line.item_id">
                                 </div>
 
@@ -338,6 +339,8 @@
                         item_id: item.id,
                         name: item.name,
                         unit: item.unit,
+                        altUnit: item.alt_unit || null,
+                        altUnitRatio: item.alt_unit_ratio || null,
                         stock: item.stock,
                         quantity: 1,
                         unit_cost: item.purchase_price,
@@ -351,6 +354,8 @@
                         item_id: line.item_id,
                         name: line.name,
                         unit: line.unit,
+                        altUnit: line.altUnit,
+                        altUnitRatio: line.altUnitRatio,
                         stock: line.stock,
                         quantity: 1,
                         unit_cost: line.unit_cost,

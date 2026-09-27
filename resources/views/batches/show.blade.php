@@ -39,6 +39,14 @@
                             <div class="text-xs text-gray-400">{{ __('Fully sold out') }}</div>
                         @endif
                     </div>
+                    @if ($batch->item->hasAltUnit())
+                        <div>
+                            <div class="text-sm text-gray-500">{{ __('Remaining (Alt Unit)') }}</div>
+                            <div class="text-xl font-semibold {{ $batch->isDepleted() ? 'text-gray-400' : 'text-green-600' }}">
+                                {{ number_format($batch->item->altUnitQuantity($batch->quantity_remaining), 2) }} {{ $batch->item->alt_unit }}
+                            </div>
+                        </div>
+                    @endif
                     @if ($batch->unit_cost)
                         <div>
                             <div class="text-sm text-gray-500">{{ __('Unit Cost') }}</div>

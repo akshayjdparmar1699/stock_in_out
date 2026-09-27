@@ -24,6 +24,8 @@ class StorePurchaseRequest extends FormRequest
             'items.*.item_id' => ['required', 'exists:items,id'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
+            'items.*.alt_unit' => ['nullable', 'string', 'max:20'],
+            'items.*.alt_unit_ratio' => ['nullable', 'required_with:items.*.alt_unit', 'numeric', 'min:0.0001'],
         ];
     }
 }

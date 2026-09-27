@@ -36,6 +36,14 @@
                             <div class="text-xs text-red-500">{{ __('Low stock') }}</div>
                         @endif
                     </div>
+                    @if ($item->hasAltUnit())
+                        <div>
+                            <div class="text-sm text-gray-500">{{ __('Current Stock (Alt Unit)') }}</div>
+                            <div class="text-xl font-semibold text-gray-900">
+                                {{ number_format($item->altUnitQuantity($currentStock), 2) }} {{ $item->alt_unit }}
+                            </div>
+                        </div>
+                    @endif
                     <div>
                         <div class="text-sm text-gray-500">{{ __('Purchase Price') }}</div>
                         <div class="text-xl font-semibold text-gray-900">₹{{ number_format($item->purchase_price, 2) }}</div>

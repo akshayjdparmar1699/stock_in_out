@@ -7,7 +7,8 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Date') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Item') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Type') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Quantity') }}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Qty (Base Unit)') }}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Qty (Alt Unit)') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Reason') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('By') }}</th>
                 <th class="px-6 py-3"></th>
@@ -23,10 +24,12 @@
                             {{ strtoupper($movement->type) }}
                         </span>
                     </td>
+                    <td class="px-6 py-3 text-sm text-gray-700">{{ $movement->quantity }} {{ $movement->item->unit }}</td>
                     <td class="px-6 py-3 text-sm text-gray-700">
-                        {{ $movement->quantity }} {{ $movement->item->unit }}
                         @if ($movement->item->hasAltUnit())
-                            <div class="text-xs text-gray-400">= {{ number_format($movement->item->altUnitQuantity($movement->quantity), 2) }} {{ $movement->item->alt_unit }}</div>
+                            {{ number_format($movement->item->altUnitQuantity($movement->quantity), 2) }} {{ $movement->item->alt_unit }}
+                        @else
+                            —
                         @endif
                     </td>
                     <td class="px-6 py-3 text-sm text-gray-500">{{ $movement->reason ?? '—' }}</td>
@@ -39,7 +42,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No stock movements yet.') }}</td>
+                    <td colspan="8" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No stock movements yet.') }}</td>
                 </tr>
             @endforelse
         </tbody>

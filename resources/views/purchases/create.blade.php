@@ -139,7 +139,22 @@
                                     <div class="text-sm font-medium text-gray-800 truncate" x-text="line.name"></div>
                                     <div class="text-xs text-gray-400" x-text="'Current stock: ' + line.stock + ' ' + line.unit"></div>
                                     <div class="text-xs text-gray-400" x-show="line.altUnitRatio" x-text="'= ' + (line.quantity * (line.altUnitRatio || 0)).toFixed(2) + ' ' + line.altUnit"></div>
+                                    <button type="button" class="text-xs text-indigo-600 hover:underline" @click="line.showAltConfig = !line.showAltConfig"
+                                        x-text="line.altUnit ? ('Alt unit: ' + line.altUnit) : '+ Set alt unit'"></button>
                                     <input type="hidden" :name="`items[${index}][item_id]`" :value="line.item_id">
+                                </div>
+
+                                <div class="sm:col-span-5 grid grid-cols-2 gap-3 mt-2" x-show="line.showAltConfig" style="display: none;">
+                                    <div>
+                                        <label class="text-xs text-gray-500">{{ __('Alternate Selling Unit (e.g. kg)') }}</label>
+                                        <input type="text" x-model="line.altUnit" :name="`items[${index}][alt_unit]`" placeholder="{{ __('e.g. kg') }}"
+                                            class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500">{{ __('1 unit = ? alt unit') }}</label>
+                                        <input type="number" step="0.0001" min="0" x-model.number="line.altUnitRatio" :name="`items[${index}][alt_unit_ratio]`" placeholder="{{ __('e.g. 50') }}"
+                                            class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    </div>
                                 </div>
 
                                 <div class="flex flex-wrap items-end gap-3 sm:contents">
@@ -341,6 +356,7 @@
                         unit: item.unit,
                         altUnit: item.alt_unit || null,
                         altUnitRatio: item.alt_unit_ratio || null,
+                        showAltConfig: false,
                         stock: item.stock,
                         quantity: 1,
                         unit_cost: item.purchase_price,
@@ -356,6 +372,7 @@
                         unit: line.unit,
                         altUnit: line.altUnit,
                         altUnitRatio: line.altUnitRatio,
+                        showAltConfig: false,
                         stock: line.stock,
                         quantity: 1,
                         unit_cost: line.unit_cost,

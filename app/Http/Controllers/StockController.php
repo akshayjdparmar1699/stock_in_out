@@ -42,6 +42,13 @@ class StockController extends Controller
         $data = $request->validated();
 
         DB::transaction(function () use ($data, $branchId) {
+            if (array_key_exists('alt_unit', $data)) {
+                Item::whereKey($data['item_id'])->update([
+                    'alt_unit' => $data['alt_unit'],
+                    'alt_unit_ratio' => $data['alt_unit'] ? $data['alt_unit_ratio'] : null,
+                ]);
+            }
+
             $stock = ItemStock::query()->firstOrCreate(
                 ['branch_id' => $branchId, 'item_id' => $data['item_id']],
                 ['quantity' => 0]

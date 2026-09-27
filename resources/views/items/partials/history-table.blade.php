@@ -6,7 +6,8 @@
             <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Date') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Type') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Quantity') }}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Qty (Base Unit)') }}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Qty (Alt Unit)') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Reason') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('By') }}</th>
                 <th class="px-6 py-3"></th>
@@ -21,10 +22,12 @@
                             {{ strtoupper($movement->type) }}
                         </span>
                     </td>
+                    <td class="px-6 py-3 text-sm text-gray-700">{{ $movement->quantity }} {{ $item->unit }}</td>
                     <td class="px-6 py-3 text-sm text-gray-700">
-                        {{ $movement->quantity }} {{ $item->unit }}
                         @if ($item->hasAltUnit())
-                            <div class="text-xs text-gray-400">= {{ number_format($item->altUnitQuantity($movement->quantity), 2) }} {{ $item->alt_unit }}</div>
+                            {{ number_format($item->altUnitQuantity($movement->quantity), 2) }} {{ $item->alt_unit }}
+                        @else
+                            —
                         @endif
                     </td>
                     <td class="px-6 py-3 text-sm text-gray-500">{{ $movement->reason ?? '—' }}</td>
@@ -37,7 +40,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No stock history for this item yet.') }}</td>
+                    <td colspan="7" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No stock history for this item yet.') }}</td>
                 </tr>
             @endforelse
         </tbody>

@@ -8,6 +8,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Source') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Received Qty') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Remaining') }}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Remaining (Alt Unit)') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Status') }}</th>
             </tr>
         </thead>
@@ -27,6 +28,13 @@
                     <td class="px-6 py-4 text-sm {{ $batch->isDepleted() ? 'text-gray-400' : 'text-green-600 font-medium' }}">
                         {{ $batch->quantity_remaining }} {{ $batch->item->unit }}
                     </td>
+                    <td class="px-6 py-4 text-sm {{ $batch->isDepleted() ? 'text-gray-400' : 'text-green-600 font-medium' }}">
+                        @if ($batch->item->hasAltUnit())
+                            {{ number_format($batch->item->altUnitQuantity($batch->quantity_remaining), 2) }} {{ $batch->item->alt_unit }}
+                        @else
+                            —
+                        @endif
+                    </td>
                     <td class="px-6 py-4 text-sm">
                         @if ($batch->isDepleted())
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{{ __('Sold out') }}</span>
@@ -37,7 +45,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No stock batches yet.') }}</td>
+                    <td colspan="7" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No stock batches yet.') }}</td>
                 </tr>
             @endforelse
         </tbody>

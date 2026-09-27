@@ -323,6 +323,7 @@
                             altUnit: item.alt_unit || null,
                             altUnitRatio: item.alt_unit_ratio || null,
                             baseStock: line.stock,
+                            baseSellingPrice: item.selling_price ?? line.unit_price,
                         };
                     });
                 },
@@ -412,6 +413,7 @@
                         unit: item.unit,
                         quantity: 1,
                         unit_price: item.selling_price,
+                        baseSellingPrice: item.selling_price,
                     });
                     this.itemQuery = '';
                     this.itemResults = [];
@@ -428,6 +430,7 @@
                         unit: line.unit,
                         quantity: 1,
                         unit_price: line.unit_price,
+                        baseSellingPrice: line.baseSellingPrice,
                     });
                 },
                 availableStock(line) {
@@ -439,7 +442,13 @@
                 setLineUnit(line, unit) {
                     if (line.unit === unit) return;
                     line.unit = unit;
-                    line.unit_price = '';
+
+                    if (unit === line.altUnit && line.altUnitRatio) {
+                        line.unit_price = Math.round((line.baseSellingPrice / line.altUnitRatio) * 100) / 100;
+                    } else {
+                        line.unit_price = line.baseSellingPrice;
+                    }
+
                     const max = this.availableStock(line);
                     if (line.quantity > max) line.quantity = max;
                 },

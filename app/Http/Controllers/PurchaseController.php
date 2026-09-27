@@ -99,9 +99,23 @@ class PurchaseController extends Controller
             $lines = [];
 
             foreach ($data['items'] as $line) {
+                // The alt-unit config can be set/updated right from the
+                // purchase form instead of a separate trip to edit the item.
+                if (array_key_exists('alt_unit', $line)) {
+                    Item::whereKey($line['item_id'])->update([
+                        'alt_unit' => $line['alt_unit'],
+                        'alt_unit_ratio' => $line['alt_unit'] ? ($line['alt_unit_ratio'] ?? null) : null,
+                    ]);
+                }
+
                 $lineTotal = round($line['quantity'] * $line['unit_cost'], 2);
                 $subtotal += $lineTotal;
-                $lines[] = $line + ['total' => $lineTotal];
+                $lines[] = [
+                    'item_id' => $line['item_id'],
+                    'quantity' => $line['quantity'],
+                    'unit_cost' => $line['unit_cost'],
+                    'total' => $lineTotal,
+                ];
             }
 
             $discount = (float) ($data['discount'] ?? 0);

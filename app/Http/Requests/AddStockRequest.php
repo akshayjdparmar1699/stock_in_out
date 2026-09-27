@@ -17,6 +17,8 @@ class AddStockRequest extends FormRequest
             'item_id' => ['required', 'exists:items,id'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'reason' => ['nullable', 'string', 'max:255'],
+            'alt_unit' => ['nullable', 'string', 'max:20'],
+            'alt_unit_ratio' => ['nullable', 'required_with:alt_unit', 'numeric', 'min:0.0001'],
         ];
     }
 }

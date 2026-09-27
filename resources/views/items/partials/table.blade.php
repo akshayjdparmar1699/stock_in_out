@@ -6,7 +6,8 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Name') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('SKU') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Selling Price') }}</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Stock (this branch)') }}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Stock (Base Unit)') }}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Stock (Alt Unit)') }}</th>
                 <th class="px-6 py-3"></th>
             </tr>
         </thead>
@@ -20,13 +21,20 @@
                     <td class="px-6 py-4 text-sm {{ $qty <= $item->low_stock_threshold ? 'text-red-600 font-medium' : 'text-green-600 font-medium' }}">
                         {{ $qty }} {{ $item->unit }}
                     </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        @if ($item->hasAltUnit())
+                            {{ number_format($item->altUnitQuantity($qty), 2) }} {{ $item->alt_unit }}
+                        @else
+                            —
+                        @endif
+                    </td>
                     <td class="px-6 py-4 text-right text-sm">
                         <a href="{{ route('items.edit', $item) }}" onclick="event.stopPropagation()" class="text-indigo-600 hover:underline">{{ __('Edit') }}</a>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No items found.') }}</td>
+                    <td colspan="6" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No items found.') }}</td>
                 </tr>
             @endforelse
         </tbody>

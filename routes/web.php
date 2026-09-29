@@ -63,7 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/staff/{staffMember}/toggle-active', [StaffMemberController::class, 'toggleActive'])->name('staff.toggle-active');
     Route::resource('staff', StaffMemberController::class)->except(['show', 'destroy'])->parameters(['staff' => 'staffMember']);
 
-    Route::resource('expenses', ExpenseController::class)->except(['show', 'destroy']);
+    Route::resource('expenses', ExpenseController::class)->except(['show']);
 });
 
 Route::middleware('auth')->group(function () {

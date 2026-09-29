@@ -114,4 +114,13 @@ class ExpenseController extends Controller
 
         return redirect()->route('expenses.index')->with('status', 'Expense updated.');
     }
+
+    public function destroy(Expense $expense): RedirectResponse
+    {
+        abort_unless($expense->branch_id === BranchContext::id(), 404);
+
+        $expense->delete();
+
+        return redirect()->route('expenses.index')->with('status', 'Expense deleted.');
+    }
 }

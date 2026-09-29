@@ -18,13 +18,14 @@ FROM php:8.3-apache
 # app's own public/icons/, which is why they 404'd even though the
 # files were correct and readable the whole time. Nothing here needs
 # mod_alias (Laravel handles all its own routing/redirects), so it's
-# simplest to just turn it off.
+# simplest to just turn it off. Debian flags it as "essential" and
+# refuses to disable it without -f in non-interactive mode.
 RUN apt-get update && apt-get install -y \
         libpq-dev libzip-dev libpng-dev unzip git \
     && docker-php-ext-install pdo pdo_pgsql pgsql bcmath gd zip \
     && docker-php-ext-enable opcache \
     && a2enmod rewrite \
-    && a2dismod alias \
+    && a2dismod -f alias \
     && rm -rf /var/lib/apt/lists/*
 
 COPY docker/opcache.ini /usr/local/etc/php/conf.d/99-opcache.ini

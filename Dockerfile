@@ -47,9 +47,17 @@ RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cac
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri -e "s!/var/www/html!\${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-available/*.conf \
-    && sed -ri -e "s!/var/www/!\${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+# Written as a literal path, not Apache's ${APACHE_DOCUMENT_ROOT} env-var
+# syntax — that indirection was the actual cause of every icon (and any
+# other file under public/) 404ing in production: mod_rewrite's own
+# per-directory -f/-d file-existence checks (used by public/.htaccess to
+# decide whether to hand a request to index.php) don't reliably resolve a
+# DocumentRoot that's set via env-var interpolation, so it was treating
+# real, readable files as "not found" and routing everything through
+# Laravel, which 404s on any path it has no route for. A plain literal
+# path removes that ambiguity entirely.
+RUN sed -ri -e "s!/var/www/html!/var/www/html/public!g" /etc/apache2/sites-available/*.conf \
+    && sed -ri -e "s!/var/www/!/var/www/html/public/!g" /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 COPY docker/apache-laravel.conf /etc/apache2/conf-enabled/laravel.conf
 

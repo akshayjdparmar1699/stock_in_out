@@ -43,6 +43,11 @@ Route::get('/__debug-icons', function () {
             ])->values()
             : null,
         'apache_document_root_env' => getenv('APACHE_DOCUMENT_ROOT'),
+        'server_document_root' => $_SERVER['DOCUMENT_ROOT'] ?? null,
+        'server_script_filename' => $_SERVER['SCRIPT_FILENAME'] ?? null,
+        'apache_default_vhost_conf' => @file_get_contents('/etc/apache2/sites-available/000-default.conf'),
+        'apache_laravel_conf' => @file_get_contents('/etc/apache2/conf-enabled/laravel.conf'),
+        'apache_ports_conf' => @file_get_contents('/etc/apache2/ports.conf'),
     ]);
 });
 

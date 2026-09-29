@@ -48,6 +48,25 @@ Route::get('/__debug-icons', function () {
         'apache_default_vhost_conf' => @file_get_contents('/etc/apache2/sites-available/000-default.conf'),
         'apache_laravel_conf' => @file_get_contents('/etc/apache2/conf-enabled/laravel.conf'),
         'apache_ports_conf' => @file_get_contents('/etc/apache2/ports.conf'),
+        'self_request_test' => (function () {
+            $port = getenv('PORT') ?: '10000';
+            $ch = curl_init("http://127.0.0.1:{$port}/icons/icon-512.png");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HEADER, true);
+            curl_setopt($ch, CURLOPT_NOBODY, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            $response = curl_exec($ch);
+            $info = curl_getinfo($ch);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            return [
+                'port_used' => $port,
+                'http_code' => $info['http_code'] ?? null,
+                'curl_error' => $error ?: null,
+                'response_head' => $response ? substr($response, 0, 500) : null,
+            ];
+        })(),
     ]);
 });
 

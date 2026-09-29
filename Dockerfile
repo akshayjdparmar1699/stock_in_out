@@ -32,6 +32,15 @@ COPY --from=assets /app/public/build ./public/build
 # to just this directory's contents, so it can't silently go missing.
 COPY public/icons ./public/icons
 
+# Fail the build loudly here rather than shipping an image that silently
+# 404s on every icon at runtime — this exact failure mode has happened on
+# this service before and the above COPY alone wasn't enough to stop it
+# recurring.
+RUN test -f public/icons/icon-512.png \
+    && test -f public/icons/icon-192.png \
+    && test -f public/icons/apple-touch-icon.png \
+    || (echo "ERROR: public/icons is missing from the build image — aborting build." && exit 1)
+
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \

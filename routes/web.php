@@ -20,6 +20,32 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
+// Temporary diagnostic route to see the live container's own filesystem
+// state for public/icons without needing shell access on the host (not
+// available on the free Render plan) — remove once the icons 404 is
+// actually root-caused and fixed.
+Route::get('/__debug-icons', function () {
+    $publicPath = public_path();
+    $iconsPath = public_path('icons');
+
+    return response()->json([
+        'public_path' => $publicPath,
+        'public_path_exists' => is_dir($publicPath),
+        'public_dir_listing' => is_dir($publicPath) ? array_values(array_diff(scandir($publicPath), ['.', '..'])) : null,
+        'icons_dir_exists' => is_dir($iconsPath),
+        'icons_dir_readable' => is_dir($iconsPath) ? is_readable($iconsPath) : null,
+        'icons_files' => is_dir($iconsPath)
+            ? collect(array_diff(scandir($iconsPath), ['.', '..']))->map(fn ($f) => [
+                'name' => $f,
+                'perms' => substr(sprintf('%o', fileperms($iconsPath.'/'.$f)), -4),
+                'size' => filesize($iconsPath.'/'.$f),
+                'readable' => is_readable($iconsPath.'/'.$f),
+            ])->values()
+            : null,
+        'apache_document_root_env' => getenv('APACHE_DOCUMENT_ROOT'),
+    ]);
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 

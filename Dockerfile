@@ -10,11 +10,21 @@ RUN npm run build
 # --- Stage 2: PHP application (Apache, multi-process — safe for real traffic) ---
 FROM php:8.3-apache
 
+# Debian's Apache ships mod_alias enabled by default with a built-in
+# `Alias /icons/ /usr/share/apache2/icons/` (used for mod_autoindex's
+# directory-listing icons) — since this app also serves its own PWA
+# icons from public/icons/, every request under that path was being
+# silently redirected to that unrelated system directory instead of the
+# app's own public/icons/, which is why they 404'd even though the
+# files were correct and readable the whole time. Nothing here needs
+# mod_alias (Laravel handles all its own routing/redirects), so it's
+# simplest to just turn it off.
 RUN apt-get update && apt-get install -y \
         libpq-dev libzip-dev libpng-dev unzip git \
     && docker-php-ext-install pdo pdo_pgsql pgsql bcmath gd zip \
     && docker-php-ext-enable opcache \
     && a2enmod rewrite \
+    && a2dismod alias \
     && rm -rf /var/lib/apt/lists/*
 
 COPY docker/opcache.ini /usr/local/etc/php/conf.d/99-opcache.ini

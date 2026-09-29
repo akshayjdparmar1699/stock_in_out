@@ -48,6 +48,9 @@ Route::get('/__debug-icons', function () {
         'apache_default_vhost_conf' => @file_get_contents('/etc/apache2/sites-available/000-default.conf'),
         'apache_laravel_conf' => @file_get_contents('/etc/apache2/conf-enabled/laravel.conf'),
         'apache_ports_conf' => @file_get_contents('/etc/apache2/ports.conf'),
+        'apache_alias_conf' => @file_get_contents('/etc/apache2/mods-enabled/alias.conf')
+            ?: @file_get_contents('/etc/apache2/mods-available/alias.conf'),
+        'apache_mods_enabled' => @scandir('/etc/apache2/mods-enabled'),
         'self_request_test' => (function () {
             $port = getenv('PORT') ?: '10000';
             $ch = curl_init("http://127.0.0.1:{$port}/icons/icon-512.png");

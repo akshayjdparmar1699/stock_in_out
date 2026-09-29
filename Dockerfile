@@ -25,17 +25,19 @@ WORKDIR /var/www/html
 COPY . .
 COPY --from=assets /app/public/build ./public/build
 
-# Belt-and-braces: the blanket COPY above has, on this service, sometimes
-# ended up without public/icons/* present in the built image (404s on
-# every icon at runtime despite the files being committed and correct in
-# git) — copying it again explicitly gives it its own cache layer keyed
-# to just this directory's contents, so it can't silently go missing.
-COPY public/icons ./public/icons
+# A second, redundant `COPY public/icons ./public/icons` used to sit here
+# as a "belt and braces" fix for icons 404ing at runtime — it's exactly
+# backwards: public/images (copied only once, by the blanket COPY above)
+# has always served correctly, while public/icons (copied a second time
+# on its own layer here) was the one 404ing, confirmed by curling the
+# live container's own loopback and getting Apache's own 404 for a file
+# that demonstrably exists on disk with correct permissions. Two COPY
+# instructions writing the same destination directory is the anomaly, not
+# the blanket COPY missing it — so this now relies on that single COPY
+# only, same as every other public/ subdirectory.
 
-# Fail the build loudly here rather than shipping an image that silently
-# 404s on every icon at runtime — this exact failure mode has happened on
-# this service before and the above COPY alone wasn't enough to stop it
-# recurring.
+# Fail the build loudly if it's ever actually missing, rather than
+# shipping an image that silently 404s on every icon at runtime.
 RUN test -f public/icons/icon-512.png \
     && test -f public/icons/icon-192.png \
     && test -f public/icons/apple-touch-icon.png \
@@ -47,15 +49,10 @@ RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cac
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Written as a literal path, not Apache's ${APACHE_DOCUMENT_ROOT} env-var
-# syntax — that indirection was the actual cause of every icon (and any
-# other file under public/) 404ing in production: mod_rewrite's own
-# per-directory -f/-d file-existence checks (used by public/.htaccess to
-# decide whether to hand a request to index.php) don't reliably resolve a
-# DocumentRoot that's set via env-var interpolation, so it was treating
-# real, readable files as "not found" and routing everything through
-# Laravel, which 404s on any path it has no route for. A plain literal
-# path removes that ambiguity entirely.
+# Written as a literal path rather than Apache's ${APACHE_DOCUMENT_ROOT}
+# env-var syntax, to keep this unambiguous — not the icons 404 fix itself
+# (that turned out to be the redundant COPY above), but no reason to
+# leave the indirection in place either.
 RUN sed -ri -e "s!/var/www/html!/var/www/html/public!g" /etc/apache2/sites-available/*.conf \
     && sed -ri -e "s!/var/www/!/var/www/html/public/!g" /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 

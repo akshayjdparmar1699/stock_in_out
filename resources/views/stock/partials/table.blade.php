@@ -38,6 +38,7 @@
                         @if ($movement->referenceUrl())
                             <a href="{{ $movement->referenceUrl() }}" class="text-indigo-600 hover:underline">{{ __($movement->referenceLabel()) }}</a>
                         @elseif ($movement->type === 'in')
+                            <a href="{{ route('stock.edit', $movement) }}" class="text-indigo-600 hover:underline mr-3">{{ __('Edit') }}</a>
                             <form method="POST" action="{{ route('stock.destroy', $movement) }}" class="inline">
                                 @csrf
                                 @method('DELETE')

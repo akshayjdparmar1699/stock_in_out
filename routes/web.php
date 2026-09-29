@@ -36,6 +36,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
     Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
+    Route::get('/stock/{movement}/edit', [StockController::class, 'edit'])->name('stock.edit');
+    Route::put('/stock/{movement}', [StockController::class, 'update'])->name('stock.update');
     Route::delete('/stock/{movement}', [StockController::class, 'destroy'])->name('stock.destroy');
 
     Route::resource('batches', BatchController::class)->only(['index', 'show']);

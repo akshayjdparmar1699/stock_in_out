@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AddStockRequest;
+use App\Http\Requests\UpdateStockRequest;
 use App\Models\Item;
 use App\Models\ItemStock;
 use App\Models\StockBatch;
@@ -90,7 +91,7 @@ class StockController extends Controller
 
         if ($movement->reference_type !== null) {
             return back()
-                ->with('status', 'This stock entry is tied to an invoice or purchase — delete that document instead.')
+                ->with('status', 'This stock entry is tied to an invoice or purchase. Delete that document instead.')
                 ->with('status_type', 'danger');
         }
 
@@ -119,5 +120,69 @@ class StockController extends Controller
         });
 
         return redirect()->route('stock.index')->with('status', 'Stock entry deleted.');
+    }
+
+    public function edit(StockMovement $movement): View
+    {
+        abort_unless($movement->branch_id === BranchContext::id(), 404);
+        abort_unless($movement->reference_type === null && $movement->type === 'in', 404);
+
+        $movement->load('item');
+
+        return view('stock.edit', ['movement' => $movement]);
+    }
+
+    /**
+     * Only manual entries can be edited here, same as destroy() — and only
+     * up to what's already been sold from the batch this entry created, so
+     * a correction can't undercut stock that's genuinely gone out the door.
+     */
+    public function update(UpdateStockRequest $request, StockMovement $movement): RedirectResponse
+    {
+        abort_unless($movement->branch_id === BranchContext::id(), 404);
+
+        if ($movement->reference_type !== null || $movement->type !== 'in') {
+            return back()
+                ->with('status', 'This stock entry cannot be edited here.')
+                ->with('status_type', 'danger');
+        }
+
+        $data = $request->validated();
+        $batch = $movement->batch;
+        $sold = $batch ? $batch->quantitySold() : 0;
+
+        if ($data['quantity'] < $sold) {
+            return back()
+                ->with('status', "Cannot reduce below {$sold} {$movement->item->unit}: that much from this entry has already been sold.")
+                ->with('status_type', 'danger');
+        }
+
+        DB::transaction(function () use ($movement, $batch, $data) {
+            if (array_key_exists('alt_unit', $data)) {
+                Item::whereKey($movement->item_id)->update([
+                    'alt_unit' => $data['alt_unit'],
+                    'alt_unit_ratio' => $data['alt_unit'] ? $data['alt_unit_ratio'] : null,
+                ]);
+            }
+
+            $delta = $data['quantity'] - (float) $movement->quantity;
+
+            ItemStock::query()
+                ->where('branch_id', $movement->branch_id)
+                ->where('item_id', $movement->item_id)
+                ->increment('quantity', $delta);
+
+            $batch?->update([
+                'quantity_in' => $data['quantity'],
+                'quantity_remaining' => (float) $batch->quantity_remaining + $delta,
+            ]);
+
+            $movement->update([
+                'quantity' => $data['quantity'],
+                'reason' => $data['reason'] ?? null,
+            ]);
+        });
+
+        return redirect()->route('stock.index')->with('status', 'Stock entry updated.');
     }
 }

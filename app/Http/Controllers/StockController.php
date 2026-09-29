@@ -78,4 +78,46 @@ class StockController extends Controller
 
         return redirect()->route('stock.index')->with('status', 'Stock added successfully.');
     }
+
+    /**
+     * Only manual entries (no reference_type) can be deleted here — a
+     * movement created by an invoice or purchase must be undone by deleting
+     * that document instead, so its own totals stay consistent.
+     */
+    public function destroy(StockMovement $movement): RedirectResponse
+    {
+        abort_unless($movement->branch_id === BranchContext::id(), 404);
+
+        if ($movement->reference_type !== null) {
+            return back()
+                ->with('status', 'This stock entry is tied to an invoice or purchase — delete that document instead.')
+                ->with('status_type', 'danger');
+        }
+
+        if ($movement->type !== 'in') {
+            return back()
+                ->with('status', 'This stock entry cannot be deleted here.')
+                ->with('status_type', 'danger');
+        }
+
+        $batch = $movement->batch;
+
+        if ($batch && $batch->quantitySold() > 0) {
+            return back()
+                ->with('status', "Cannot delete: {$batch->quantitySold()} {$movement->item->unit} from this entry has already been sold. Remove those sales first.")
+                ->with('status_type', 'danger');
+        }
+
+        DB::transaction(function () use ($movement, $batch) {
+            ItemStock::query()
+                ->where('branch_id', $movement->branch_id)
+                ->where('item_id', $movement->item_id)
+                ->decrement('quantity', $movement->quantity);
+
+            $batch?->delete();
+            $movement->delete();
+        });
+
+        return redirect()->route('stock.index')->with('status', 'Stock entry deleted.');
+    }
 }

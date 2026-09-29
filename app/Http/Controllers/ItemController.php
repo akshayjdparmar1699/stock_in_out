@@ -7,7 +7,10 @@ use App\Http\Requests\UpdateItemRequest;
 use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemStock;
+use App\Models\InvoiceItem;
+use App\Models\PurchaseItem;
 use App\Models\StockBatch;
+use App\Models\StockBatchAllocation;
 use App\Models\StockMovement;
 use App\Services\BranchContext;
 use App\Services\PerPagePreference;
@@ -138,6 +141,29 @@ class ItemController extends Controller
         $item->update(['is_active' => $request->boolean('is_active')] + $request->validated());
 
         return redirect()->route('items.index')->with('status', "Item \"{$item->name}\" updated.");
+    }
+
+    public function destroy(Item $item): RedirectResponse
+    {
+        $hasBeenTraded = InvoiceItem::where('item_id', $item->id)->exists()
+            || PurchaseItem::where('item_id', $item->id)->exists();
+
+        if ($hasBeenTraded) {
+            return back()
+                ->with('status', "Cannot delete \"{$item->name}\": it has billing or purchase history. Mark it inactive instead.")
+                ->with('status_type', 'danger');
+        }
+
+        DB::transaction(function () use ($item) {
+            $movementIds = StockMovement::where('item_id', $item->id)->pluck('id');
+            StockBatchAllocation::whereIn('stock_movement_id', $movementIds)->delete();
+            StockBatch::where('item_id', $item->id)->delete();
+            StockMovement::where('item_id', $item->id)->delete();
+            ItemStock::where('item_id', $item->id)->delete();
+            $item->delete();
+        });
+
+        return redirect()->route('items.index')->with('status', "Item \"{$item->name}\" deleted.");
     }
 
     public function search(Request $request): JsonResponse

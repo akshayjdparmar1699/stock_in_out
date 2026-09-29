@@ -3,7 +3,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Stock') }}</h2>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-12" x-data="{ deleteOpen: false, deleteForm: null, deleteLabel: '' }">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 flex items-center justify-between gap-3">
@@ -92,5 +92,7 @@
                 </div>
             </div>
         </div>
+
+        @include('partials.delete-confirm-modal')
     </div>
 </x-app-layout>

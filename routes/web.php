@@ -32,10 +32,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active')->middleware('admin');
 
     Route::get('/items/search', [ItemController::class, 'search'])->name('items.search');
-    Route::resource('items', ItemController::class)->except(['destroy']);
+    Route::resource('items', ItemController::class);
 
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
     Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
+    Route::delete('/stock/{movement}', [StockController::class, 'destroy'])->name('stock.destroy');
 
     Route::resource('batches', BatchController::class)->only(['index', 'show']);
 

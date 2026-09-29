@@ -28,13 +28,49 @@ class StockController extends Controller
             ->paginate(PerPagePreference::get())
             ->withQueryString();
 
+        $remainingByMovement = $this->remainingStockByMovement($branchId, $movements->pluck('item_id')->unique());
+
         if ($request->ajax()) {
-            return view('stock.partials.table', ['movements' => $movements]);
+            return view('stock.partials.table', ['movements' => $movements, 'remainingByMovement' => $remainingByMovement]);
         }
 
         $items = Item::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('stock.index', ['movements' => $movements, 'items' => $items]);
+        return view('stock.index', ['movements' => $movements, 'items' => $items, 'remainingByMovement' => $remainingByMovement]);
+    }
+
+    /**
+     * For each of the given items, walks every one of their movements in
+     * this branch in chronological order and keeps a running total, so each
+     * movement can show what stock was actually left right after it — not
+     * just the movement's own quantity. Keyed by movement id so a paginated
+     * page can look up just the rows it's showing.
+     */
+    private function remainingStockByMovement(int $branchId, $itemIds): array
+    {
+        if ($itemIds->isEmpty()) {
+            return [];
+        }
+
+        $allMovements = StockMovement::query()
+            ->where('branch_id', $branchId)
+            ->whereIn('item_id', $itemIds)
+            ->orderBy('item_id')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get(['id', 'item_id', 'type', 'quantity']);
+
+        $running = [];
+        $balances = [];
+
+        foreach ($allMovements as $movement) {
+            $running[$movement->item_id] = ($running[$movement->item_id] ?? 0)
+                + ($movement->type === 'in' ? (float) $movement->quantity : -(float) $movement->quantity);
+
+            $balances[$movement->id] = round($running[$movement->item_id], 2);
+        }
+
+        return $balances;
     }
 
     public function store(AddStockRequest $request): RedirectResponse

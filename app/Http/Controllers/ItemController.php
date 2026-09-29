@@ -111,8 +111,26 @@ class ItemController extends Controller
             ->paginate(PerPagePreference::get())
             ->withQueryString();
 
+        // Walks every movement for this item in chronological order to work
+        // out what stock was actually left right after each one, keyed by
+        // movement id so the (possibly paginated) list above can look up
+        // just the rows it's showing.
+        $running = 0;
+        $remainingByMovement = StockMovement::query()
+            ->where('branch_id', $branchId)
+            ->where('item_id', $item->id)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get(['id', 'type', 'quantity'])
+            ->mapWithKeys(function (StockMovement $movement) use (&$running) {
+                $running += $movement->type === 'in' ? (float) $movement->quantity : -(float) $movement->quantity;
+
+                return [$movement->id => round($running, 2)];
+            })
+            ->all();
+
         if ($request->ajax()) {
-            return view('items.partials.history-table', ['movements' => $movements, 'item' => $item]);
+            return view('items.partials.history-table', ['movements' => $movements, 'item' => $item, 'remainingByMovement' => $remainingByMovement]);
         }
 
         $totals = StockMovement::query()
@@ -128,6 +146,7 @@ class ItemController extends Controller
             'totalIn' => (float) $totals->total_in,
             'totalOut' => (float) $totals->total_out,
             'movements' => $movements,
+            'remainingByMovement' => $remainingByMovement,
         ]);
     }
 

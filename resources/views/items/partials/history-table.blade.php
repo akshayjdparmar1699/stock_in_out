@@ -8,6 +8,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Type') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Qty (Base Unit)') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Qty (Alt Unit)') }}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Remaining Stock') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Reason') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('By') }}</th>
                 <th class="px-6 py-3"></th>
@@ -30,6 +31,17 @@
                             —
                         @endif
                     </td>
+                    <td class="px-6 py-3 text-sm font-medium text-gray-800">
+                        @php $remaining = $remainingByMovement[$movement->id] ?? null; @endphp
+                        @if ($remaining !== null)
+                            {{ rtrim(rtrim(number_format($remaining, 2), '0'), '.') }} {{ $item->unit }}
+                            @if ($item->hasAltUnit())
+                                <div class="text-xs text-gray-400 font-normal">= {{ number_format($item->altUnitQuantity($remaining), 2) }} {{ $item->alt_unit }}</div>
+                            @endif
+                        @else
+                            —
+                        @endif
+                    </td>
                     <td class="px-6 py-3 text-sm text-gray-500">{{ $movement->reason ?? '—' }}</td>
                     <td class="px-6 py-3 text-sm text-gray-500">{{ $movement->user->name ?? '—' }}</td>
                     <td class="px-6 py-3 text-sm text-right">
@@ -40,7 +52,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No stock history for this item yet.') }}</td>
+                    <td colspan="8" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No stock history for this item yet.') }}</td>
                 </tr>
             @endforelse
         </tbody>

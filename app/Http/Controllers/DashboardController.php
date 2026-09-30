@@ -20,22 +20,47 @@ class DashboardController extends Controller
 {
     private const PER_PAGE = 5;
 
+    /**
+     * Renders only the page shell (period switcher, quick-add buttons, and
+     * one placeholder per section) — none of the actual figures are
+     * queried here. Each section only runs its own query when its refresh
+     * icon is clicked, via the widget branch below, so a page load never
+     * pays for every section's query at once, and a section nobody looks
+     * at today never runs at all.
+     */
     public function __invoke(Request $request): View
     {
-        $branchId = BranchContext::id();
-        $branch = BranchContext::current();
-        $period = $request->string('period', 'today')->toString();
+        $period = $this->resolvePeriod($request);
 
-        if (! in_array($period, ['today', 'week', 'month', 'all'], true)) {
-            $period = 'today';
+        if ($widget = $request->string('widget')->toString()) {
+            return $this->renderWidget($widget, $request, $period);
         }
 
-        [$from, $to] = match ($period) {
+        return view('dashboard', ['period' => $period]);
+    }
+
+    private function resolvePeriod(Request $request): string
+    {
+        $period = $request->string('period', 'today')->toString();
+
+        return in_array($period, ['today', 'week', 'month', 'all'], true) ? $period : 'today';
+    }
+
+    private function periodRange(string $period): array
+    {
+        return match ($period) {
             'week' => [now()->startOfWeek(), now()->endOfWeek()],
             'month' => [now()->startOfMonth(), now()->endOfMonth()],
             'all' => [null, null],
             default => [now()->startOfDay(), now()->endOfDay()],
         };
+    }
+
+    private function renderWidget(string $widget, Request $request, string $period): View
+    {
+        $branchId = BranchContext::id();
+        $branch = BranchContext::current();
+        [$from, $to] = $this->periodRange($period);
 
         $salesQuery = Invoice::query()->where('branch_id', $branchId)
             ->when($from, fn ($q) => $q->whereBetween('invoice_date', [$from, $to]));
@@ -43,144 +68,119 @@ class DashboardController extends Controller
         $purchasesQuery = Purchase::query()->where('branch_id', $branchId)
             ->when($from, fn ($q) => $q->whereBetween('purchase_date', [$from, $to]));
 
-        // AJAX partial refresh for a single widget's pagination — skip the
-        // rest of the (heavier) dashboard computation entirely.
-        if ($widget = $request->string('widget')->toString()) {
-            return match ($widget) {
-                'invoices' => view('dashboard.partials.invoices', [
-                    'recentInvoices' => (clone $salesQuery)->with('customer')->latest('invoice_date')->latest('id')
-                        ->paginate(self::PER_PAGE, ['*'], 'invoices_page')->withQueryString(),
-                ]),
-                'purchases' => view('dashboard.partials.purchases', [
-                    'recentPurchases' => (clone $purchasesQuery)->with('supplier')->latest('purchase_date')->latest('id')
-                        ->paginate(self::PER_PAGE, ['*'], 'purchases_page')->withQueryString(),
-                ]),
-                'low-stock' => view('dashboard.partials.low-stock', [
-                    'lowStockItems' => $this->lowStockItemsQuery($branchId)
-                        ->paginate(self::PER_PAGE, ['*'], 'stock_page')->withQueryString(),
-                ]),
-                'followup' => view('dashboard.partials.followup', [
-                    'followUpCustomers' => $this->paginateCollection($this->buildFollowUpCustomers($branch, $branchId), $request, 'followup_page'),
-                ]),
-                'over-limit' => view('dashboard.partials.over-limit', [
-                    'overLimitCustomers' => $this->paginateCollection($this->buildOverLimitCustomers($branch, $branchId), $request, 'over_limit_page'),
-                ]),
-                'expenses' => view('dashboard.partials.expenses', [
-                    'recentExpenses' => Expense::query()->where('branch_id', $branchId)->with(['staffMember', 'user'])
-                        ->latest('expense_date')->latest('id')
-                        ->paginate(self::PER_PAGE, ['*'], 'expenses_page')->withQueryString(),
-                ]),
-                default => abort(404),
-            };
-        }
+        return match ($widget) {
+            'stats' => view('dashboard.partials.stats', [
+                'period' => $period,
+                'salesTotal' => (clone $salesQuery)->sum('total'),
+                'salesCount' => (clone $salesQuery)->count(),
+                'purchasesTotal' => (clone $purchasesQuery)->sum('total'),
+                'purchasesCount' => (clone $purchasesQuery)->count(),
+                'profit' => $this->calculateProfit($branchId, $from, $to),
+                'totalStockValue' => $this->totalStockValue($branchId),
+                'lowStockCount' => $this->lowStockItemsQuery($branchId)->count(),
+            ]),
+            'dues' => view('dashboard.partials.dues', [
+                'customerDueTotal' => $this->customerDueTotal($branchId),
+                'supplierDueTotal' => $this->supplierDueTotal($branchId),
+                'totalUpad' => $this->totalUpad($branchId),
+            ]),
+            'invoices' => view('dashboard.partials.invoices', [
+                'recentInvoices' => (clone $salesQuery)->with('customer')->latest('invoice_date')->latest('id')
+                    ->paginate(self::PER_PAGE, ['*'], 'invoices_page')->withQueryString(),
+            ]),
+            'purchases' => view('dashboard.partials.purchases', [
+                'recentPurchases' => (clone $purchasesQuery)->with('supplier')->latest('purchase_date')->latest('id')
+                    ->paginate(self::PER_PAGE, ['*'], 'purchases_page')->withQueryString(),
+            ]),
+            'low-stock' => (function () use ($branch, $branchId) {
+                $lowStockItems = $this->lowStockItemsQuery($branchId)
+                    ->paginate(self::PER_PAGE, ['*'], 'stock_page')->withQueryString();
 
-        $salesTotal = (clone $salesQuery)->sum('total');
-        $salesCount = (clone $salesQuery)->count();
+                $lowStockAdminUrl = null;
+                if ($branch && $lowStockItems->isNotEmpty()) {
+                    $lowStockAdminUrl = AdminAlertService::lowStockUrl($branch, $lowStockItems->getCollection()->map(fn (ItemStock $stock) => [
+                        'name' => $stock->item->name,
+                        'quantity' => $stock->quantity,
+                        'unit' => $stock->item->unit,
+                    ]));
+                }
 
-        $purchasesTotal = (clone $purchasesQuery)->sum('total');
-        $purchasesCount = (clone $purchasesQuery)->count();
+                return view('dashboard.partials.low-stock', [
+                    'lowStockItems' => $lowStockItems,
+                    'lowStockAdminUrl' => $lowStockAdminUrl,
+                ]);
+            })(),
+            'followup' => view('dashboard.partials.followup', [
+                'followUpCustomers' => $this->paginateCollection($this->buildFollowUpCustomers($branch, $branchId), $request, 'followup_page'),
+            ]),
+            'over-limit' => view('dashboard.partials.over-limit', [
+                'overLimitCustomers' => $this->paginateCollection($this->buildOverLimitCustomers($branch, $branchId), $request, 'over_limit_page'),
+            ]),
+            'expense-breakdown' => (function () use ($branchId, $from, $to, $period) {
+                $expenseBreakdown = Expense::query()
+                    ->where('branch_id', $branchId)
+                    ->when($from, fn ($q) => $q->whereBetween('expense_date', [$from, $to]))
+                    ->selectRaw('category, COALESCE(SUM(amount), 0) as total')
+                    ->groupBy('category')
+                    ->pluck('total', 'category');
 
-        $profit = (float) DB::table('invoice_items')
+                return view('dashboard.partials.expense-breakdown', [
+                    'period' => $period,
+                    'expenseBreakdown' => $expenseBreakdown,
+                    'expenseTotal' => (float) $expenseBreakdown->sum(),
+                ]);
+            })(),
+            'expenses' => view('dashboard.partials.expenses', [
+                'recentExpenses' => Expense::query()->where('branch_id', $branchId)->with(['staffMember', 'user'])
+                    ->latest('expense_date')->latest('id')
+                    ->paginate(self::PER_PAGE, ['*'], 'expenses_page')->withQueryString(),
+            ]),
+            default => abort(404),
+        };
+    }
+
+    private function calculateProfit(int $branchId, $from, $to): float
+    {
+        return (float) DB::table('invoice_items')
             ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
             ->join('items', 'items.id', '=', 'invoice_items.item_id')
             ->where('invoices.branch_id', $branchId)
             ->when($from, fn ($q) => $q->whereBetween('invoices.invoice_date', [$from, $to]))
             ->selectRaw('COALESCE(SUM(invoice_items.total - (invoice_items.base_quantity * items.purchase_price)), 0) as profit')
             ->value('profit');
+    }
 
-        $lowStockCount = $this->lowStockItemsQuery($branchId)->count();
-
-        $totalStockValue = ItemStock::query()
+    private function totalStockValue(int $branchId): float
+    {
+        return (float) (ItemStock::query()
             ->where('branch_id', $branchId)
             ->join('items', 'items.id', '=', 'item_stocks.item_id')
             ->select(DB::raw('SUM(item_stocks.quantity * items.selling_price) as value'))
-            ->value('value') ?? 0;
+            ->value('value') ?? 0);
+    }
 
-        $recentInvoices = (clone $salesQuery)
-            ->with('customer')
-            ->latest('invoice_date')
-            ->latest('id')
-            ->paginate(self::PER_PAGE, ['*'], 'invoices_page')
-            ->withQueryString();
-
-        $recentPurchases = (clone $purchasesQuery)
-            ->with('supplier')
-            ->latest('purchase_date')
-            ->latest('id')
-            ->paginate(self::PER_PAGE, ['*'], 'purchases_page')
-            ->withQueryString();
-
-        $lowStockItems = $this->lowStockItemsQuery($branchId)
-            ->paginate(self::PER_PAGE, ['*'], 'stock_page')
-            ->withQueryString();
-
-        $lowStockAdminUrl = null;
-        if ($branch && $lowStockItems->isNotEmpty()) {
-            $lowStockAdminUrl = AdminAlertService::lowStockUrl($branch, $lowStockItems->getCollection()->map(fn (ItemStock $stock) => [
-                'name' => $stock->item->name,
-                'quantity' => $stock->quantity,
-                'unit' => $stock->item->unit,
-            ]));
-        }
-
-        $followUpCustomers = $this->paginateCollection($this->buildFollowUpCustomers($branch, $branchId), $request, 'followup_page');
-
-        $overLimitCustomers = $this->paginateCollection($this->buildOverLimitCustomers($branch, $branchId), $request, 'over_limit_page');
-
-        $customerDueTotal = Customer::query()
+    private function customerDueTotal(int $branchId): float
+    {
+        return (float) Customer::query()
             ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
             ->get()
             ->sum(fn (Customer $c) => $c->dueAmount());
+    }
 
-        $supplierDueTotal = (float) Purchase::query()
+    private function supplierDueTotal(int $branchId): float
+    {
+        return (float) Purchase::query()
             ->where('branch_id', $branchId)
             ->selectRaw('COALESCE(SUM(total - paid_amount), 0) as due')
             ->value('due');
+    }
 
-        $totalUpad = (float) Expense::query()
+    private function totalUpad(int $branchId): float
+    {
+        return (float) Expense::query()
             ->where('branch_id', $branchId)
             ->where('category', 'upad')
             ->sum('amount');
-
-        $expenseBreakdown = Expense::query()
-            ->where('branch_id', $branchId)
-            ->when($from, fn ($q) => $q->whereBetween('expense_date', [$from, $to]))
-            ->selectRaw('category, COALESCE(SUM(amount), 0) as total')
-            ->groupBy('category')
-            ->pluck('total', 'category');
-
-        $expenseTotal = (float) $expenseBreakdown->sum();
-
-        $recentExpenses = Expense::query()
-            ->where('branch_id', $branchId)
-            ->with(['staffMember', 'user'])
-            ->latest('expense_date')
-            ->latest('id')
-            ->paginate(self::PER_PAGE, ['*'], 'expenses_page')
-            ->withQueryString();
-
-        return view('dashboard', [
-            'period' => $period,
-            'salesTotal' => $salesTotal,
-            'salesCount' => $salesCount,
-            'purchasesTotal' => $purchasesTotal,
-            'purchasesCount' => $purchasesCount,
-            'profit' => $profit,
-            'lowStockCount' => $lowStockCount,
-            'totalStockValue' => $totalStockValue,
-            'recentInvoices' => $recentInvoices,
-            'recentPurchases' => $recentPurchases,
-            'lowStockItems' => $lowStockItems,
-            'lowStockAdminUrl' => $lowStockAdminUrl,
-            'followUpCustomers' => $followUpCustomers,
-            'overLimitCustomers' => $overLimitCustomers,
-            'customerDueTotal' => $customerDueTotal,
-            'supplierDueTotal' => $supplierDueTotal,
-            'totalUpad' => $totalUpad,
-            'expenseBreakdown' => $expenseBreakdown,
-            'expenseTotal' => $expenseTotal,
-            'recentExpenses' => $recentExpenses,
-        ]);
     }
 
     private function lowStockItemsQuery(int $branchId)

@@ -139,6 +139,16 @@ class DashboardController extends Controller
         };
     }
 
+    /**
+     * Cost of goods sold per line comes from the real cost of whichever
+     * batch(es) that specific sale was FIFO-allocated from (via the line's
+     * own stock_movement_id), not the item's current/latest purchase
+     * price — so a rate change between two purchases of the same item
+     * shows up as a genuinely different margin on old stock versus new,
+     * instead of every past sale silently re-pricing itself to today's
+     * rate. Lines saved before this was tracked (stock_movement_id is
+     * null) fall back to the old flat-rate estimate.
+     */
     private function calculateProfit(int $branchId, $from, $to): float
     {
         return (float) DB::table('invoice_items')
@@ -146,7 +156,17 @@ class DashboardController extends Controller
             ->join('items', 'items.id', '=', 'invoice_items.item_id')
             ->where('invoices.branch_id', $branchId)
             ->when($from, fn ($q) => $q->whereBetween('invoices.invoice_date', [$from, $to]))
-            ->selectRaw('COALESCE(SUM(invoice_items.total - (invoice_items.base_quantity * items.purchase_price)), 0) as profit')
+            ->selectRaw('
+                COALESCE(SUM(
+                    invoice_items.total - COALESCE(
+                        (SELECT SUM(stock_batch_allocations.quantity * stock_batches.unit_cost)
+                         FROM stock_batch_allocations
+                         JOIN stock_batches ON stock_batches.id = stock_batch_allocations.stock_batch_id
+                         WHERE stock_batch_allocations.stock_movement_id = invoice_items.stock_movement_id),
+                        invoice_items.base_quantity * items.purchase_price
+                    )
+                ), 0) as profit
+            ')
             ->value('profit');
     }
 

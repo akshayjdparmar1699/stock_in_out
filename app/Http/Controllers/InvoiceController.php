@@ -340,7 +340,7 @@ class InvoiceController extends Controller
         }
 
         foreach ($lines as $line) {
-            $invoice->items()->create($line);
+            $invoiceItem = $invoice->items()->create($line);
 
             $stocks->get($line['item_id'])->decrement('quantity', $line['base_quantity']);
 
@@ -354,6 +354,12 @@ class InvoiceController extends Controller
                 'reference_type' => Invoice::class,
                 'reference_id' => $invoice->id,
             ]);
+
+            // Links this line to the movement that actually consumed the
+            // stock, so profit can later be worked out from the real cost
+            // of the batch(es) it was FIFO-allocated from below, not just
+            // the item's current/latest purchase price.
+            $invoiceItem->update(['stock_movement_id' => $movement->id]);
 
             $this->allocateFromBatches($branchId, $line['item_id'], (float) $line['base_quantity'], $movement->id);
         }

@@ -16,6 +16,7 @@ class InvoiceItem extends Model
         'quantity',
         'unit',
         'base_quantity',
+        'stock_movement_id',
         'unit_price',
         'total',
     ];
@@ -47,5 +48,10 @@ class InvoiceItem extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function stockMovement(): BelongsTo
+    {
+        return $this->belongsTo(StockMovement::class);
     }
 }

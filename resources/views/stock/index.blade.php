@@ -42,9 +42,9 @@
                     },
                 }">
                 <h3 class="font-medium text-gray-700 mb-4">{{ __('Manual Stock Adjustment') }}</h3>
-                <form method="POST" action="{{ route('stock.store') }}" class="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end">
+                <form method="POST" action="{{ route('stock.store') }}" class="flex flex-wrap items-end gap-4">
                     @csrf
-                    <div class="sm:col-span-2">
+                    <div class="w-full sm:w-auto sm:flex-1 sm:min-w-[220px]">
                         <x-input-label for="item_id" :value="__('Item')" />
                         <select id="item_id" name="item_id" required x-model="itemId" @change="onItemChange()" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="">{{ __('Select item') }}</option>
@@ -54,7 +54,7 @@
                         </select>
                         <x-input-error :messages="$errors->get('item_id')" class="mt-2" />
                     </div>
-                    <div>
+                    <div class="w-full sm:w-28">
                         <x-input-label for="quantity" :value="__('Quantity')" />
                         <x-text-input id="quantity" name="quantity" type="number" step="0.01" min="0.01" x-model.number="quantity" class="mt-1 block w-full" :value="old('quantity')" required />
                         <p class="text-xs text-gray-400 mt-1" x-show="altTotal !== null" style="display: none;">
@@ -62,18 +62,22 @@
                         </p>
                         <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
                     </div>
-                    <div>
+                    <div class="w-full sm:w-36">
                         <x-input-label for="unit_cost" :value="__('Purchase Price (per unit)')" />
                         <x-text-input id="unit_cost" name="unit_cost" type="number" step="0.01" min="0" x-model.number="unitCost" class="mt-1 block w-full" :value="old('unit_cost')" required />
-                        <p class="text-xs text-gray-400 mt-1">{{ __('Whatever you paid for this — updates the item\'s cost.') }}</p>
                         <x-input-error :messages="$errors->get('unit_cost')" class="mt-2" />
                     </div>
-                    <div>
+                    <div class="w-full sm:w-auto sm:flex-1 sm:min-w-[180px]">
                         <x-input-label for="reason" :value="__('Reason (optional)')" />
                         <x-text-input id="reason" name="reason" type="text" class="mt-1 block w-full" :value="old('reason')" placeholder="{{ __('e.g. Purchase from supplier') }}" />
                     </div>
+                    <div class="w-full sm:w-auto">
+                        <x-primary-button class="w-full sm:w-auto justify-center">{{ __('Add Stock') }}</x-primary-button>
+                    </div>
 
-                    <div class="sm:col-span-5 border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="itemId" style="display: none;">
+                    <p class="text-xs text-gray-400 w-full -mt-2">{{ __("Purchase price is whatever you paid for this batch, it updates the item's cost.") }}</p>
+
+                    <div class="w-full border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="itemId" style="display: none;">
                         <div>
                             <x-input-label for="alt_unit" :value="__('Alternate Selling Unit (e.g. kg)')" />
                             <x-text-input id="alt_unit" name="alt_unit" type="text" x-model="altUnit" class="mt-1 block w-full" placeholder="{{ __('e.g. kg') }}" />
@@ -85,12 +89,8 @@
                             <x-input-error :messages="$errors->get('alt_unit_ratio')" class="mt-2" />
                         </div>
                         <p class="text-xs text-gray-400 sm:col-span-2 -mt-2">
-                            {{ __('Only if this item is also sold in a different unit — this updates the item, not just this stock entry. Leave blank if not needed.') }}
+                            {{ __('Only if this item is also sold in a different unit, this updates the item, not just this stock entry. Leave blank if not needed.') }}
                         </p>
-                    </div>
-
-                    <div class="sm:col-span-5 flex justify-end">
-                        <x-primary-button>{{ __('Add Stock') }}</x-primary-button>
                     </div>
                 </form>
             </div>

@@ -23,6 +23,7 @@ class StockController extends Controller
 
         $movements = StockMovement::query()
             ->where('branch_id', $branchId)
+            ->when($request->filled('item_id'), fn ($q) => $q->where('item_id', $request->integer('item_id')))
             ->with(['item', 'user'])
             ->latest()
             ->paginate(PerPagePreference::get())
@@ -36,7 +37,12 @@ class StockController extends Controller
 
         $items = Item::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('stock.index', ['movements' => $movements, 'items' => $items, 'remainingByMovement' => $remainingByMovement]);
+        return view('stock.index', [
+            'movements' => $movements,
+            'items' => $items,
+            'remainingByMovement' => $remainingByMovement,
+            'filterItemId' => $request->integer('item_id') ?: null,
+        ]);
     }
 
     /**
@@ -93,6 +99,10 @@ class StockController extends Controller
 
             $stock->increment('quantity', $data['quantity']);
 
+            // Keep the item's cost basis current for profit calculations,
+            // same as a purchase bill does.
+            Item::whereKey($data['item_id'])->update(['purchase_price' => $data['unit_cost']]);
+
             $movement = StockMovement::create([
                 'branch_id' => $branchId,
                 'item_id' => $data['item_id'],
@@ -106,7 +116,7 @@ class StockController extends Controller
                 'branch_id' => $branchId,
                 'item_id' => $data['item_id'],
                 'stock_movement_id' => $movement->id,
-                'unit_cost' => Item::whereKey($data['item_id'])->value('purchase_price'),
+                'unit_cost' => $data['unit_cost'],
                 'quantity_in' => $data['quantity'],
                 'quantity_remaining' => $data['quantity'],
                 'received_at' => $movement->created_at,
@@ -163,7 +173,7 @@ class StockController extends Controller
         abort_unless($movement->branch_id === BranchContext::id(), 404);
         abort_unless($movement->reference_type === null && $movement->type === 'in', 404);
 
-        $movement->load('item');
+        $movement->load('item', 'batch');
 
         return view('stock.edit', ['movement' => $movement]);
     }
@@ -201,6 +211,8 @@ class StockController extends Controller
                 ]);
             }
 
+            Item::whereKey($movement->item_id)->update(['purchase_price' => $data['unit_cost']]);
+
             $delta = $data['quantity'] - (float) $movement->quantity;
 
             ItemStock::query()
@@ -209,6 +221,7 @@ class StockController extends Controller
                 ->increment('quantity', $delta);
 
             $batch?->update([
+                'unit_cost' => $data['unit_cost'],
                 'quantity_in' => $data['quantity'],
                 'quantity_remaining' => (float) $batch->quantity_remaining + $delta,
             ]);

@@ -35,6 +35,13 @@
                     </div>
 
                     <div>
+                        <x-input-label for="unit_cost" :value="__('Purchase Price (per unit)')" />
+                        <x-text-input id="unit_cost" name="unit_cost" type="number" step="0.01" min="0" class="mt-1 block w-full" :value="old('unit_cost', $movement->batch->unit_cost ?? $movement->item->purchase_price)" required />
+                        <p class="text-xs text-gray-400 mt-1">{{ __('Whatever you paid for this — updates the item\'s cost.') }}</p>
+                        <x-input-error :messages="$errors->get('unit_cost')" class="mt-2" />
+                    </div>
+
+                    <div>
                         <x-input-label for="reason" :value="__('Reason (optional)')" />
                         <x-text-input id="reason" name="reason" type="text" class="mt-1 block w-full" :value="old('reason', $movement->reason)" />
                         <x-input-error :messages="$errors->get('reason')" class="mt-2" />

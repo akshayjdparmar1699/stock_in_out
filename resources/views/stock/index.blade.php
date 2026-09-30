@@ -19,12 +19,14 @@
                     'alt_unit' => $item->alt_unit,
                     'ratio' => $item->alt_unit_ratio !== null ? (float) $item->alt_unit_ratio : null,
                     'unit' => $item->unit,
+                    'purchase_price' => (float) $item->purchase_price,
                 ]);
             @endphp
             <div class="bg-white shadow-sm rounded-lg p-6"
                 x-data="{
                     itemId: '{{ old('item_id') }}',
                     quantity: {{ old('quantity') ? (float) old('quantity') : 'null' }},
+                    unitCost: {{ old('unit_cost') ? (float) old('unit_cost') : 'null' }},
                     altUnit: '{{ old('alt_unit') }}',
                     altUnitRatio: {{ old('alt_unit_ratio') ? (float) old('alt_unit_ratio') : 'null' }},
                     itemsMeta: @json($stockItemsMeta),
@@ -32,6 +34,7 @@
                         const meta = this.itemsMeta[this.itemId] ?? null;
                         this.altUnit = meta ? (meta.alt_unit || '') : '';
                         this.altUnitRatio = meta ? meta.ratio : null;
+                        this.unitCost = meta ? meta.purchase_price : null;
                     },
                     get altTotal() {
                         if (!this.altUnit || !this.altUnitRatio || !this.quantity) return null;
@@ -39,7 +42,7 @@
                     },
                 }">
                 <h3 class="font-medium text-gray-700 mb-4">{{ __('Manual Stock Adjustment') }}</h3>
-                <form method="POST" action="{{ route('stock.store') }}" class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+                <form method="POST" action="{{ route('stock.store') }}" class="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end">
                     @csrf
                     <div class="sm:col-span-2">
                         <x-input-label for="item_id" :value="__('Item')" />
@@ -60,11 +63,17 @@
                         <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
                     </div>
                     <div>
+                        <x-input-label for="unit_cost" :value="__('Purchase Price (per unit)')" />
+                        <x-text-input id="unit_cost" name="unit_cost" type="number" step="0.01" min="0" x-model.number="unitCost" class="mt-1 block w-full" :value="old('unit_cost')" required />
+                        <p class="text-xs text-gray-400 mt-1">{{ __('Whatever you paid for this — updates the item\'s cost.') }}</p>
+                        <x-input-error :messages="$errors->get('unit_cost')" class="mt-2" />
+                    </div>
+                    <div>
                         <x-input-label for="reason" :value="__('Reason (optional)')" />
                         <x-text-input id="reason" name="reason" type="text" class="mt-1 block w-full" :value="old('reason')" placeholder="{{ __('e.g. Purchase from supplier') }}" />
                     </div>
 
-                    <div class="sm:col-span-4 border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="itemId" style="display: none;">
+                    <div class="sm:col-span-5 border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="itemId" style="display: none;">
                         <div>
                             <x-input-label for="alt_unit" :value="__('Alternate Selling Unit (e.g. kg)')" />
                             <x-text-input id="alt_unit" name="alt_unit" type="text" x-model="altUnit" class="mt-1 block w-full" placeholder="{{ __('e.g. kg') }}" />
@@ -80,11 +89,26 @@
                         </p>
                     </div>
 
-                    <div class="sm:col-span-4 flex justify-end">
+                    <div class="sm:col-span-5 flex justify-end">
                         <x-primary-button>{{ __('Add Stock') }}</x-primary-button>
                     </div>
                 </form>
             </div>
+
+            <form method="GET" class="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-end gap-3">
+                <div class="flex-1 min-w-[200px]">
+                    <x-input-label for="item_id" :value="__('Filter by item')" />
+                    <select id="item_id" name="item_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" onchange="this.form.submit()">
+                        <option value="">{{ __('All items') }}</option>
+                        @foreach ($items as $item)
+                            <option value="{{ $item->id }}" @selected($filterItemId === $item->id)>{{ $item->name }} ({{ $item->sku }})</option>
+                        @endforeach
+                    </select>
+                </div>
+                @if ($filterItemId)
+                    <a href="{{ route('stock.index') }}" class="text-sm text-gray-500 hover:underline">{{ __('Clear filter') }}</a>
+                @endif
+            </form>
 
             <div x-data="listTable()">
                 <div x-ref="content" :class="loading && 'opacity-50'">

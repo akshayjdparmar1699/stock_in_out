@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PurchaseController extends Controller
@@ -95,32 +96,8 @@ class PurchaseController extends Controller
         $data = $request->validated();
 
         $purchase = DB::transaction(function () use ($data, $branchId) {
-            $subtotal = 0;
-            $lines = [];
-
-            foreach ($data['items'] as $line) {
-                // The alt-unit config can be set/updated right from the
-                // purchase form instead of a separate trip to edit the item.
-                if (array_key_exists('alt_unit', $line)) {
-                    Item::whereKey($line['item_id'])->update([
-                        'alt_unit' => $line['alt_unit'],
-                        'alt_unit_ratio' => $line['alt_unit'] ? ($line['alt_unit_ratio'] ?? null) : null,
-                    ]);
-                }
-
-                $lineTotal = round($line['quantity'] * $line['unit_cost'], 2);
-                $subtotal += $lineTotal;
-                $lines[] = [
-                    'item_id' => $line['item_id'],
-                    'quantity' => $line['quantity'],
-                    'unit_cost' => $line['unit_cost'],
-                    'total' => $lineTotal,
-                ];
-            }
-
             $discount = (float) ($data['discount'] ?? 0);
             $tax = (float) ($data['tax'] ?? 0);
-            $total = round($subtotal - $discount + $tax, 2);
             $paidAmount = (float) ($data['paid_amount'] ?? 0);
 
             $purchase = Purchase::create([
@@ -129,48 +106,23 @@ class PurchaseController extends Controller
                 'supplier_id' => $data['supplier_id'],
                 'user_id' => auth()->id(),
                 'purchase_date' => $data['purchase_date'],
-                'subtotal' => $subtotal,
+                'subtotal' => 0,
                 'discount' => $discount,
                 'tax' => $tax,
-                'total' => $total,
+                'total' => 0,
                 'paid_amount' => $paidAmount,
-                'status' => $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid'),
+                'status' => 'unpaid',
                 'notes' => $data['notes'] ?? null,
             ]);
 
-            foreach ($lines as $line) {
-                $purchase->items()->create($line);
+            $subtotal = $this->applyLines($purchase, $branchId, $data['items']);
+            $total = round($subtotal - $discount + $tax, 2);
 
-                $stock = ItemStock::query()->firstOrCreate(
-                    ['branch_id' => $branchId, 'item_id' => $line['item_id']],
-                    ['quantity' => 0]
-                );
-                $stock->increment('quantity', $line['quantity']);
-
-                // Keep the item's cost basis current for profit calculations.
-                Item::whereKey($line['item_id'])->update(['purchase_price' => $line['unit_cost']]);
-
-                $movement = StockMovement::create([
-                    'branch_id' => $branchId,
-                    'item_id' => $line['item_id'],
-                    'user_id' => auth()->id(),
-                    'type' => 'in',
-                    'quantity' => $line['quantity'],
-                    'reason' => "Purchase - {$purchase->purchase_number}",
-                    'reference_type' => Purchase::class,
-                    'reference_id' => $purchase->id,
-                ]);
-
-                StockBatch::create([
-                    'branch_id' => $branchId,
-                    'item_id' => $line['item_id'],
-                    'stock_movement_id' => $movement->id,
-                    'unit_cost' => $line['unit_cost'],
-                    'quantity_in' => $line['quantity'],
-                    'quantity_remaining' => $line['quantity'],
-                    'received_at' => $movement->created_at,
-                ]);
-            }
+            $purchase->update([
+                'subtotal' => $subtotal,
+                'total' => $total,
+                'status' => $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid'),
+            ]);
 
             if ($paidAmount > 0) {
                 PurchasePayment::create([
@@ -212,6 +164,203 @@ class PurchaseController extends Controller
         return redirect()->route('purchases.show', $purchase)->with('status', "Purchase {$purchase->purchase_number} recorded.");
     }
 
+    public function edit(Purchase $purchase): View
+    {
+        $purchase->load('items.item', 'supplier');
+
+        $items = Item::query()
+            ->where('is_active', true)
+            ->with(['stocks' => fn ($q) => $q->where('branch_id', $purchase->branch_id)])
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Item $item) => [
+                'id' => $item->id,
+                'name' => $item->name,
+                'sku' => $item->sku,
+                'unit' => $item->unit,
+                'alt_unit' => $item->alt_unit,
+                'alt_unit_ratio' => $item->alt_unit_ratio !== null ? (float) $item->alt_unit_ratio : null,
+                'purchase_price' => (float) $item->purchase_price,
+                'stock' => (float) ($item->stocks->first()->quantity ?? 0),
+            ]);
+
+        $itemsById = $items->keyBy('id');
+
+        $initialLines = $purchase->items->map(fn ($line) => [
+            'id' => $line->id,
+            'item_id' => $line->item_id,
+            'name' => $line->item->name,
+            'unit' => $line->item->unit,
+            'stock' => $itemsById->get($line->item_id)['stock'] ?? 0,
+            'quantity' => (float) $line->quantity,
+            'unit_cost' => (float) $line->unit_cost,
+        ])->values();
+
+        $selectedSupplier = [
+            'id' => $purchase->supplier->id,
+            'name' => $purchase->supplier->name,
+            'phone' => $purchase->supplier->phone,
+            'address' => $purchase->supplier->address,
+            'due' => $purchase->supplier->dueAmount(),
+        ];
+
+        return view('purchases.edit', [
+            'purchase' => $purchase,
+            'items' => $items,
+            'initialLines' => $initialLines,
+            'selectedSupplier' => $selectedSupplier,
+        ]);
+    }
+
+    public function update(StorePurchaseRequest $request, Purchase $purchase): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $this->assertReversible($purchase);
+
+        DB::transaction(function () use ($data, $purchase) {
+            $this->reverseStockEffects($purchase);
+
+            $discount = (float) ($data['discount'] ?? 0);
+            $tax = (float) ($data['tax'] ?? 0);
+
+            $subtotal = $this->applyLines($purchase, $purchase->branch_id, $data['items']);
+            $total = round($subtotal - $discount + $tax, 2);
+
+            $purchase->update([
+                'supplier_id' => $data['supplier_id'],
+                'purchase_date' => $data['purchase_date'],
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'tax' => $tax,
+                'total' => $total,
+                'status' => $purchase->paid_amount >= $total ? 'paid' : ($purchase->paid_amount > 0 ? 'partial' : 'unpaid'),
+                'notes' => $data['notes'] ?? null,
+            ]);
+        });
+
+        return redirect()->route('purchases.show', $purchase)->with('status', "Purchase {$purchase->purchase_number} updated.");
+    }
+
+    /**
+     * Validates and creates every item line for a purchase that currently
+     * has none (assumes $purchase already exists and has no items — for an
+     * edit, call reverseStockEffects() first), incrementing stock and
+     * recording a stock-in movement + FIFO batch for each. Returns the
+     * subtotal.
+     */
+    private function applyLines(Purchase $purchase, int $branchId, array $items): float
+    {
+        $subtotal = 0;
+
+        foreach ($items as $line) {
+            // The alt-unit config can be set/updated right from the
+            // purchase form instead of a separate trip to edit the item.
+            if (array_key_exists('alt_unit', $line)) {
+                Item::whereKey($line['item_id'])->update([
+                    'alt_unit' => $line['alt_unit'],
+                    'alt_unit_ratio' => $line['alt_unit'] ? ($line['alt_unit_ratio'] ?? null) : null,
+                ]);
+            }
+
+            $lineTotal = round($line['quantity'] * $line['unit_cost'], 2);
+            $subtotal += $lineTotal;
+
+            $purchase->items()->create([
+                'item_id' => $line['item_id'],
+                'quantity' => $line['quantity'],
+                'unit_cost' => $line['unit_cost'],
+                'total' => $lineTotal,
+            ]);
+
+            $stock = ItemStock::query()->firstOrCreate(
+                ['branch_id' => $branchId, 'item_id' => $line['item_id']],
+                ['quantity' => 0]
+            );
+            $stock->increment('quantity', $line['quantity']);
+
+            // Keep the item's cost basis current for profit calculations.
+            Item::whereKey($line['item_id'])->update(['purchase_price' => $line['unit_cost']]);
+
+            $movement = StockMovement::create([
+                'branch_id' => $branchId,
+                'item_id' => $line['item_id'],
+                'user_id' => auth()->id(),
+                'type' => 'in',
+                'quantity' => $line['quantity'],
+                'reason' => "Purchase - {$purchase->purchase_number}",
+                'reference_type' => Purchase::class,
+                'reference_id' => $purchase->id,
+            ]);
+
+            StockBatch::create([
+                'branch_id' => $branchId,
+                'item_id' => $line['item_id'],
+                'stock_movement_id' => $movement->id,
+                'unit_cost' => $line['unit_cost'],
+                'quantity_in' => $line['quantity'],
+                'quantity_remaining' => $line['quantity'],
+                'received_at' => $movement->created_at,
+            ]);
+        }
+
+        return $subtotal;
+    }
+
+    /**
+     * Throws if any of this purchase's stock has already been sold — used
+     * before both editing and deleting, since either one is about to wipe
+     * out the batches that sale drew from.
+     */
+    private function assertReversible(Purchase $purchase): void
+    {
+        $alreadySold = [];
+
+        foreach ($this->purchaseMovements($purchase) as $movement) {
+            $batch = $movement->batch;
+            if ($batch && (float) $batch->quantity_remaining < (float) $batch->quantity_in) {
+                $sold = (float) $batch->quantity_in - (float) $batch->quantity_remaining;
+                $alreadySold[] = "{$movement->item?->name}: {$sold} {$movement->item?->unit} already sold";
+            }
+        }
+
+        if (! empty($alreadySold)) {
+            throw ValidationException::withMessages([
+                'items' => 'Cannot edit: '.implode(', ', $alreadySold).'. Remove those sales first.',
+            ]);
+        }
+    }
+
+    /**
+     * Undoes applyLines(): restores the stock this purchase's current lines
+     * added (deleting each stock-in movement cascades to the batch it
+     * created) and removes those lines. Used by update() (which re-applies
+     * fresh lines right after) — destroy() has its own copy since it also
+     * needs the movements for its own guard message.
+     */
+    private function reverseStockEffects(Purchase $purchase): void
+    {
+        foreach ($this->purchaseMovements($purchase) as $movement) {
+            ItemStock::query()
+                ->where('branch_id', $purchase->branch_id)
+                ->where('item_id', $movement->item_id)
+                ->decrement('quantity', $movement->quantity);
+
+            $movement->delete();
+        }
+
+        $purchase->items()->delete();
+    }
+
+    private function purchaseMovements(Purchase $purchase)
+    {
+        return StockMovement::query()
+            ->where('reference_type', Purchase::class)
+            ->where('reference_id', $purchase->id)
+            ->with(['batch', 'item'])
+            ->get();
+    }
+
     public function show(Purchase $purchase): View
     {
         $purchase->load(['supplier', 'branch', 'user', 'items.item', 'payments.user']);
@@ -232,36 +381,16 @@ class PurchaseController extends Controller
 
     public function destroy(Purchase $purchase): RedirectResponse
     {
-        $movements = StockMovement::query()
-            ->where('reference_type', Purchase::class)
-            ->where('reference_id', $purchase->id)
-            ->with(['batch', 'item'])
-            ->get();
-
-        $alreadySold = [];
-        foreach ($movements as $movement) {
-            $batch = $movement->batch;
-            if ($batch && (float) $batch->quantity_remaining < (float) $batch->quantity_in) {
-                $sold = (float) $batch->quantity_in - (float) $batch->quantity_remaining;
-                $alreadySold[] = "{$movement->item?->name}: {$sold} {$movement->item?->unit} already sold";
-            }
-        }
-
-        if (! empty($alreadySold)) {
+        try {
+            $this->assertReversible($purchase);
+        } catch (ValidationException $e) {
             return back()
-                ->with('status', 'Cannot delete: '.implode(', ', $alreadySold).'. Remove those sales first.')
+                ->with('status', collect($e->errors())->flatten()->first())
                 ->with('status_type', 'danger');
         }
 
-        DB::transaction(function () use ($purchase, $movements) {
-            foreach ($movements as $movement) {
-                ItemStock::query()
-                    ->where('branch_id', $purchase->branch_id)
-                    ->where('item_id', $movement->item_id)
-                    ->decrement('quantity', $movement->quantity);
-
-                $movement->delete();
-            }
+        DB::transaction(function () use ($purchase) {
+            $this->reverseStockEffects($purchase);
 
             // Any credit this purchase auto-drew from the supplier's
             // balance goes back to them — otherwise deleting the purchase

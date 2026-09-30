@@ -3,6 +3,10 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 class="font-semibold text-lg sm:text-xl text-gray-800 leading-tight truncate">{{ __('Purchase') }} {{ $purchase->purchase_number }}</h2>
             <div class="flex flex-wrap gap-2 print:hidden">
+                <a href="{{ route('purchases.edit', $purchase) }}" onclick="window.showCubeLoader()"
+                    class="inline-flex items-center px-3 sm:px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50">
+                    {{ __('Edit') }}
+                </a>
                 <button type="button"
                     onclick="window.sharePdf({ url: {{ \Illuminate\Support\Js::from(route('purchases.pdf', $purchase)) }}, filename: {{ \Illuminate\Support\Js::from($purchase->purchase_number.'.pdf') }}, title: {{ \Illuminate\Support\Js::from(__('Purchase').' '.$purchase->purchase_number) }}, text: {{ \Illuminate\Support\Js::from($shareMessage) }} })"
                     class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700">

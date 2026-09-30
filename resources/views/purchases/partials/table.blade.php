@@ -27,6 +27,7 @@
                         ])>{{ ucfirst($purchase->status) }}</span>
                     </td>
                     <td class="px-6 py-4 text-right text-sm" @click.stop>
+                        <a href="{{ route('purchases.edit', $purchase) }}" onclick="window.showCubeLoader()" class="text-indigo-600 hover:underline mr-3">{{ __('Edit') }}</a>
                         <form method="POST" action="{{ route('purchases.destroy', $purchase) }}">
                             @csrf
                             @method('DELETE')

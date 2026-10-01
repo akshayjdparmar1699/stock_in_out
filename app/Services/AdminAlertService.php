@@ -49,6 +49,45 @@ class AdminAlertService
         return self::url($message);
     }
 
+    /**
+     * Opens a chat with the customer themselves (not the admin), addressed
+     * to them directly, so a tap can go straight to asking them for the
+     * money rather than just reminding the shop owner to. Returns null
+     * when the stored phone number isn't usable — customer phone numbers
+     * get typed in a lot of different ways (spaces, +91, or sometimes not
+     * a phone number at all), so this is deliberately conservative rather
+     * than ever handing back a dead wa.me link.
+     */
+    public static function creditLimitCustomerUrl(Customer $customer, float $due, float $limit): ?string
+    {
+        $number = self::normalizeIndianPhone($customer->phone);
+
+        if (! $number) {
+            return null;
+        }
+
+        $message = "Hi {$customer->name}, your outstanding balance with us is ₹".number_format($due, 2)
+            .", which is over your approved credit limit of ₹".number_format($limit, 2)
+            .". Please clear this at your earliest. Thank you.";
+
+        return 'https://wa.me/'.$number.'?text='.rawurlencode($message);
+    }
+
+    private static function normalizeIndianPhone(?string $phone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone);
+
+        if (strlen($digits) === 10) {
+            return '91'.$digits;
+        }
+
+        if (strlen($digits) === 12 && str_starts_with($digits, '91')) {
+            return $digits;
+        }
+
+        return null;
+    }
+
     private static function url(string $message): string
     {
         return 'https://wa.me/'.self::ADMIN_WHATSAPP_NUMBER.'?text='.rawurlencode($message);

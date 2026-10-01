@@ -257,7 +257,7 @@ class DashboardController extends Controller
             ->map(fn (array $row) => [
                 'customer' => $row['customer'],
                 'due' => $row['due'],
-                'whatsapp_url' => AdminAlertService::creditLimitUrl($branch, $row['customer'], $row['due'], (float) $row['customer']->credit_limit),
+                'whatsapp_url' => AdminAlertService::creditLimitCustomerUrl($row['customer'], $row['due'], (float) $row['customer']->credit_limit),
             ]);
     }
 

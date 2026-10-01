@@ -47,10 +47,15 @@ class StockController extends Controller
 
     /**
      * For each of the given items, walks every one of their movements in
-     * this branch in chronological order and keeps a running total, so each
-     * movement can show what stock was actually left right after it — not
-     * just the movement's own quantity. Keyed by movement id so a paginated
-     * page can look up just the rows it's showing.
+     * this branch newest-first, starting from the item's actual current
+     * stock (ItemStock.quantity) and undoing each movement in turn — rather
+     * than summing forward from zero. Editing an invoice or purchase deletes
+     * its old stock-in/out entries without leaving any trace behind (see
+     * reverseStockEffects() on those controllers), so a forward sum can
+     * drift below the real total once an item has had any edited document;
+     * anchoring on the current quantity instead guarantees the newest row
+     * always agrees with what the Items page shows. Keyed by movement id so
+     * a paginated page can look up just the rows it's showing.
      */
     private function remainingStockByMovement(int $branchId, $itemIds): array
     {
@@ -58,22 +63,30 @@ class StockController extends Controller
             return [];
         }
 
+        $currentQuantities = ItemStock::query()
+            ->where('branch_id', $branchId)
+            ->whereIn('item_id', $itemIds)
+            ->pluck('quantity', 'item_id');
+
         $allMovements = StockMovement::query()
             ->where('branch_id', $branchId)
             ->whereIn('item_id', $itemIds)
             ->orderBy('item_id')
-            ->orderBy('created_at')
-            ->orderBy('id')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get(['id', 'item_id', 'type', 'quantity']);
 
         $running = [];
         $balances = [];
 
         foreach ($allMovements as $movement) {
-            $running[$movement->item_id] = ($running[$movement->item_id] ?? 0)
-                + ($movement->type === 'in' ? (float) $movement->quantity : -(float) $movement->quantity);
+            if (! array_key_exists($movement->item_id, $running)) {
+                $running[$movement->item_id] = (float) ($currentQuantities[$movement->item_id] ?? 0);
+            }
 
             $balances[$movement->id] = round($running[$movement->item_id], 2);
+
+            $running[$movement->item_id] -= $movement->type === 'in' ? (float) $movement->quantity : -(float) $movement->quantity;
         }
 
         return $balances;

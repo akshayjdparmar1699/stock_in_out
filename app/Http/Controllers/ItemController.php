@@ -111,21 +111,25 @@ class ItemController extends Controller
             ->paginate(PerPagePreference::get())
             ->withQueryString();
 
-        // Walks every movement for this item in chronological order to work
-        // out what stock was actually left right after each one, keyed by
-        // movement id so the (possibly paginated) list above can look up
-        // just the rows it's showing.
-        $running = 0;
+        // Walks every movement for this item newest-first, starting from the
+        // item's actual current stock and undoing each movement in turn —
+        // rather than summing forward from zero. Editing an invoice or
+        // purchase deletes its old stock entries without a trace (see
+        // reverseStockEffects()), so a forward sum can drift below the real
+        // total once an item's had any edited document; anchoring on the
+        // current quantity keeps the newest row in agreement with it.
+        $running = (float) $currentStock;
         $remainingByMovement = StockMovement::query()
             ->where('branch_id', $branchId)
             ->where('item_id', $item->id)
-            ->orderBy('created_at')
-            ->orderBy('id')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get(['id', 'type', 'quantity'])
             ->mapWithKeys(function (StockMovement $movement) use (&$running) {
-                $running += $movement->type === 'in' ? (float) $movement->quantity : -(float) $movement->quantity;
+                $balance = round($running, 2);
+                $running -= $movement->type === 'in' ? (float) $movement->quantity : -(float) $movement->quantity;
 
-                return [$movement->id => round($running, 2)];
+                return [$movement->id => $balance];
             })
             ->all();
 

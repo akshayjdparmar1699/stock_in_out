@@ -73,10 +73,35 @@ class SupplierController extends Controller
      * rolls over onto the next). Anything left over after every purchase is
      * fully paid settles their opening balance, and if it's still more than
      * that, the rest becomes credit we can draw on for a future purchase.
+     *
+     * A "received" payment is the reverse: money the supplier handed back
+     * to us (e.g. a refund for goods billed but never delivered). It isn't
+     * matched against any purchase — it just reduces whatever credit we're
+     * holding with them (and going past zero correctly shows up as money
+     * we now owe them again), since we can't know which purchase a refund
+     * is "for" without them telling us.
      */
     public function storePayment(StoreSupplierPaymentRequest $request, Supplier $supplier): RedirectResponse
     {
         $data = $request->validated();
+
+        if (($data['type'] ?? 'paid') === 'received') {
+            DB::transaction(function () use ($supplier, $data) {
+                PurchasePayment::create([
+                    'supplier_id' => $supplier->id,
+                    'user_id' => auth()->id(),
+                    'amount' => $data['amount'],
+                    'type' => 'received',
+                    'note' => $data['note'] ?? null,
+                ]);
+
+                $supplier->decrement('credit_balance', $data['amount']);
+            });
+
+            return redirect()->route('suppliers.show', $supplier)
+                ->with('status', "Refund of ₹".number_format($data['amount'], 2)." recorded for \"{$supplier->name}\".");
+        }
+
         $remaining = (float) $data['amount'];
         $batchId = (string) Str::uuid();
 
@@ -134,6 +159,54 @@ class SupplierController extends Controller
     }
 
     /**
+     * Deletes a statement entry for a wrongly recorded payment or refund —
+     * identified by the batch_id a multi-purchase payment shares, or by its
+     * own id when it's a single row (e.g. one made from a purchase's own
+     * page). Reverses exactly what storePayment() did: gives back any
+     * purchase's paid_amount it was applied to, or undoes whichever way it
+     * moved the credit balance.
+     */
+    public function destroyPayment(Supplier $supplier, string $key): RedirectResponse
+    {
+        $payments = PurchasePayment::query()
+            ->where('from_credit_balance', false)
+            ->where(function ($query) use ($supplier) {
+                $query->where('supplier_id', $supplier->id)
+                    ->orWhereHas('purchase', fn ($q) => $q->where('supplier_id', $supplier->id));
+            })
+            ->when(
+                str_starts_with($key, 'id-'),
+                fn ($query) => $query->where('id', (int) substr($key, 3)),
+                fn ($query) => $query->where('batch_id', $key)
+            )
+            ->with('purchase')
+            ->get();
+
+        abort_if($payments->isEmpty(), 404);
+
+        DB::transaction(function () use ($payments, $supplier) {
+            foreach ($payments as $payment) {
+                if ($payment->purchase_id) {
+                    $purchase = $payment->purchase;
+                    $purchase->decrement('paid_amount', $payment->amount);
+                    $purchase->refresh();
+                    $purchase->update([
+                        'status' => $purchase->paid_amount >= $purchase->total ? 'paid' : ($purchase->paid_amount > 0 ? 'partial' : 'unpaid'),
+                    ]);
+                } elseif ($payment->type === 'received') {
+                    $supplier->increment('credit_balance', $payment->amount);
+                } else {
+                    $supplier->decrement('credit_balance', $payment->amount);
+                }
+
+                $payment->delete();
+            }
+        });
+
+        return redirect()->route('suppliers.show', $supplier)->with('status', 'Statement entry deleted.');
+    }
+
+    /**
      * Every purchase (debit — billed by the supplier) and purchase payment
      * (credit — paid to them) as one running-balance timeline, oldest
      * first, starting from the opening balance.
@@ -151,6 +224,7 @@ class SupplierController extends Controller
                 'label' => "Purchase {$purchase->purchase_number}",
                 'amount' => (float) $purchase->total,
                 'url' => route('purchases.show', $purchase),
+                'payment_key' => null,
             ]);
         }
 
@@ -174,15 +248,19 @@ class SupplierController extends Controller
             ->groupBy(fn (array $row) => $row['payment']->batch_id ?: 'single-'.$row['payment']->id)
             ->each(function (Collection $rows) use ($entries, $supplier) {
                 $first = $rows->first();
+                $isRefund = $first['payment']->type === 'received';
 
                 $entries->push([
                     'date' => $first['payment']->created_at,
-                    'type' => 'paid',
-                    'label' => $first['payment']->note
-                        ? "Payment ({$first['payment']->note})"
-                        : ($first['purchase'] ? "Payment for {$first['purchase']->purchase_number}" : 'Payment'),
+                    'type' => $isRefund ? 'refund' : 'paid',
+                    'label' => $isRefund
+                        ? ($first['payment']->note ? "Refund received ({$first['payment']->note})" : 'Refund received')
+                        : ($first['payment']->note
+                            ? "Payment ({$first['payment']->note})"
+                            : ($first['purchase'] ? "Payment for {$first['purchase']->purchase_number}" : 'Payment')),
                     'amount' => (float) $rows->sum(fn (array $row) => (float) $row['payment']->amount),
                     'url' => $first['purchase'] ? route('purchases.show', $first['purchase']) : route('suppliers.show', $supplier),
+                    'payment_key' => $first['payment']->batch_id ?: 'id-'.$first['payment']->id,
                 ]);
             });
 
@@ -190,7 +268,9 @@ class SupplierController extends Controller
 
         return $entries->sortBy('date')->values()
             ->map(function (array $entry) use (&$balance) {
-                $balance += $entry['type'] === 'billed' ? $entry['amount'] : -$entry['amount'];
+                // A refund works out the same way as a purchase bill does
+                // for this running total — both increase what we owe them.
+                $balance += in_array($entry['type'], ['billed', 'refund'], true) ? $entry['amount'] : -$entry['amount'];
                 $entry['balance_after'] = round($balance, 2);
 
                 return $entry;

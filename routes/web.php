@@ -99,6 +99,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/customers/{customer}/toggle-active', [CustomerController::class, 'toggleActive'])->name('customers.toggle-active');
     Route::get('/customers/{customer}/statement-pdf', [CustomerController::class, 'statementPdf'])->name('customers.statement-pdf');
     Route::post('/customers/{customer}/payments', [CustomerController::class, 'storePayment'])->name('customers.payments.store');
+    Route::delete('/customers/{customer}/payments/{key}', [CustomerController::class, 'destroyPayment'])->name('customers.payments.destroy');
     Route::resource('customers', CustomerController::class);
 
     Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
@@ -107,6 +108,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/suppliers/search', [SupplierController::class, 'search'])->name('suppliers.search');
     Route::post('/suppliers/{supplier}/payments', [SupplierController::class, 'storePayment'])->name('suppliers.payments.store');
+    Route::delete('/suppliers/{supplier}/payments/{key}', [SupplierController::class, 'destroyPayment'])->name('suppliers.payments.destroy');
     Route::resource('suppliers', SupplierController::class)->except(['destroy']);
 
     Route::resource('purchases', PurchaseController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);

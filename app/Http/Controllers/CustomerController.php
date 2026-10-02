@@ -101,7 +101,7 @@ class CustomerController extends Controller
             'customer' => $customer,
             'months' => $months,
             'openingBalance' => (float) $customer->opening_balance,
-            'totalDebit' => $entries->where('type', 'billed')->sum('amount'),
+            'totalDebit' => $entries->whereIn('type', ['billed', 'refund'])->sum('amount'),
             'totalCredit' => $entries->where('type', 'received')->sum('amount'),
             'due' => $customer->dueAmount(),
             'entryCount' => $entries->count(),
@@ -118,10 +118,34 @@ class CustomerController extends Controller
      * Anything left over after every invoice is fully paid settles their
      * opening balance, and if it's still more than that, the rest becomes
      * credit they can draw on for a future invoice.
+     *
+     * A "received" payment here actually means the reverse: money we gave
+     * back to the customer (e.g. refunding part of an over-payment, or
+     * cash handed back for returned goods). It isn't matched against any
+     * invoice — it just reduces whatever credit we're holding for them
+     * (and going past zero correctly shows up as them owing us again).
      */
     public function storePayment(StoreCustomerPaymentRequest $request, Customer $customer): RedirectResponse
     {
         $data = $request->validated();
+
+        if (($data['type'] ?? 'paid') === 'received') {
+            DB::transaction(function () use ($customer, $data) {
+                InvoicePayment::create([
+                    'customer_id' => $customer->id,
+                    'user_id' => auth()->id(),
+                    'amount' => $data['amount'],
+                    'type' => 'received',
+                    'note' => $data['note'] ?? null,
+                ]);
+
+                $customer->decrement('credit_balance', $data['amount']);
+            });
+
+            return redirect()->route('customers.show', $customer)
+                ->with('status', "Refund of ₹".number_format($data['amount'], 2)." recorded for \"{$customer->name}\".");
+        }
+
         $remaining = (float) $data['amount'];
         $batchId = (string) Str::uuid();
 
@@ -179,6 +203,54 @@ class CustomerController extends Controller
     }
 
     /**
+     * Deletes a statement entry for a wrongly recorded payment or refund —
+     * identified by the batch_id a multi-invoice payment shares, or by its
+     * own id when it's a single row (e.g. one made from an invoice's own
+     * page). Reverses exactly what storePayment() did: gives back any
+     * invoice's paid_amount it was applied to, or undoes whichever way it
+     * moved the credit balance.
+     */
+    public function destroyPayment(Customer $customer, string $key): RedirectResponse
+    {
+        $payments = InvoicePayment::query()
+            ->where('from_credit_balance', false)
+            ->where(function ($query) use ($customer) {
+                $query->where('customer_id', $customer->id)
+                    ->orWhereHas('invoice', fn ($q) => $q->where('customer_id', $customer->id));
+            })
+            ->when(
+                str_starts_with($key, 'id-'),
+                fn ($query) => $query->where('id', (int) substr($key, 3)),
+                fn ($query) => $query->where('batch_id', $key)
+            )
+            ->with('invoice')
+            ->get();
+
+        abort_if($payments->isEmpty(), 404);
+
+        DB::transaction(function () use ($payments, $customer) {
+            foreach ($payments as $payment) {
+                if ($payment->invoice_id) {
+                    $invoice = $payment->invoice;
+                    $invoice->decrement('paid_amount', $payment->amount);
+                    $invoice->refresh();
+                    $invoice->update([
+                        'status' => $invoice->paid_amount >= $invoice->total ? 'paid' : ($invoice->paid_amount > 0 ? 'partial' : 'unpaid'),
+                    ]);
+                } elseif ($payment->type === 'received') {
+                    $customer->increment('credit_balance', $payment->amount);
+                } else {
+                    $customer->decrement('credit_balance', $payment->amount);
+                }
+
+                $payment->delete();
+            }
+        });
+
+        return redirect()->route('customers.show', $customer)->with('status', 'Statement entry deleted.');
+    }
+
+    /**
      * Every invoice (debit — billed to the customer) and invoice payment
      * (credit — received from them) as one running-balance timeline,
      * oldest first, starting from their opening balance.
@@ -196,6 +268,7 @@ class CustomerController extends Controller
                 'label' => "Invoice {$invoice->invoice_number}",
                 'amount' => (float) $invoice->total,
                 'url' => route('invoices.show', $invoice),
+                'payment_key' => null,
             ]);
         }
 
@@ -224,15 +297,19 @@ class CustomerController extends Controller
             ->groupBy(fn (array $row) => $row['payment']->batch_id ?: 'single-'.$row['payment']->id)
             ->each(function (Collection $rows) use ($entries, $customer) {
                 $first = $rows->first();
+                $isRefund = $first['payment']->type === 'received';
 
                 $entries->push([
                     'date' => $first['payment']->created_at,
-                    'type' => 'received',
-                    'label' => $first['payment']->note
-                        ? "Payment ({$first['payment']->note})"
-                        : ($first['invoice'] ? "Payment for {$first['invoice']->invoice_number}" : 'Payment'),
+                    'type' => $isRefund ? 'refund' : 'received',
+                    'label' => $isRefund
+                        ? ($first['payment']->note ? "Refund paid ({$first['payment']->note})" : 'Refund paid')
+                        : ($first['payment']->note
+                            ? "Payment ({$first['payment']->note})"
+                            : ($first['invoice'] ? "Payment for {$first['invoice']->invoice_number}" : 'Payment')),
                     'amount' => (float) $rows->sum(fn (array $row) => (float) $row['payment']->amount),
                     'url' => $first['invoice'] ? route('invoices.show', $first['invoice']) : route('customers.show', $customer),
+                    'payment_key' => $first['payment']->batch_id ?: 'id-'.$first['payment']->id,
                 ]);
             });
 
@@ -240,7 +317,9 @@ class CustomerController extends Controller
 
         return $entries->sortBy('date')->values()
             ->map(function (array $entry) use (&$balance) {
-                $balance += $entry['type'] === 'billed' ? $entry['amount'] : -$entry['amount'];
+                // A refund works out the same way as an invoice bill does
+                // for this running total — both increase what they owe us.
+                $balance += in_array($entry['type'], ['billed', 'refund'], true) ? $entry['amount'] : -$entry['amount'];
                 $entry['balance_after'] = round($balance, 2);
 
                 return $entry;

@@ -15,6 +15,7 @@ class InvoicePayment extends Model
         'customer_id',
         'user_id',
         'amount',
+        'type',
         'note',
         'batch_id',
         'from_credit_balance',

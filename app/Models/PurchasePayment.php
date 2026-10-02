@@ -15,6 +15,7 @@ class PurchasePayment extends Model
         'supplier_id',
         'user_id',
         'amount',
+        'type',
         'note',
         'batch_id',
         'from_credit_balance',

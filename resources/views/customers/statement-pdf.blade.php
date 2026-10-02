@@ -91,7 +91,7 @@
                     <tr>
                         <td>{{ $entry['date']->format('d M') }}</td>
                         <td>{{ $entry['label'] }}</td>
-                        <td class="num debit-cell">{{ $entry['type'] === 'billed' ? number_format($entry['amount'], 2) : '' }}</td>
+                        <td class="num debit-cell">{{ in_array($entry['type'], ['billed', 'refund'], true) ? number_format($entry['amount'], 2) : '' }}</td>
                         <td class="num credit-cell">{{ $entry['type'] === 'received' ? number_format($entry['amount'], 2) : '' }}</td>
                         <td class="num {{ $entry['balance_after'] >= 0 ? 'balance-dr' : 'balance-cr' }}">
                             {{ number_format(abs($entry['balance_after']), 2) }} {{ $entry['balance_after'] >= 0 ? 'Dr' : 'Cr' }}
@@ -100,7 +100,7 @@
                 @endforeach
                 <tr class="month-total">
                     <td colspan="2">{{ $monthLabel }} Total</td>
-                    <td class="num">{{ number_format($monthEntries->where('type', 'billed')->sum('amount'), 2) }}</td>
+                    <td class="num">{{ number_format($monthEntries->whereIn('type', ['billed', 'refund'])->sum('amount'), 2) }}</td>
                     <td class="num">{{ number_format($monthEntries->where('type', 'received')->sum('amount'), 2) }}</td>
                     <td></td>
                 </tr>

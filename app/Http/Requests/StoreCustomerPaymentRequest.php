@@ -18,6 +18,7 @@ class StoreCustomerPaymentRequest extends FormRequest
             // allowed on purpose — the excess becomes credit the customer
             // can draw on for a future invoice instead of being rejected.
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'type' => ['nullable', 'in:paid,received'],
             'note' => ['nullable', 'string', 'max:255'],
         ];
     }

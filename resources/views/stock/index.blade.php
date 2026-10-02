@@ -21,28 +21,43 @@
                     'unit' => $item->unit,
                     'purchase_price' => (float) $item->purchase_price,
                 ]);
+                $hasOldStockInput = $errors->any() || old('item_id');
             @endphp
             <div class="bg-white shadow-sm rounded-lg p-6"
                 x-data="{
+                    showForm: {{ $hasOldStockInput ? 'true' : 'false' }},
                     itemId: '{{ old('item_id') }}',
                     quantity: {{ old('quantity') ? (float) old('quantity') : 'null' }},
+                    quantityUnit: '{{ old('quantity_unit', 'base') }}',
                     unitCost: {{ old('unit_cost') ? (float) old('unit_cost') : 'null' }},
+                    unitLabel: '',
                     altUnit: '{{ old('alt_unit') }}',
                     altUnitRatio: {{ old('alt_unit_ratio') ? (float) old('alt_unit_ratio') : 'null' }},
-                    itemsMeta: @json($stockItemsMeta),
+                    itemsMeta: {{ \Illuminate\Support\Js::from($stockItemsMeta) }},
                     onItemChange() {
                         const meta = this.itemsMeta[this.itemId] ?? null;
                         this.altUnit = meta ? (meta.alt_unit || '') : '';
                         this.altUnitRatio = meta ? meta.ratio : null;
+                        this.unitLabel = meta ? meta.unit : '';
                         this.unitCost = meta ? meta.purchase_price : null;
+                        this.quantityUnit = 'base';
+                    },
+                    onUnitToggle() {
+                        // The price typed in one unit is meaningless in the
+                        // other (₹/bag vs ₹/kg), so it's cleared rather than
+                        // silently carried over or auto-converted.
+                        this.unitCost = null;
                     },
                     get altTotal() {
-                        if (!this.altUnit || !this.altUnitRatio || !this.quantity) return null;
+                        if (!this.altUnit || !this.altUnitRatio || !this.quantity || this.quantityUnit !== 'base') return null;
                         return Math.round(this.quantity * this.altUnitRatio * 100) / 100;
                     },
                 }">
-                <h3 class="font-medium text-gray-700 mb-4">{{ __('Manual Stock Adjustment') }}</h3>
-                <form method="POST" action="{{ route('stock.store') }}" class="flex flex-wrap items-end gap-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-medium text-gray-700">{{ __('Manual Stock Adjustment') }}</h3>
+                    <x-secondary-button type="button" @click="showForm = !showForm" x-text="showForm ? '{{ __('Cancel') }}' : '{{ __('+ Add Stock') }}'"></x-secondary-button>
+                </div>
+                <form method="POST" action="{{ route('stock.store') }}" class="flex flex-wrap items-end gap-4" x-show="showForm" style="display: none;">
                     @csrf
                     <div class="w-full sm:w-auto sm:flex-1 sm:min-w-[220px]">
                         <x-input-label for="item_id" :value="__('Item')" />
@@ -54,16 +69,36 @@
                         </select>
                         <x-input-error :messages="$errors->get('item_id')" class="mt-2" />
                     </div>
+
+                    <input type="hidden" name="quantity_unit" :value="quantityUnit">
+                    <div class="w-full flex gap-4" x-show="altUnit && altUnitRatio" style="display: none;">
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                            <input type="radio" value="base" x-model="quantityUnit" @change="onUnitToggle()" class="text-indigo-600 focus:ring-indigo-500">
+                            <span x-text="unitLabel"></span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                            <input type="radio" value="alt" x-model="quantityUnit" @change="onUnitToggle()" class="text-indigo-600 focus:ring-indigo-500">
+                            <span x-text="altUnit"></span>
+                        </label>
+                    </div>
+
                     <div class="w-full sm:w-28">
-                        <x-input-label for="quantity" :value="__('Quantity')" />
+                        <x-input-label for="quantity">
+                            {{ __('Quantity') }} <span class="text-gray-400 font-normal" x-show="quantityUnit === 'alt' && altUnit" x-text="'(' + altUnit + ')'"></span>
+                        </x-input-label>
                         <x-text-input id="quantity" name="quantity" type="number" step="0.01" min="0.01" x-model.number="quantity" class="mt-1 block w-full" :value="old('quantity')" required />
                         <p class="text-xs text-gray-400 mt-1" x-show="altTotal !== null" style="display: none;">
                             = <span x-text="altTotal"></span> <span x-text="altUnit"></span>
                         </p>
+                        <p class="text-xs text-gray-400 mt-1" x-show="quantityUnit === 'alt' && altUnitRatio" style="display: none;">
+                            = <span x-text="quantity ? Math.round((quantity / altUnitRatio) * 10000) / 10000 : 0"></span> <span x-text="unitLabel"></span>
+                        </p>
                         <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
                     </div>
                     <div class="w-full sm:w-36">
-                        <x-input-label for="unit_cost" :value="__('Purchase Price (per unit)')" />
+                        <x-input-label for="unit_cost">
+                            {{ __('Purchase Price') }} <span class="text-gray-400 font-normal" x-text="'(per ' + (quantityUnit === 'alt' ? altUnit : (unitLabel || 'unit')) + ')'"></span>
+                        </x-input-label>
                         <x-text-input id="unit_cost" name="unit_cost" type="number" step="0.01" min="0" x-model.number="unitCost" class="mt-1 block w-full" :value="old('unit_cost')" required />
                         <x-input-error :messages="$errors->get('unit_cost')" class="mt-2" />
                     </div>
@@ -75,7 +110,7 @@
                         <x-primary-button class="w-full sm:w-auto justify-center">{{ __('Add Stock') }}</x-primary-button>
                     </div>
 
-                    <p class="text-xs text-gray-400 w-full -mt-2">{{ __("Purchase price is whatever you paid for this batch, it updates the item's cost.") }}</p>
+                    <p class="text-xs text-gray-400 w-full -mt-2">{{ __("Quantity and purchase price are both in whichever unit you pick above, it updates the item's cost.") }}</p>
 
                     <div class="w-full border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="itemId" style="display: none;">
                         <div>

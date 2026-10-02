@@ -138,10 +138,21 @@
                                 <div class="min-w-0 mb-3 sm:mb-0">
                                     <div class="text-sm font-medium text-gray-800 truncate" x-text="line.name"></div>
                                     <div class="text-xs text-gray-400" x-text="'Current stock: ' + line.stock + ' ' + line.unit"></div>
-                                    <div class="text-xs text-gray-400" x-show="line.altUnitRatio" x-text="'= ' + (line.quantity * (line.altUnitRatio || 0)).toFixed(2) + ' ' + line.altUnit"></div>
-                                    <button type="button" class="text-xs text-indigo-600 hover:underline" @click="line.showAltConfig = !line.showAltConfig"
+                                    <template x-if="line.altUnitRatio">
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <div class="text-xs text-gray-400" x-text="'= ' + (line.quantityUnit === 'alt' ? (line.quantity / line.altUnitRatio) : (line.quantity * line.altUnitRatio)).toFixed(4) + ' ' + (line.quantityUnit === 'alt' ? line.unit : line.altUnit)"></div>
+                                            <div class="flex rounded-md border border-gray-300 overflow-hidden text-xs">
+                                                <button type="button" @click="line.quantityUnit = 'base'; line.unit_cost = null"
+                                                    class="px-2 py-0.5" :class="line.quantityUnit === 'base' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600'" x-text="line.unit"></button>
+                                                <button type="button" @click="line.quantityUnit = 'alt'; line.unit_cost = null"
+                                                    class="px-2 py-0.5 border-l border-gray-300" :class="line.quantityUnit === 'alt' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600'" x-text="line.altUnit"></button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <button type="button" class="text-xs text-indigo-600 hover:underline block mt-1" @click="line.showAltConfig = !line.showAltConfig"
                                         x-text="line.altUnit ? ('Alt unit: ' + line.altUnit) : '+ Set alt unit'"></button>
                                     <input type="hidden" :name="`items[${index}][item_id]`" :value="line.item_id">
+                                    <input type="hidden" :name="`items[${index}][quantity_unit]`" :value="line.quantityUnit">
                                 </div>
 
                                 <div class="sm:col-span-5 grid grid-cols-2 gap-3 mt-2" x-show="line.showAltConfig" style="display: none;">
@@ -356,6 +367,7 @@
                         unit: item.unit,
                         altUnit: item.alt_unit || null,
                         altUnitRatio: item.alt_unit_ratio || null,
+                        quantityUnit: 'base',
                         showAltConfig: false,
                         stock: item.stock,
                         quantity: 1,
@@ -372,6 +384,7 @@
                         unit: line.unit,
                         altUnit: line.altUnit,
                         altUnitRatio: line.altUnitRatio,
+                        quantityUnit: line.quantityUnit,
                         showAltConfig: false,
                         stock: line.stock,
                         quantity: 1,

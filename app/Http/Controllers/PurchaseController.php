@@ -254,22 +254,35 @@ class PurchaseController extends Controller
         $subtotal = 0;
 
         foreach ($items as $line) {
+            $item = Item::whereKey($line['item_id'])->lockForUpdate()->first();
+
             // The alt-unit config can be set/updated right from the
             // purchase form instead of a separate trip to edit the item.
             if (array_key_exists('alt_unit', $line)) {
-                Item::whereKey($line['item_id'])->update([
+                $item->update([
                     'alt_unit' => $line['alt_unit'],
                     'alt_unit_ratio' => $line['alt_unit'] ? ($line['alt_unit_ratio'] ?? null) : null,
                 ]);
             }
 
+            // The quantity/cost actually typed can be in the item's
+            // alternate unit (e.g. 35 pcs instead of 0.7 bag) — the amount
+            // billed comes out the same either way, so it's worked out
+            // before converting down to the base unit everything else
+            // (stock, batches) is stored in.
             $lineTotal = round($line['quantity'] * $line['unit_cost'], 2);
             $subtotal += $lineTotal;
 
+            $ratio = $item->alt_unit_ratio !== null ? (float) $item->alt_unit_ratio : null;
+            $useAlt = ($line['quantity_unit'] ?? 'base') === 'alt' && $ratio;
+
+            $quantity = $useAlt ? round((float) $line['quantity'] / $ratio, 4) : (float) $line['quantity'];
+            $unitCost = $useAlt ? round((float) $line['unit_cost'] * $ratio, 2) : (float) $line['unit_cost'];
+
             $purchase->items()->create([
                 'item_id' => $line['item_id'],
-                'quantity' => $line['quantity'],
-                'unit_cost' => $line['unit_cost'],
+                'quantity' => $quantity,
+                'unit_cost' => $unitCost,
                 'total' => $lineTotal,
             ]);
 
@@ -277,17 +290,17 @@ class PurchaseController extends Controller
                 ['branch_id' => $branchId, 'item_id' => $line['item_id']],
                 ['quantity' => 0]
             );
-            $stock->increment('quantity', $line['quantity']);
+            $stock->increment('quantity', $quantity);
 
             // Keep the item's cost basis current for profit calculations.
-            Item::whereKey($line['item_id'])->update(['purchase_price' => $line['unit_cost']]);
+            $item->update(['purchase_price' => $unitCost]);
 
             $movement = StockMovement::create([
                 'branch_id' => $branchId,
                 'item_id' => $line['item_id'],
                 'user_id' => auth()->id(),
                 'type' => 'in',
-                'quantity' => $line['quantity'],
+                'quantity' => $quantity,
                 'reason' => "Purchase - {$purchase->purchase_number}",
                 'reference_type' => Purchase::class,
                 'reference_id' => $purchase->id,
@@ -297,9 +310,9 @@ class PurchaseController extends Controller
                 'branch_id' => $branchId,
                 'item_id' => $line['item_id'],
                 'stock_movement_id' => $movement->id,
-                'unit_cost' => $line['unit_cost'],
-                'quantity_in' => $line['quantity'],
-                'quantity_remaining' => $line['quantity'],
+                'unit_cost' => $unitCost,
+                'quantity_in' => $quantity,
+                'quantity_remaining' => $quantity,
                 'received_at' => $movement->created_at,
             ]);
         }

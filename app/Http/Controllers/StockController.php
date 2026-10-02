@@ -98,30 +98,34 @@ class StockController extends Controller
         $data = $request->validated();
 
         DB::transaction(function () use ($data, $branchId) {
+            $item = Item::whereKey($data['item_id'])->lockForUpdate()->first();
+
             if (array_key_exists('alt_unit', $data)) {
-                Item::whereKey($data['item_id'])->update([
+                $item->update([
                     'alt_unit' => $data['alt_unit'],
                     'alt_unit_ratio' => $data['alt_unit'] ? $data['alt_unit_ratio'] : null,
                 ]);
             }
+
+            [$quantity, $unitCost] = $this->toBaseUnit($data, $item);
 
             $stock = ItemStock::query()->firstOrCreate(
                 ['branch_id' => $branchId, 'item_id' => $data['item_id']],
                 ['quantity' => 0]
             );
 
-            $stock->increment('quantity', $data['quantity']);
+            $stock->increment('quantity', $quantity);
 
             // Keep the item's cost basis current for profit calculations,
             // same as a purchase bill does.
-            Item::whereKey($data['item_id'])->update(['purchase_price' => $data['unit_cost']]);
+            $item->update(['purchase_price' => $unitCost]);
 
             $movement = StockMovement::create([
                 'branch_id' => $branchId,
                 'item_id' => $data['item_id'],
                 'user_id' => auth()->id(),
                 'type' => 'in',
-                'quantity' => $data['quantity'],
+                'quantity' => $quantity,
                 'reason' => $data['reason'] ?? 'Stock added',
             ]);
 
@@ -129,14 +133,38 @@ class StockController extends Controller
                 'branch_id' => $branchId,
                 'item_id' => $data['item_id'],
                 'stock_movement_id' => $movement->id,
-                'unit_cost' => $data['unit_cost'],
-                'quantity_in' => $data['quantity'],
-                'quantity_remaining' => $data['quantity'],
+                'unit_cost' => $unitCost,
+                'quantity_in' => $quantity,
+                'quantity_remaining' => $quantity,
                 'received_at' => $movement->created_at,
             ]);
         });
 
         return redirect()->route('stock.index')->with('status', 'Stock added successfully.');
+    }
+
+    /**
+     * Lets the quantity/price actually typed on the form be in the item's
+     * alternate unit (e.g. 25 kg or 35 pcs) instead of always the base
+     * stock unit (bag) — converted here using whichever ratio applies:
+     * one just set on this same submission, or the item's existing one.
+     * Everything downstream (ItemStock, StockMovement, StockBatch) keeps
+     * storing base-unit quantity and base-unit cost exactly as before.
+     *
+     * @return array{0: float, 1: float} [base quantity, base unit cost]
+     */
+    private function toBaseUnit(array $data, Item $item): array
+    {
+        $ratio = $item->alt_unit_ratio !== null ? (float) $item->alt_unit_ratio : null;
+
+        if (($data['quantity_unit'] ?? 'base') !== 'alt' || ! $ratio) {
+            return [(float) $data['quantity'], (float) $data['unit_cost']];
+        }
+
+        return [
+            round((float) $data['quantity'] / $ratio, 4),
+            round((float) $data['unit_cost'] * $ratio, 2),
+        ];
     }
 
     /**

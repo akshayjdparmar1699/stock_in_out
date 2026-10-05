@@ -384,7 +384,7 @@ class CustomerController extends Controller
             ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term))
             ->orderBy('name')
             ->limit(10)
-            ->get(['id', 'name', 'phone', 'email', 'address', 'opening_balance', 'is_active'])
+            ->get(['id', 'name', 'phone', 'email', 'address', 'opening_balance', 'credit_balance', 'is_active'])
             ->map(function (Customer $customer) {
                 $customer->due = $customer->dueAmount();
 

@@ -301,7 +301,7 @@ class SupplierController extends Controller
             ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term))
             ->orderBy('name')
             ->limit(10)
-            ->get(['id', 'name', 'phone', 'address'])
+            ->get(['id', 'name', 'phone', 'address', 'opening_balance', 'credit_balance'])
             ->map(function (Supplier $supplier) {
                 $supplier->due = $supplier->dueAmount();
 

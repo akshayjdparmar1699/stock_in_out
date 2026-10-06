@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreItemRequest;
 use App\Http\Requests\UpdateItemRequest;
-use App\Models\Branch;
 use App\Models\Item;
 use App\Models\ItemStock;
 use App\Models\InvoiceItem;
@@ -49,44 +48,48 @@ class ItemController extends Controller
         return view('items.create');
     }
 
+    /**
+     * A new item only belongs to the branch it's created in — it used to
+     * get an (empty) stock row on every branch regardless, which made it
+     * silently show up everywhere once branches could carry different
+     * items from each other. It'll show up for another branch the same
+     * way any item does: once that branch purchases or manually stocks it.
+     */
     public function store(StoreItemRequest $request): RedirectResponse
     {
         $data = $request->validated();
         $openingQuantity = (float) ($data['opening_quantity'] ?? 0);
         unset($data['opening_quantity']);
+        $branchId = BranchContext::id();
 
-        $item = DB::transaction(function () use ($data, $openingQuantity) {
+        $item = DB::transaction(function () use ($data, $openingQuantity, $branchId) {
             $item = Item::create($data);
 
-            $branches = Branch::query()->pluck('id');
+            ItemStock::create([
+                'branch_id' => $branchId,
+                'item_id' => $item->id,
+                'quantity' => $openingQuantity,
+            ]);
 
-            foreach ($branches as $branchId) {
-                $stock = ItemStock::create([
+            if ($openingQuantity > 0) {
+                $movement = StockMovement::create([
                     'branch_id' => $branchId,
                     'item_id' => $item->id,
-                    'quantity' => $branchId === BranchContext::id() ? $openingQuantity : 0,
+                    'user_id' => auth()->id(),
+                    'type' => 'in',
+                    'quantity' => $openingQuantity,
+                    'reason' => 'Opening stock',
                 ]);
 
-                if ($openingQuantity > 0 && $branchId === BranchContext::id()) {
-                    $movement = StockMovement::create([
-                        'branch_id' => $branchId,
-                        'item_id' => $item->id,
-                        'user_id' => auth()->id(),
-                        'type' => 'in',
-                        'quantity' => $openingQuantity,
-                        'reason' => 'Opening stock',
-                    ]);
-
-                    StockBatch::create([
-                        'branch_id' => $branchId,
-                        'item_id' => $item->id,
-                        'stock_movement_id' => $movement->id,
-                        'unit_cost' => $item->purchase_price,
-                        'quantity_in' => $openingQuantity,
-                        'quantity_remaining' => $openingQuantity,
-                        'received_at' => $movement->created_at,
-                    ]);
-                }
+                StockBatch::create([
+                    'branch_id' => $branchId,
+                    'item_id' => $item->id,
+                    'stock_movement_id' => $movement->id,
+                    'unit_cost' => $item->purchase_price,
+                    'quantity_in' => $openingQuantity,
+                    'quantity_remaining' => $openingQuantity,
+                    'received_at' => $movement->created_at,
+                ]);
             }
 
             return $item;

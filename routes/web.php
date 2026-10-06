@@ -79,7 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/preferences/per-page', [PreferenceController::class, 'setPerPage'])->name('preferences.per-page');
 
     Route::post('/branches/switch', [BranchController::class, 'switch'])->name('branches.switch');
-    Route::resource('branches', BranchController::class)->except(['show', 'destroy'])->middleware('admin');
+    Route::resource('branches', BranchController::class)->except(['show'])->middleware('admin');
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index')->middleware('admin');
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('admin');

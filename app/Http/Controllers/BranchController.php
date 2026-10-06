@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreBranchRequest;
 use App\Models\Branch;
 use App\Models\ItemStock;
+use App\Models\User;
 use App\Services\BranchContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,6 +70,48 @@ class BranchController extends Controller
         $branch->update($request->validated());
 
         return redirect()->route('branches.index')->with('status', "Branch \"{$branch->name}\" updated.");
+    }
+
+    /**
+     * Invoices/purchases already can't be deleted out from under a branch
+     * at the database level (restrictOnDelete), but item stock, stock
+     * movements, and expenses would otherwise cascade-delete silently —
+     * so every kind of real activity is checked up front and reported
+     * together, rather than letting a raw constraint error through for
+     * the first one or quietly wiping out the rest.
+     */
+    public function destroy(Branch $branch): RedirectResponse
+    {
+        if (Branch::count() <= 1) {
+            return back()
+                ->with('status', 'Cannot delete the only branch — the app needs at least one.')
+                ->with('status_type', 'danger');
+        }
+
+        if (User::where('branch_id', $branch->id)->exists()) {
+            return back()
+                ->with('status', "Cannot delete \"{$branch->name}\": it still has staff users assigned to it. Reassign or remove them first.")
+                ->with('status_type', 'danger');
+        }
+
+        $blockers = [
+            'invoices' => $branch->invoices()->exists(),
+            'purchases' => $branch->purchases()->exists(),
+            'expenses' => $branch->expenses()->exists(),
+            'stock movements' => $branch->stockMovements()->exists(),
+        ];
+
+        $reasons = array_keys(array_filter($blockers));
+
+        if (! empty($reasons)) {
+            return back()
+                ->with('status', "Cannot delete \"{$branch->name}\": it already has ".implode(', ', $reasons).'.')
+                ->with('status_type', 'danger');
+        }
+
+        $branch->delete();
+
+        return redirect()->route('branches.index')->with('status', "Branch \"{$branch->name}\" deleted.");
     }
 
     public function switch(Request $request): RedirectResponse

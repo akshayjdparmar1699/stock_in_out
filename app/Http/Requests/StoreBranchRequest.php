@@ -21,6 +21,7 @@ class StoreBranchRequest extends FormRequest
             'code' => ['required', 'string', 'max:20', 'alpha_dash', Rule::unique('branches', 'code')->ignore($branchId)],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'copy_items' => ['nullable', 'boolean'],
         ];
     }
 }

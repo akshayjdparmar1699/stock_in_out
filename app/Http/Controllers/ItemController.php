@@ -27,6 +27,7 @@ class ItemController extends Controller
         $branchId = BranchContext::id();
 
         $items = Item::query()
+            ->whereHas('stocks', fn ($q) => $q->where('branch_id', $branchId))
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
                 $query->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('sku', 'ilike', $term));

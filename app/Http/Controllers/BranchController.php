@@ -25,20 +25,33 @@ class BranchController extends Controller
         return view('branches.create');
     }
 
+    /**
+     * "Copy items" on by default so a new branch behaves like today unless
+     * someone deliberately opts out — unchecked, the branch starts with no
+     * items at all (the Items page only shows items that have a stock row
+     * for the current branch), and items only appear there once they're
+     * individually purchased or manually stocked for it.
+     */
     public function store(StoreBranchRequest $request): RedirectResponse
     {
-        $branch = Branch::create($request->validated());
+        $data = $request->validated();
+        $copyItems = $request->boolean('copy_items');
+        unset($data['copy_items']);
 
-        $stockRows = Item::query()->pluck('id')->map(fn ($itemId) => [
-            'branch_id' => $branch->id,
-            'item_id' => $itemId,
-            'quantity' => 0,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $branch = Branch::create($data);
 
-        if ($stockRows->isNotEmpty()) {
-            ItemStock::insert($stockRows->all());
+        if ($copyItems) {
+            $stockRows = Item::query()->pluck('id')->map(fn ($itemId) => [
+                'branch_id' => $branch->id,
+                'item_id' => $itemId,
+                'quantity' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            if ($stockRows->isNotEmpty()) {
+                ItemStock::insert($stockRows->all());
+            }
         }
 
         return redirect()->route('branches.index')->with('status', "Branch \"{$branch->name}\" created.");

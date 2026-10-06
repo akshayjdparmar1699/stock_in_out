@@ -22,6 +22,7 @@ class StoreBranchRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
             'copy_items' => ['nullable', 'boolean'],
+            'copy_from_branch_id' => ['nullable', 'required_if:copy_items,1', 'exists:branches,id'],
         ];
     }
 }

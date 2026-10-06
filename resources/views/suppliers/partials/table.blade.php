@@ -12,7 +12,7 @@
         </thead>
         <tbody class="divide-y divide-gray-100">
             @forelse ($suppliers as $supplier)
-                @php $due = $supplier->dueAmount(); @endphp
+                @php $due = $dueBySupplierId[$supplier->id] ?? 0; @endphp
                 <tr>
                     <td class="px-6 py-4 text-sm text-gray-800">
                         <a href="{{ route('suppliers.show', $supplier) }}" class="text-indigo-700 hover:underline font-medium">{{ $supplier->name }}</a>

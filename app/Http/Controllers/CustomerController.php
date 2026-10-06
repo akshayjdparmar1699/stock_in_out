@@ -42,11 +42,48 @@ class CustomerController extends Controller
             ->paginate(PerPagePreference::get())
             ->withQueryString();
 
+        $dueByCustomerId = $this->dueAmountsFor($customers->getCollection());
+
         if ($request->ajax()) {
-            return view('customers.partials.table', ['customers' => $customers]);
+            return view('customers.partials.table', ['customers' => $customers, 'dueByCustomerId' => $dueByCustomerId]);
         }
 
-        return view('customers.index', ['customers' => $customers, 'status' => $status]);
+        return view('customers.index', ['customers' => $customers, 'status' => $status, 'dueByCustomerId' => $dueByCustomerId]);
+    }
+
+    /**
+     * Works out every given customer's due in one aggregate query instead
+     * of calling dueAmount() (two SUM queries, run twice over for anyone
+     * with a credit limit set, via isOverCreditLimit()) once per row —
+     * which made this list page slower the more customers were on it,
+     * worse still with per-page bumped up to 100.
+     */
+    private function dueAmountsFor(Collection $customers): array
+    {
+        if ($customers->isEmpty()) {
+            return [];
+        }
+
+        $totals = Invoice::query()
+            ->whereIn('customer_id', $customers->pluck('id'))
+            ->selectRaw('customer_id, COALESCE(SUM(total), 0) as invoiced, COALESCE(SUM(paid_amount), 0) as paid')
+            ->groupBy('customer_id')
+            ->get()
+            ->keyBy('customer_id');
+
+        return $customers->mapWithKeys(function (Customer $customer) use ($totals) {
+            $row = $totals->get($customer->id);
+
+            $due = round(
+                (float) $customer->opening_balance
+                    + (float) ($row->invoiced ?? 0)
+                    - (float) ($row->paid ?? 0)
+                    - (float) $customer->credit_balance,
+                2
+            );
+
+            return [$customer->id => $due];
+        })->all();
     }
 
     public function create(): View

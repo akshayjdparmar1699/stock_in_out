@@ -30,11 +30,46 @@ class SupplierController extends Controller
             ->paginate(PerPagePreference::get())
             ->withQueryString();
 
+        $dueBySupplierId = $this->dueAmountsFor($suppliers->getCollection());
+
         if ($request->ajax()) {
-            return view('suppliers.partials.table', ['suppliers' => $suppliers]);
+            return view('suppliers.partials.table', ['suppliers' => $suppliers, 'dueBySupplierId' => $dueBySupplierId]);
         }
 
-        return view('suppliers.index', ['suppliers' => $suppliers]);
+        return view('suppliers.index', ['suppliers' => $suppliers, 'dueBySupplierId' => $dueBySupplierId]);
+    }
+
+    /**
+     * Works out every given supplier's due in one aggregate query instead
+     * of calling dueAmount() (two SUM queries) once per row, which made
+     * this list page slower the more suppliers were on it.
+     */
+    private function dueAmountsFor(Collection $suppliers): array
+    {
+        if ($suppliers->isEmpty()) {
+            return [];
+        }
+
+        $totals = Purchase::query()
+            ->whereIn('supplier_id', $suppliers->pluck('id'))
+            ->selectRaw('supplier_id, COALESCE(SUM(total), 0) as purchased, COALESCE(SUM(paid_amount), 0) as paid')
+            ->groupBy('supplier_id')
+            ->get()
+            ->keyBy('supplier_id');
+
+        return $suppliers->mapWithKeys(function (Supplier $supplier) use ($totals) {
+            $row = $totals->get($supplier->id);
+
+            $due = round(
+                (float) $supplier->opening_balance
+                    + (float) ($row->purchased ?? 0)
+                    - (float) ($row->paid ?? 0)
+                    - (float) $supplier->credit_balance,
+                2
+            );
+
+            return [$supplier->id => $due];
+        })->all();
     }
 
     public function create(): View

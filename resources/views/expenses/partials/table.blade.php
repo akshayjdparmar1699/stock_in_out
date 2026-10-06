@@ -15,7 +15,7 @@
         <tbody class="divide-y divide-gray-100">
             @forelse ($expenses as $expense)
                 <tr>
-                    <td class="px-6 py-3 text-sm text-gray-500">{{ $expense->expense_date->format('d M Y') }}</td>
+                    <td class="px-6 py-3 text-sm text-gray-500">{{ $expense->expense_date->format('d M Y') }}, {{ $expense->created_at->format('h:i A') }}</td>
                     <td class="px-6 py-3 text-sm">
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $expense->category === 'upad' ? 'bg-amber-100 text-amber-700' : ($expense->category === 'salary' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600') }}">
                             {{ $expense->categoryLabel() }}

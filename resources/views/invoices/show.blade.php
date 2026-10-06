@@ -68,7 +68,7 @@
                         <div class="text-sm text-gray-500">{{ __('Invoice #') }}</div>
                         <div class="font-medium text-gray-800">{{ $invoice->invoice_number }}</div>
                         <div class="text-sm text-gray-500 mt-2">{{ __('Date') }}</div>
-                        <div class="font-medium text-gray-800">{{ $invoice->invoice_date->format('d M Y') }}</div>
+                        <div class="font-medium text-gray-800">{{ $invoice->invoice_date->format('d M Y') }}, {{ $invoice->created_at->format('h:i A') }}</div>
                     </div>
                 </div>
 

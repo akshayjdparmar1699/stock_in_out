@@ -47,7 +47,7 @@
                         <div class="text-sm text-gray-500">{{ __('Purchase #') }}</div>
                         <div class="font-medium text-gray-800">{{ $purchase->purchase_number }}</div>
                         <div class="text-sm text-gray-500 mt-2">{{ __('Date') }}</div>
-                        <div class="font-medium text-gray-800">{{ $purchase->purchase_date->format('d M Y') }}</div>
+                        <div class="font-medium text-gray-800">{{ $purchase->purchase_date->format('d M Y') }}, {{ $purchase->created_at->format('h:i A') }}</div>
                     </div>
                 </div>
 

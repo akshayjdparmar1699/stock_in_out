@@ -225,6 +225,7 @@ class DashboardController extends Controller
             ->map(fn (Customer $customer) => [
                 'customer' => $customer,
                 'last_date' => $customer->invoices->first()?->invoice_date,
+                'last_invoice_created_at' => $customer->invoices->first()?->created_at,
             ])
             ->filter(fn (array $row) => $row['last_date'] !== null && $row['last_date']->lt(now()->subDays(3)))
             ->sortBy('last_date')
@@ -232,6 +233,7 @@ class DashboardController extends Controller
             ->map(fn (array $row) => [
                 'customer' => $row['customer'],
                 'last_date' => $row['last_date'],
+                'last_invoice_created_at' => $row['last_invoice_created_at'],
                 'whatsapp_url' => AdminAlertService::inactiveCustomerUrl($branch, $row['customer'], $row['last_date']->format('d M Y')),
             ]);
     }

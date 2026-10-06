@@ -4,7 +4,7 @@
             <div>
                 <div class="text-sm font-medium text-gray-800">{{ $expense->categoryLabel() }}</div>
                 <div class="text-xs text-gray-500">
-                    {{ $expense->staffMember?->name ?? __('General') }} &middot; {{ $expense->expense_date->format('d M Y') }}
+                    {{ $expense->staffMember?->name ?? __('General') }} &middot; {{ $expense->expense_date->format('d M Y') }}, {{ $expense->created_at->format('h:i A') }}
                 </div>
             </div>
             <div class="text-sm text-gray-700">₹{{ number_format($expense->amount, 2) }}</div>

@@ -8,6 +8,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Role') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Branch') }}</th>
                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">{{ __('Status') }}</th>
+                <th class="px-6 py-3"></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -46,10 +47,13 @@
                             </form>
                         @endif
                     </td>
+                    <td class="px-6 py-4 text-right text-sm">
+                        <a href="{{ route('users.edit', $user) }}" class="text-indigo-600 hover:underline">{{ __('Edit') }}</a>
+                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No users found.') }}</td>
+                    <td colspan="6" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No users found.') }}</td>
                 </tr>
             @endforelse
         </tbody>

@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateUserRequest;
+use App\Models\Branch;
 use App\Models\User;
 use App\Services\PerPagePreference;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -27,6 +31,37 @@ class UserController extends Controller
         }
 
         return view('users.index', ['users' => $users]);
+    }
+
+    public function edit(User $user): View
+    {
+        return view('users.edit', ['user' => $user, 'branches' => Branch::orderBy('name')->get()]);
+    }
+
+    /**
+     * Admins can't demote themselves away from admin — role controls
+     * whether a login is locked to one branch at all, so doing that to
+     * your own account could lock you out of the rest of the app.
+     */
+    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    {
+        $data = $request->validated();
+
+        if ($user->id === auth()->id() && $data['role'] !== User::ROLE_ADMIN) {
+            throw ValidationException::withMessages([
+                'role' => "You can't change your own role away from admin.",
+            ]);
+        }
+
+        $user->update([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'role' => $data['role'],
+            'branch_id' => $data['role'] === User::ROLE_STAFF ? $data['branch_id'] : null,
+            ...(! empty($data['password']) ? ['password' => Hash::make($data['password'])] : []),
+        ]);
+
+        return redirect()->route('users.index')->with('status', "User \"{$user->name}\" updated.");
     }
 
     public function toggleActive(User $user): RedirectResponse

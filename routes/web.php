@@ -82,6 +82,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('branches', BranchController::class)->except(['show', 'destroy'])->middleware('admin');
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index')->middleware('admin');
+    Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('admin');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('admin');
     Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active')->middleware('admin');
 
     Route::get('/items/search', [ItemController::class, 'search'])->name('items.search');

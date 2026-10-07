@@ -193,6 +193,13 @@ class ItemController extends Controller
         return redirect()->route('items.index')->with('status', "Item \"{$item->name}\" deleted.");
     }
 
+    /**
+     * Shared between the Invoice and Purchase item-search boxes. A
+     * purchase has to be able to find any item, including one this branch
+     * doesn't stock yet — that's exactly how it ends up stocking it — so
+     * only the invoice side passes in_stock_only to limit results to what
+     * this branch can actually sell.
+     */
     public function search(Request $request): JsonResponse
     {
         $branchId = BranchContext::id();
@@ -201,6 +208,7 @@ class ItemController extends Controller
         $items = Item::query()
             ->where('is_active', true)
             ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('sku', 'ilike', $term))
+            ->when($request->boolean('in_stock_only'), fn ($q) => $q->whereHas('stocks', fn ($q2) => $q2->where('branch_id', $branchId)))
             ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
             ->limit(10)
             ->get()

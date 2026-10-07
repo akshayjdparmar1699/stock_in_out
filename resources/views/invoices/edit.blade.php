@@ -393,7 +393,7 @@
 
                 async searchItems() {
                     if (this.itemQuery.length < 1) { this.itemResults = []; return; }
-                    const res = await fetch(`{{ route('items.search') }}?q=` + encodeURIComponent(this.itemQuery));
+                    const res = await fetch(`{{ route('items.search') }}?in_stock_only=1&q=` + encodeURIComponent(this.itemQuery));
                     this.itemResults = await res.json();
                 },
                 addItem(item) {

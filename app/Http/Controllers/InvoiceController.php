@@ -79,6 +79,7 @@ class InvoiceController extends Controller
 
         $items = Item::query()
             ->where('is_active', true)
+            ->whereHas('stocks', fn ($q) => $q->where('branch_id', $branchId))
             ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
             ->orderBy('name')
             ->get()
@@ -181,6 +182,11 @@ class InvoiceController extends Controller
 
         $items = Item::query()
             ->where('is_active', true)
+            // A line already on this invoice stays selectable even if the
+            // item isn't (or is no longer) stocked at this branch, so an
+            // existing line can still be seen/edited/removed.
+            ->where(fn ($q) => $q->whereHas('stocks', fn ($q2) => $q2->where('branch_id', $invoice->branch_id))
+                ->orWhereIn('id', $alreadyOnInvoice->keys()))
             ->with(['stocks' => fn ($q) => $q->where('branch_id', $invoice->branch_id)])
             ->orderBy('name')
             ->get()

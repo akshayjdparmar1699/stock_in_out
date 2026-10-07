@@ -35,7 +35,7 @@ class StockController extends Controller
             return view('stock.partials.table', ['movements' => $movements, 'remainingByMovement' => $remainingByMovement]);
         }
 
-        $items = Item::query()->where('is_active', true)->orderBy('name')->get();
+        $items = Item::query()->where('company_id', auth()->user()->company_id)->where('is_active', true)->orderBy('name')->get();
 
         return view('stock.index', [
             'movements' => $movements,

@@ -72,6 +72,7 @@ class PurchaseController extends Controller
         $branchId = BranchContext::id();
 
         $items = Item::query()
+            ->where('company_id', auth()->user()->company_id)
             ->where('is_active', true)
             ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
             ->orderBy('name')
@@ -169,6 +170,7 @@ class PurchaseController extends Controller
         $purchase->load('items.item', 'supplier');
 
         $items = Item::query()
+            ->where('company_id', auth()->user()->company_id)
             ->where('is_active', true)
             ->with(['stocks' => fn ($q) => $q->where('branch_id', $purchase->branch_id)])
             ->orderBy('name')

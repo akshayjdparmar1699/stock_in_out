@@ -26,6 +26,7 @@ class ItemController extends Controller
         $branchId = BranchContext::id();
 
         $items = Item::query()
+            ->where('company_id', auth()->user()->company_id)
             ->whereHas('stocks', fn ($q) => $q->where('branch_id', $branchId))
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
@@ -62,8 +63,10 @@ class ItemController extends Controller
         unset($data['opening_quantity']);
         $branchId = BranchContext::id();
 
-        $item = DB::transaction(function () use ($data, $openingQuantity, $branchId) {
-            $item = Item::create($data);
+        $companyId = auth()->user()->company_id;
+
+        $item = DB::transaction(function () use ($data, $openingQuantity, $branchId, $companyId) {
+            $item = Item::create([...$data, 'company_id' => $companyId]);
 
             ItemStock::create([
                 'branch_id' => $branchId,
@@ -100,6 +103,8 @@ class ItemController extends Controller
 
     public function show(Request $request, Item $item): View
     {
+        abort_unless($item->company_id === auth()->user()->company_id, 404);
+
         $branchId = BranchContext::id();
 
         $currentStock = ItemStock::query()
@@ -160,11 +165,15 @@ class ItemController extends Controller
 
     public function edit(Item $item): View
     {
+        abort_unless($item->company_id === auth()->user()->company_id, 404);
+
         return view('items.edit', ['item' => $item]);
     }
 
     public function update(UpdateItemRequest $request, Item $item): RedirectResponse
     {
+        abort_unless($item->company_id === auth()->user()->company_id, 404);
+
         $item->update(['is_active' => $request->boolean('is_active')] + $request->validated());
 
         return redirect()->route('items.index')->with('status', "Item \"{$item->name}\" updated.");
@@ -172,6 +181,8 @@ class ItemController extends Controller
 
     public function destroy(Item $item): RedirectResponse
     {
+        abort_unless($item->company_id === auth()->user()->company_id, 404);
+
         $hasBeenTraded = InvoiceItem::where('item_id', $item->id)->exists()
             || PurchaseItem::where('item_id', $item->id)->exists();
 
@@ -206,6 +217,7 @@ class ItemController extends Controller
         $term = '%'.$request->string('q').'%';
 
         $items = Item::query()
+            ->where('company_id', auth()->user()->company_id)
             ->where('is_active', true)
             ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('sku', 'ilike', $term))
             ->when($request->boolean('in_stock_only'), fn ($q) => $q->whereHas('stocks', fn ($q2) => $q2->where('branch_id', $branchId)))

@@ -78,6 +78,7 @@ class InvoiceController extends Controller
         $branchId = BranchContext::id();
 
         $items = Item::query()
+            ->where('company_id', auth()->user()->company_id)
             ->where('is_active', true)
             ->whereHas('stocks', fn ($q) => $q->where('branch_id', $branchId))
             ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
@@ -181,6 +182,7 @@ class InvoiceController extends Controller
             ->map(fn ($lines) => $lines->sum('base_quantity'));
 
         $items = Item::query()
+            ->where('company_id', auth()->user()->company_id)
             ->where('is_active', true)
             // A line already on this invoice stays selectable even if the
             // item isn't (or is no longer) stocked at this branch, so an

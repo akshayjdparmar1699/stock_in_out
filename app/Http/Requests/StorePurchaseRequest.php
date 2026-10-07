@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePurchaseRequest extends FormRequest
 {
@@ -21,7 +22,7 @@ class StorePurchaseRequest extends FormRequest
             'paid_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.item_id' => ['required', 'exists:items,id'],
+            'items.*.item_id' => ['required', Rule::exists('items', 'id')->where('company_id', $this->user()?->company_id)],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'items.*.quantity_unit' => ['nullable', 'in:base,alt'],
             'items.*.unit_cost' => ['required', 'numeric', 'min:0'],

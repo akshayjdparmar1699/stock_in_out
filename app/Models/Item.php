@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Item extends Model
@@ -11,6 +12,7 @@ class Item extends Model
     use HasFactory;
 
     protected $fillable = [
+        'company_id',
         'name',
         'sku',
         'unit',
@@ -45,6 +47,11 @@ class Item extends Model
     public function altUnitQuantity(float|int $baseQuantity): ?float
     {
         return $this->hasAltUnit() ? round((float) $baseQuantity * (float) $this->alt_unit_ratio, 2) : null;
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function stocks(): HasMany

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AddStockRequest extends FormRequest
 {
@@ -14,7 +15,7 @@ class AddStockRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'item_id' => ['required', 'exists:items,id'],
+            'item_id' => ['required', Rule::exists('items', 'id')->where('company_id', $this->user()?->company_id)],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'quantity_unit' => ['nullable', 'in:base,alt'],
             'unit_cost' => ['required', 'numeric', 'min:0'],

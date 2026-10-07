@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Services\BranchContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,14 @@ class AddStockRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'item_id' => ['required', Rule::exists('items', 'id')->where('company_id', $this->user()?->company_id)],
+            // Scoped to items this branch already carries, same as the
+            // dropdown it's picked from — manually adding stock isn't a way
+            // to bring a new-to-this-branch item in, only Purchase is.
+            'item_id' => [
+                'required',
+                Rule::exists('items', 'id')->where('company_id', $this->user()?->company_id),
+                Rule::exists('item_stocks', 'item_id')->where('branch_id', BranchContext::id()),
+            ],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'quantity_unit' => ['nullable', 'in:base,alt'],
             'unit_cost' => ['required', 'numeric', 'min:0'],

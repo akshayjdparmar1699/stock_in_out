@@ -86,9 +86,22 @@ class CustomerController extends Controller
         })->all();
     }
 
+    /**
+     * A customer has no company_id of its own — it's only reachable
+     * through the branches it's linked to — so route-model-bound methods
+     * (show/edit/payments/etc.) check ownership this way, since binding a
+     * customer by id alone doesn't rule out one from another company.
+     */
+    private function belongsToCurrentCompany(Customer $customer): bool
+    {
+        return $customer->branches()->where('branches.company_id', auth()->user()->company_id)->exists();
+    }
+
     public function create(): View
     {
-        return view('customers.create', ['branches' => Branch::orderBy('name')->get()]);
+        $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+
+        return view('customers.create', ['branches' => $branches]);
     }
 
     public function store(StoreCustomerRequest $request): RedirectResponse|JsonResponse
@@ -116,6 +129,8 @@ class CustomerController extends Controller
 
     public function show(Customer $customer): View
     {
+        abort_unless($this->belongsToCurrentCompany($customer), 404);
+
         $due = $customer->dueAmount();
         $branch = BranchContext::current();
 
@@ -131,6 +146,8 @@ class CustomerController extends Controller
 
     public function statementPdf(Customer $customer): Response
     {
+        abort_unless($this->belongsToCurrentCompany($customer), 404);
+
         $entries = $this->buildLedger($customer);
         $months = $entries->groupBy(fn (array $entry) => $entry['date']->format('F Y'));
 
@@ -164,6 +181,8 @@ class CustomerController extends Controller
      */
     public function storePayment(StoreCustomerPaymentRequest $request, Customer $customer): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($customer), 404);
+
         $data = $request->validated();
 
         if (($data['type'] ?? 'paid') === 'received') {
@@ -249,6 +268,8 @@ class CustomerController extends Controller
      */
     public function destroyPayment(Customer $customer, string $key): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($customer), 404);
+
         $payments = InvoicePayment::query()
             ->where('from_credit_balance', false)
             ->where(function ($query) use ($customer) {
@@ -365,13 +386,19 @@ class CustomerController extends Controller
 
     public function edit(Customer $customer): View
     {
+        abort_unless($this->belongsToCurrentCompany($customer), 404);
+
         $customer->load('branches');
 
-        return view('customers.edit', ['customer' => $customer, 'branches' => Branch::orderBy('name')->get()]);
+        $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+
+        return view('customers.edit', ['customer' => $customer, 'branches' => $branches]);
     }
 
     public function update(UpdateCustomerRequest $request, Customer $customer): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($customer), 404);
+
         $data = $request->validated();
         $data['opening_balance'] = $data['opening_balance'] ?? 0;
         $data['credit_limit'] = $data['credit_limit'] ?? 0;
@@ -389,6 +416,8 @@ class CustomerController extends Controller
 
     public function destroy(Customer $customer): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($customer), 404);
+
         if ($customer->invoices()->exists()) {
             return back()
                 ->with('status', "Cannot delete \"{$customer->name}\": they have billing history. Mark them inactive instead.")
@@ -402,6 +431,8 @@ class CustomerController extends Controller
 
     public function toggleActive(Customer $customer): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($customer), 404);
+
         $customer->update(['is_active' => ! $customer->is_active]);
 
         $status = $customer->is_active ? 'active' : 'inactive';

@@ -1,5 +1,5 @@
 <aside class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200">
-    <a href="{{ route('dashboard') }}" class="h-16 shrink-0 flex items-center gap-3 px-6 border-b border-gray-100">
+    <a href="{{ Auth::user()->isSuperAdmin() ? route('companies.index') : route('dashboard') }}" class="h-16 shrink-0 flex items-center gap-3 px-6 border-b border-gray-100">
         <x-application-logo class="w-8 h-8 text-indigo-600" />
         <span class="font-semibold text-gray-800">{{ config('app.name') }}</span>
     </a>
@@ -25,24 +25,26 @@
             </div>
         </div>
 
-        @if (Auth::user()->isAdmin())
-            <form method="POST" action="{{ route('branches.switch') }}">
-                @csrf
-                <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 px-1">{{ __('Branch') }}</label>
-                <select name="branch_id" onchange="window.showCubeLoader(); this.form.submit()" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    @foreach (\App\Models\Branch::orderBy('name')->get() as $branch)
-                        <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>
-                            {{ $branch->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </form>
-        @else
-            <div class="px-1">
-                <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('Branch') }}</p>
-                <p class="text-sm text-gray-700">{{ \App\Services\BranchContext::current()?->name }}</p>
-            </div>
-        @endif
+        @unless (Auth::user()->isSuperAdmin())
+            @if (Auth::user()->isAdmin())
+                <form method="POST" action="{{ route('branches.switch') }}">
+                    @csrf
+                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 px-1">{{ __('Branch') }}</label>
+                    <select name="branch_id" onchange="window.showCubeLoader(); this.form.submit()" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        @foreach (\App\Models\Branch::where('company_id', Auth::user()->company_id)->orderBy('name')->get() as $branch)
+                            <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>
+                                {{ $branch->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+            @else
+                <div class="px-1">
+                    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('Branch') }}</p>
+                    <p class="text-sm text-gray-700">{{ \App\Services\BranchContext::current()?->name }}</p>
+                </div>
+            @endif
+        @endunless
 
         <div x-data="{ open: false }" class="relative">
             <button @click="open = !open" class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 text-left">

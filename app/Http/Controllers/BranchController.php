@@ -15,14 +15,16 @@ class BranchController extends Controller
 {
     public function index(): View
     {
-        $branches = Branch::withCount('users')->latest()->get();
+        $branches = Branch::where('company_id', auth()->user()->company_id)->withCount('users')->latest()->get();
 
         return view('branches.index', ['branches' => $branches]);
     }
 
     public function create(): View
     {
-        return view('branches.create', ['branches' => Branch::orderBy('name')->get()]);
+        $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+
+        return view('branches.create', ['branches' => $branches]);
     }
 
     /**
@@ -36,12 +38,16 @@ class BranchController extends Controller
     public function store(StoreBranchRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $companyId = auth()->user()->company_id;
         $copyFromBranchId = $request->boolean('copy_items') ? $data['copy_from_branch_id'] : null;
         unset($data['copy_items'], $data['copy_from_branch_id']);
 
-        $branch = Branch::create($data);
+        $branch = Branch::create([...$data, 'company_id' => $companyId]);
 
-        if ($copyFromBranchId) {
+        // Re-checked here (not just in validation) so a tampered request
+        // can't copy another company's items in via a branch id that
+        // doesn't actually belong to this admin's own company.
+        if ($copyFromBranchId && Branch::whereKey($copyFromBranchId)->where('company_id', $companyId)->exists()) {
             $itemIds = ItemStock::query()->where('branch_id', $copyFromBranchId)->pluck('item_id');
 
             $stockRows = $itemIds->map(fn ($itemId) => [
@@ -62,12 +68,19 @@ class BranchController extends Controller
 
     public function edit(Branch $branch): View
     {
+        abort_unless($branch->company_id === auth()->user()->company_id, 404);
+
         return view('branches.edit', ['branch' => $branch]);
     }
 
     public function update(StoreBranchRequest $request, Branch $branch): RedirectResponse
     {
-        $branch->update($request->validated());
+        abort_unless($branch->company_id === auth()->user()->company_id, 404);
+
+        $data = $request->validated();
+        unset($data['copy_items'], $data['copy_from_branch_id']);
+
+        $branch->update($data);
 
         return redirect()->route('branches.index')->with('status', "Branch \"{$branch->name}\" updated.");
     }
@@ -82,9 +95,11 @@ class BranchController extends Controller
      */
     public function destroy(Branch $branch): RedirectResponse
     {
-        if (Branch::count() <= 1) {
+        abort_unless($branch->company_id === auth()->user()->company_id, 404);
+
+        if (Branch::where('company_id', $branch->company_id)->count() <= 1) {
             return back()
-                ->with('status', 'Cannot delete the only branch — the app needs at least one.')
+                ->with('status', 'Cannot delete the only branch — the company needs at least one.')
                 ->with('status_type', 'danger');
         }
 
@@ -122,7 +137,14 @@ class BranchController extends Controller
             abort(403);
         }
 
-        BranchContext::set((int) $request->input('branch_id'));
+        $branchId = (int) $request->input('branch_id');
+
+        abort_unless(
+            Branch::whereKey($branchId)->where('company_id', $request->user()->company_id)->exists(),
+            403
+        );
+
+        BranchContext::set($branchId);
 
         return redirect()->back()->with('status', 'Branch switched.');
     }

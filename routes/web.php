@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
@@ -73,7 +74,7 @@ Route::get('/__debug-icons', function () {
     ]);
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::post('/preferences/per-page', [PreferenceController::class, 'setPerPage'])->name('preferences.per-page');
@@ -121,6 +122,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('staff', StaffMemberController::class)->except(['show', 'destroy'])->parameters(['staff' => 'staffMember']);
 
     Route::resource('expenses', ExpenseController::class)->except(['show']);
+});
+
+Route::middleware(['auth', 'verified', 'super_admin'])->group(function () {
+    Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
+    Route::get('/companies/create', [CompanyController::class, 'create'])->name('companies.create');
+    Route::post('/companies', [CompanyController::class, 'store'])->name('companies.store');
 });
 
 Route::middleware('auth')->group(function () {

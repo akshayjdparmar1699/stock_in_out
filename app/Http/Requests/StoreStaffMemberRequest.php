@@ -20,7 +20,7 @@ class StoreStaffMemberRequest extends FormRequest
             'monthly_salary' => ['nullable', 'numeric', 'min:0'],
             'phone' => ['nullable', 'string', 'max:20'],
             'branch_ids' => ['nullable', 'array'],
-            'branch_ids.*' => ['integer', 'exists:branches,id'],
+            'branch_ids.*' => ['integer', Rule::exists('branches', 'id')->where('company_id', $this->user()?->company_id)],
         ];
     }
 }

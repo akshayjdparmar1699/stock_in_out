@@ -17,6 +17,7 @@ class UserController extends Controller
     public function index(Request $request): View
     {
         $users = User::query()
+            ->where('company_id', auth()->user()->company_id)
             ->with('branch')
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
@@ -35,7 +36,11 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
-        return view('users.edit', ['user' => $user, 'branches' => Branch::orderBy('name')->get()]);
+        abort_unless($user->company_id === auth()->user()->company_id, 404);
+
+        $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+
+        return view('users.edit', ['user' => $user, 'branches' => $branches]);
     }
 
     /**
@@ -45,6 +50,8 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
+        abort_unless($user->company_id === auth()->user()->company_id, 404);
+
         $data = $request->validated();
 
         if ($user->id === auth()->id() && $data['role'] !== User::ROLE_ADMIN) {
@@ -66,6 +73,8 @@ class UserController extends Controller
 
     public function toggleActive(User $user): RedirectResponse
     {
+        abort_unless($user->company_id === auth()->user()->company_id, 404);
+
         if ($user->id === auth()->id()) {
             return redirect()->back()
                 ->with('status', "You can't deactivate your own account.")

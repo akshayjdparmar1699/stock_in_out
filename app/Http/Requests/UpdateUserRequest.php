@@ -19,7 +19,10 @@ class UpdateUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
             'role' => ['required', 'in:admin,staff'],
-            'branch_id' => ['nullable', 'required_if:role,staff', 'exists:branches,id'],
+            'branch_id' => [
+                'nullable', 'required_if:role,staff',
+                Rule::exists('branches', 'id')->where('company_id', $this->user()?->company_id),
+            ],
             // Left blank to keep the current password unchanged.
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
         ];

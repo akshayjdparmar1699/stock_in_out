@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'super_admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
+            'not_super_admin' => \App\Http\Middleware\RedirectSuperAdminToCompanies::class,
         ]);
 
         // Render (and most PaaS hosts) terminate HTTPS at their edge and

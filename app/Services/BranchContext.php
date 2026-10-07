@@ -20,7 +20,7 @@ class BranchContext
     {
         $user = Auth::user();
 
-        if (! $user) {
+        if (! $user || $user->isSuperAdmin()) {
             return null;
         }
 
@@ -28,7 +28,19 @@ class BranchContext
             return $user->branch_id;
         }
 
-        return Session::get(self::SESSION_KEY) ?? Branch::query()->where('is_active', true)->value('id');
+        $sessionBranchId = Session::get(self::SESSION_KEY);
+
+        // Only trust the session's branch id if it's actually one of this
+        // admin's own company's branches — otherwise a stale session (or a
+        // tampered one) could leak another company's branch into view.
+        if ($sessionBranchId && Branch::whereKey($sessionBranchId)->where('company_id', $user->company_id)->exists()) {
+            return $sessionBranchId;
+        }
+
+        return Branch::query()
+            ->where('company_id', $user->company_id)
+            ->where('is_active', true)
+            ->value('id');
     }
 
     public static function current(): ?Branch

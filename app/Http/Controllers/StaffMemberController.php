@@ -42,7 +42,9 @@ class StaffMemberController extends Controller
 
     public function create(): View
     {
-        return view('staff.create', ['branches' => Branch::orderBy('name')->get()]);
+        $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+
+        return view('staff.create', ['branches' => $branches]);
     }
 
     public function store(StoreStaffMemberRequest $request): RedirectResponse
@@ -55,7 +57,7 @@ class StaffMemberController extends Controller
 
         if (! $branchIds) {
             $branchIds = $data['type'] === 'partner'
-                ? Branch::query()->pluck('id')->all()
+                ? Branch::query()->where('company_id', auth()->user()->company_id)->pluck('id')->all()
                 : [BranchContext::id()];
         }
 
@@ -64,15 +66,32 @@ class StaffMemberController extends Controller
         return redirect()->route('staff.index')->with('status', "\"{$staff->name}\" added.");
     }
 
+    /**
+     * A staff member has no company_id of its own — it's only reachable
+     * through the branches it's linked to — so ownership is checked that
+     * way instead, same as a StaffMember with no branches at all (a state
+     * that shouldn't normally happen) being treated as not this company's.
+     */
+    private function belongsToCurrentCompany(StaffMember $staffMember): bool
+    {
+        return $staffMember->branches()->where('branches.company_id', auth()->user()->company_id)->exists();
+    }
+
     public function edit(StaffMember $staffMember): View
     {
+        abort_unless($this->belongsToCurrentCompany($staffMember), 404);
+
         $staffMember->load('branches');
 
-        return view('staff.edit', ['staffMember' => $staffMember, 'branches' => Branch::orderBy('name')->get()]);
+        $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+
+        return view('staff.edit', ['staffMember' => $staffMember, 'branches' => $branches]);
     }
 
     public function update(UpdateStaffMemberRequest $request, StaffMember $staffMember): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($staffMember), 404);
+
         $data = $request->validated();
         $branchIds = $data['branch_ids'] ?? null;
         unset($data['branch_ids']);
@@ -88,6 +107,8 @@ class StaffMemberController extends Controller
 
     public function toggleActive(StaffMember $staffMember): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($staffMember), 404);
+
         $staffMember->update(['is_active' => ! $staffMember->is_active]);
 
         $status = $staffMember->is_active ? 'active' : 'inactive';

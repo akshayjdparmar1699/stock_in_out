@@ -34,7 +34,7 @@
                         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
                         class="fixed inset-y-0 left-0 w-64 bg-white flex flex-col shadow-xl">
                     <div class="h-16 shrink-0 flex items-center justify-between px-4 border-b border-gray-100">
-                        <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
+                        <a href="{{ Auth::user()->isSuperAdmin() ? route('companies.index') : route('dashboard') }}" class="flex items-center gap-3">
                             <x-application-logo class="w-8 h-8 text-indigo-600" />
                             <span class="font-semibold text-gray-800">{{ config('app.name') }}</span>
                         </a>
@@ -50,24 +50,26 @@
                     </nav>
 
                     <div class="px-3 py-4 border-t border-gray-100">
-                        @if (Auth::user()->isAdmin())
-                            <form method="POST" action="{{ route('branches.switch') }}" class="mb-3">
-                                @csrf
-                                <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 px-1">{{ __('Branch') }}</label>
-                                <select name="branch_id" onchange="window.showCubeLoader(); this.form.submit()" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    @foreach (\App\Models\Branch::orderBy('name')->get() as $branch)
-                                        <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>
-                                            {{ $branch->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </form>
-                        @else
-                            <div class="px-1 mb-3">
-                                <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('Branch') }}</p>
-                                <p class="text-sm text-gray-700">{{ \App\Services\BranchContext::current()?->name }}</p>
-                            </div>
-                        @endif
+                        @unless (Auth::user()->isSuperAdmin())
+                            @if (Auth::user()->isAdmin())
+                                <form method="POST" action="{{ route('branches.switch') }}" class="mb-3">
+                                    @csrf
+                                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 px-1">{{ __('Branch') }}</label>
+                                    <select name="branch_id" onchange="window.showCubeLoader(); this.form.submit()" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        @foreach (\App\Models\Branch::where('company_id', Auth::user()->company_id)->orderBy('name')->get() as $branch)
+                                            <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>
+                                                {{ $branch->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </form>
+                            @else
+                                <div class="px-1 mb-3">
+                                    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('Branch') }}</p>
+                                    <p class="text-sm text-gray-700">{{ \App\Services\BranchContext::current()?->name }}</p>
+                                </div>
+                            @endif
+                        @endunless
 
                         <div x-data="{ installable: false, showIosHint: false }"
                             x-init="window.addEventListener('pwa-installable', () => installable = true); window.addEventListener('pwa-installed', () => installable = false); installable = !!window.deferredInstallPrompt; showIosHint = window.isIosInstallable && !localStorage.getItem('pwaIosHintDismissed')"

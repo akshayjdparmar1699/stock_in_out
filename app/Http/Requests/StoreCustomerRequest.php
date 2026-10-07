@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCustomerRequest extends FormRequest
 {
@@ -22,7 +23,7 @@ class StoreCustomerRequest extends FormRequest
             'opening_balance' => ['nullable', 'numeric', 'min:0'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'branch_ids' => ['nullable', 'array'],
-            'branch_ids.*' => ['integer', 'exists:branches,id'],
+            'branch_ids.*' => ['integer', Rule::exists('branches', 'id')->where('company_id', $this->user()?->company_id)],
         ];
     }
 }

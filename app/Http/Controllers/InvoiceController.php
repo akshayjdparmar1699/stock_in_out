@@ -174,8 +174,21 @@ class InvoiceController extends Controller
         return redirect()->route('invoices.show', $invoice)->with('status', "Invoice {$invoice->invoice_number} created.");
     }
 
+    /**
+     * Invoice has no company_id of its own — only a branch_id — so
+     * route-model-bound methods (show/edit/payments/pdf/etc.) check
+     * ownership through the branch's own company, since binding an
+     * invoice by id alone doesn't rule out one from another company.
+     */
+    private function belongsToCurrentCompany(Invoice $invoice): bool
+    {
+        return $invoice->branch?->company_id === auth()->user()->company_id;
+    }
+
     public function edit(Invoice $invoice): View
     {
+        abort_unless($this->belongsToCurrentCompany($invoice), 404);
+
         $invoice->load('items.item', 'customer');
 
         $alreadyOnInvoice = $invoice->items->groupBy('item_id')
@@ -243,6 +256,8 @@ class InvoiceController extends Controller
 
     public function update(UpdateInvoiceRequest $request, Invoice $invoice): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($invoice), 404);
+
         $data = $request->validated();
 
         $this->assertCustomerInBranch($data['customer_id'], $invoice->branch_id);
@@ -440,6 +455,8 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice): View
     {
+        abort_unless($this->belongsToCurrentCompany($invoice), 404);
+
         $invoice->load(['customer', 'branch', 'user', 'items.item', 'payments.user']);
 
         $lowStockLines = ItemStock::query()
@@ -467,6 +484,8 @@ class InvoiceController extends Controller
 
     public function destroy(Invoice $invoice): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($invoice), 404);
+
         DB::transaction(function () use ($invoice) {
             $this->reverseStockEffects($invoice);
 
@@ -486,6 +505,8 @@ class InvoiceController extends Controller
 
     public function pdf(Invoice $invoice): Response
     {
+        abort_unless($this->belongsToCurrentCompany($invoice), 404);
+
         $invoice->load(['customer', 'branch', 'items.item']);
 
         return $this->renderPdf($invoice)->stream("{$invoice->invoice_number}.pdf");
@@ -501,6 +522,8 @@ class InvoiceController extends Controller
 
     public function storePayment(StoreInvoicePaymentRequest $request, Invoice $invoice): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($invoice), 404);
+
         $data = $request->validated();
 
         DB::transaction(function () use ($data, $invoice) {

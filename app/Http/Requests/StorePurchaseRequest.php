@@ -15,7 +15,7 @@ class StorePurchaseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'supplier_id' => ['required', 'exists:suppliers,id'],
+            'supplier_id' => ['required', Rule::exists('suppliers', 'id')->where('company_id', $this->user()?->company_id)],
             'purchase_date' => ['required', 'date'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'tax' => ['nullable', 'numeric', 'min:0'],

@@ -165,8 +165,21 @@ class PurchaseController extends Controller
         return redirect()->route('purchases.show', $purchase)->with('status', "Purchase {$purchase->purchase_number} recorded.");
     }
 
+    /**
+     * Purchase has no company_id of its own — only a branch_id — so
+     * route-model-bound methods (show/edit/payments/pdf/etc.) check
+     * ownership through the branch's own company, since binding a
+     * purchase by id alone doesn't rule out one from another company.
+     */
+    private function belongsToCurrentCompany(Purchase $purchase): bool
+    {
+        return $purchase->branch?->company_id === auth()->user()->company_id;
+    }
+
     public function edit(Purchase $purchase): View
     {
+        abort_unless($this->belongsToCurrentCompany($purchase), 404);
+
         $purchase->load('items.item', 'supplier');
 
         $items = Item::query()
@@ -216,6 +229,8 @@ class PurchaseController extends Controller
 
     public function update(StorePurchaseRequest $request, Purchase $purchase): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($purchase), 404);
+
         $data = $request->validated();
 
         $this->assertReversible($purchase);
@@ -378,6 +393,8 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase): View
     {
+        abort_unless($this->belongsToCurrentCompany($purchase), 404);
+
         $purchase->load(['supplier', 'branch', 'user', 'items.item', 'payments.user']);
 
         return view('purchases.show', [
@@ -389,6 +406,8 @@ class PurchaseController extends Controller
 
     public function pdf(Purchase $purchase): Response
     {
+        abort_unless($this->belongsToCurrentCompany($purchase), 404);
+
         $purchase->load(['supplier', 'branch', 'items.item']);
 
         return $this->renderPdf($purchase)->stream("{$purchase->purchase_number}.pdf");
@@ -396,6 +415,8 @@ class PurchaseController extends Controller
 
     public function destroy(Purchase $purchase): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($purchase), 404);
+
         try {
             $this->assertReversible($purchase);
         } catch (ValidationException $e) {
@@ -431,6 +452,8 @@ class PurchaseController extends Controller
 
     public function storePayment(StorePurchasePaymentRequest $request, Purchase $purchase): RedirectResponse
     {
+        abort_unless($this->belongsToCurrentCompany($purchase), 404);
+
         $data = $request->validated();
 
         DB::transaction(function () use ($data, $purchase) {

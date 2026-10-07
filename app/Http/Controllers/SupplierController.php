@@ -22,6 +22,7 @@ class SupplierController extends Controller
     public function index(Request $request): View
     {
         $suppliers = Supplier::query()
+            ->where('company_id', auth()->user()->company_id)
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
                 $query->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term));
@@ -81,6 +82,7 @@ class SupplierController extends Controller
     {
         $data = $request->validated();
         $data['opening_balance'] = $data['opening_balance'] ?? 0;
+        $data['company_id'] = auth()->user()->company_id;
 
         $supplier = Supplier::create($data);
 
@@ -95,6 +97,8 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier): View
     {
+        abort_unless($supplier->company_id === auth()->user()->company_id, 404);
+
         return view('suppliers.show', [
             'supplier' => $supplier,
             'entries' => $this->buildLedger($supplier)->reverse()->values(),
@@ -118,6 +122,8 @@ class SupplierController extends Controller
      */
     public function storePayment(StoreSupplierPaymentRequest $request, Supplier $supplier): RedirectResponse
     {
+        abort_unless($supplier->company_id === auth()->user()->company_id, 404);
+
         $data = $request->validated();
 
         if (($data['type'] ?? 'paid') === 'received') {
@@ -203,6 +209,8 @@ class SupplierController extends Controller
      */
     public function destroyPayment(Supplier $supplier, string $key): RedirectResponse
     {
+        abort_unless($supplier->company_id === auth()->user()->company_id, 404);
+
         $payments = PurchasePayment::query()
             ->where('from_credit_balance', false)
             ->where(function ($query) use ($supplier) {
@@ -314,11 +322,15 @@ class SupplierController extends Controller
 
     public function edit(Supplier $supplier): View
     {
+        abort_unless($supplier->company_id === auth()->user()->company_id, 404);
+
         return view('suppliers.edit', ['supplier' => $supplier]);
     }
 
     public function update(UpdateSupplierRequest $request, Supplier $supplier): RedirectResponse
     {
+        abort_unless($supplier->company_id === auth()->user()->company_id, 404);
+
         $data = $request->validated();
         $data['opening_balance'] = $data['opening_balance'] ?? 0;
 
@@ -332,6 +344,7 @@ class SupplierController extends Controller
         $term = '%'.$request->string('q').'%';
 
         $suppliers = Supplier::query()
+            ->where('company_id', auth()->user()->company_id)
             ->where('is_active', true)
             ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term))
             ->orderBy('name')

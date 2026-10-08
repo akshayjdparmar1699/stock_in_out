@@ -16,7 +16,12 @@
                 <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.showCubeLoader(); window.location='{{ route('invoices.show', $invoice) }}'">
                     <td class="px-6 py-4 text-sm font-medium text-indigo-700 hover:underline">{{ $invoice->invoice_number }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $invoice->invoice_date->format('d M Y') }}, {{ $invoice->created_at->format('h:i A') }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">{{ $invoice->customer->name }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        {{ $invoice->displayCustomerName() }}
+                        @if ($invoice->isGuestCustomer())
+                            <span class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700" title="{{ __('No customer record was saved for this bill.') }}">{{ __('Unregistered') }}</span>
+                        @endif
+                    </td>
                     <td class="px-6 py-4 text-sm text-gray-700">₹{{ number_format($invoice->total, 2) }}</td>
                     <td class="px-6 py-4 text-sm">
                         <span @class([

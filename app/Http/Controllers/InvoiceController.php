@@ -102,10 +102,13 @@ class InvoiceController extends Controller
     {
         $branchId = BranchContext::id();
         $data = $request->validated();
+        $customerId = $data['customer_id'] ?? null;
 
-        $this->assertCustomerInBranch($data['customer_id'], $branchId);
+        if ($customerId) {
+            $this->assertCustomerInBranch($customerId, $branchId);
+        }
 
-        $invoice = DB::transaction(function () use ($data, $branchId) {
+        $invoice = DB::transaction(function () use ($data, $branchId, $customerId) {
             $discount = (float) ($data['discount'] ?? 0);
             $tax = (float) ($data['tax'] ?? 0);
             $transportation = (float) ($data['transportation'] ?? 0);
@@ -114,7 +117,8 @@ class InvoiceController extends Controller
             $invoice = Invoice::create([
                 'invoice_number' => $this->nextInvoiceNumber($branchId),
                 'branch_id' => $branchId,
-                'customer_id' => $data['customer_id'],
+                'customer_id' => $customerId,
+                'guest_customer_name' => $customerId ? null : $data['guest_customer_name'],
                 'user_id' => auth()->id(),
                 'invoice_date' => $data['invoice_date'],
                 'subtotal' => 0,
@@ -139,26 +143,30 @@ class InvoiceController extends Controller
                 ]);
             }
 
-            // Any credit this customer is already holding (from a past
-            // payment that exceeded everything they owed at the time)
-            // auto-draws against what's still due on this new invoice,
-            // oldest credit first — they shouldn't have to remember to
-            // ask for it to be applied.
-            $customer = Customer::whereKey($data['customer_id'])->lockForUpdate()->first();
-            $stillDue = round($total - $paidAmount, 2);
-            $creditToApply = min((float) $customer->credit_balance, max(0, $stillDue));
+            // A walk-in billed by name only has no Customer record to hold
+            // a credit balance on, so there's nothing to auto-draw against.
+            if ($customerId) {
+                // Any credit this customer is already holding (from a past
+                // payment that exceeded everything they owed at the time)
+                // auto-draws against what's still due on this new invoice,
+                // oldest credit first — they shouldn't have to remember to
+                // ask for it to be applied.
+                $customer = Customer::whereKey($customerId)->lockForUpdate()->first();
+                $stillDue = round($total - $paidAmount, 2);
+                $creditToApply = min((float) $customer->credit_balance, max(0, $stillDue));
 
-            if ($creditToApply > 0) {
-                InvoicePayment::create([
-                    'invoice_id' => $invoice->id,
-                    'user_id' => auth()->id(),
-                    'amount' => $creditToApply,
-                    'note' => 'Applied from customer credit balance',
-                    'from_credit_balance' => true,
-                ]);
+                if ($creditToApply > 0) {
+                    InvoicePayment::create([
+                        'invoice_id' => $invoice->id,
+                        'user_id' => auth()->id(),
+                        'amount' => $creditToApply,
+                        'note' => 'Applied from customer credit balance',
+                        'from_credit_balance' => true,
+                    ]);
 
-                $customer->decrement('credit_balance', $creditToApply);
-                $paidAmount = round($paidAmount + $creditToApply, 2);
+                    $customer->decrement('credit_balance', $creditToApply);
+                    $paidAmount = round($paidAmount + $creditToApply, 2);
+                }
             }
 
             $invoice->update([
@@ -171,7 +179,18 @@ class InvoiceController extends Controller
             return $invoice;
         });
 
-        return redirect()->route('invoices.show', $invoice)->with('status', "Invoice {$invoice->invoice_number} created.");
+        $redirect = redirect()->route('invoices.show', $invoice)->with('status', "Invoice {$invoice->invoice_number} created.");
+
+        // Only a saved Customer carries a balance between visits — a
+        // walk-in billed by name has nowhere for that to live, so the
+        // shop has to remember the credit themselves. Flagged here rather
+        // than silently, since it's easy to forget this bill was ever
+        // partly unpaid once the page is closed.
+        if ($invoice->isGuestCustomer() && $invoice->balanceDue() > 0.004) {
+            $redirect->with('guest_credit_warning', true);
+        }
+
+        return $redirect;
     }
 
     /**
@@ -238,19 +257,20 @@ class InvoiceController extends Controller
             'unit_price' => (float) $line->unit_price,
         ])->values();
 
-        $selectedCustomer = [
+        $selectedCustomer = $invoice->customer ? [
             'id' => $invoice->customer->id,
             'name' => $invoice->customer->name,
             'phone' => $invoice->customer->phone,
             'address' => $invoice->customer->address,
             'due' => $invoice->customer->dueAmount(),
-        ];
+        ] : null;
 
         return view('invoices.edit', [
             'invoice' => $invoice,
             'items' => $items,
             'initialLines' => $initialLines,
             'selectedCustomer' => $selectedCustomer,
+            'guestCustomerName' => $invoice->guest_customer_name,
         ]);
     }
 
@@ -259,10 +279,13 @@ class InvoiceController extends Controller
         abort_unless($this->belongsToCurrentCompany($invoice), 404);
 
         $data = $request->validated();
+        $customerId = $data['customer_id'] ?? null;
 
-        $this->assertCustomerInBranch($data['customer_id'], $invoice->branch_id);
+        if ($customerId) {
+            $this->assertCustomerInBranch($customerId, $invoice->branch_id);
+        }
 
-        DB::transaction(function () use ($data, $invoice) {
+        DB::transaction(function () use ($data, $invoice, $customerId) {
             $this->reverseStockEffects($invoice);
 
             $discount = (float) ($data['discount'] ?? 0);
@@ -273,7 +296,8 @@ class InvoiceController extends Controller
             $total = round($subtotal - $discount + $tax + $transportation, 2);
 
             $invoice->update([
-                'customer_id' => $data['customer_id'],
+                'customer_id' => $customerId,
+                'guest_customer_name' => $customerId ? null : $data['guest_customer_name'],
                 'invoice_date' => $data['invoice_date'],
                 'subtotal' => $subtotal,
                 'discount' => $discount,
@@ -473,7 +497,7 @@ class InvoiceController extends Controller
 
         return view('invoices.show', [
             'invoice' => $invoice,
-            'customerDue' => $invoice->customer->dueAmount(),
+            'customerDue' => $invoice->customer?->dueAmount(),
             'shareMessage' => $invoice->whatsappMessage(),
             'lowStockLines' => $lowStockLines,
             'lowStockAdminUrl' => $lowStockLines->isNotEmpty()
@@ -516,7 +540,7 @@ class InvoiceController extends Controller
     {
         return Pdf::loadView('invoices.pdf', [
             'invoice' => $invoice,
-            'customerDue' => $invoice->customer->dueAmount(),
+            'customerDue' => $invoice->customer?->dueAmount(),
         ])->setPaper('a4');
     }
 

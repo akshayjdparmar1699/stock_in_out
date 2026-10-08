@@ -34,7 +34,32 @@
         });
     </script>
 
-    <div class="py-12">
+    <div class="py-12" x-data="{ guestWarningOpen: {{ session('guest_credit_warning') ? 'true' : 'false' }} }">
+        @if (session('guest_credit_warning'))
+            <div x-show="guestWarningOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 print:hidden" style="display: none;">
+                <div class="absolute inset-0 bg-gray-900/50" @click="guestWarningOpen = false"></div>
+
+                <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 text-center">
+                    <div class="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-5 bg-amber-50">
+                        <svg class="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+
+                    <h3 class="text-lg font-semibold text-amber-700">{{ __('Remember this one yourself') }}</h3>
+
+                    <p class="text-sm text-gray-500 mt-2">
+                        {{ __("This bill wasn't paid in full and no customer record was saved — we have no name, phone, or way to track that money is still owed. You'll need to remember it yourself.") }}
+                    </p>
+
+                    <button type="button" @click="guestWarningOpen = false"
+                        class="mt-7 w-full px-4 py-2.5 rounded-lg text-white text-sm font-medium bg-amber-600 hover:bg-amber-700">
+                        {{ __('Got it') }}
+                    </button>
+                </div>
+            </div>
+        @endif
+
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 
             @if ($lowStockAdminUrl)
@@ -74,13 +99,22 @@
 
                 <div class="mb-8">
                     <div class="text-sm text-gray-500">{{ __('Bill To') }}</div>
-                    <div class="font-medium text-gray-800">{{ $invoice->customer->name }}</div>
-                    <div class="text-sm text-gray-500">{{ $invoice->customer->phone }}</div>
-                    @if ($invoice->customer->address)
-                        <div class="text-sm text-gray-500">{{ $invoice->customer->address }}</div>
-                    @endif
-                    @if ($invoice->customer->gst_number)
-                        <div class="text-sm text-gray-500">{{ __('GSTIN') }}: {{ $invoice->customer->gst_number }}</div>
+                    <div class="font-medium text-gray-800 flex items-center gap-2">
+                        {{ $invoice->displayCustomerName() }}
+                        @if ($invoice->isGuestCustomer())
+                            <span class="text-xs font-normal px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 print:border print:border-amber-400" title="{{ __('No customer record was saved for this bill — just a name.') }}">
+                                {{ __('Unregistered') }}
+                            </span>
+                        @endif
+                    </div>
+                    @if ($invoice->customer)
+                        <div class="text-sm text-gray-500">{{ $invoice->customer->phone }}</div>
+                        @if ($invoice->customer->address)
+                            <div class="text-sm text-gray-500">{{ $invoice->customer->address }}</div>
+                        @endif
+                        @if ($invoice->customer->gst_number)
+                            <div class="text-sm text-gray-500">{{ __('GSTIN') }}: {{ $invoice->customer->gst_number }}</div>
+                        @endif
                     @endif
                 </div>
 
@@ -108,7 +142,7 @@
                 </div>
 
                 @php
-                    $previousDue = $customerDue - ($invoice->total - $invoice->paid_amount);
+                    $previousDue = $invoice->isGuestCustomer() ? null : $customerDue - ($invoice->total - $invoice->paid_amount);
                 @endphp
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-6">
                     <div>
@@ -147,16 +181,23 @@
                             <span>₹{{ number_format($invoice->paid_amount, 2) }}</span>
                         </div>
 
-                        <div class="flex justify-between text-sm text-gray-500 border-t pt-1 mt-1">
-                            <span>{{ __('Previous Due') }}</span>
-                            <span class="{{ $previousDue > 0 ? 'text-red-600' : ($previousDue < 0 ? 'text-green-600' : 'text-gray-700') }}">
-                                ₹{{ number_format(abs($previousDue), 2) }}{{ $previousDue < 0 ? ' CR' : '' }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between text-base font-semibold {{ $customerDue > 0 ? 'text-red-600' : 'text-green-600' }}">
-                            <span>{{ $customerDue > 0 ? __('Balance Due') : __('Settled / In Credit') }}</span>
-                            <span>₹{{ number_format(abs($customerDue), 2) }}{{ $customerDue < 0 ? ' CR' : '' }}</span>
-                        </div>
+                        @if ($invoice->isGuestCustomer())
+                            <div class="flex justify-between text-base font-semibold {{ $invoice->balanceDue() > 0 ? 'text-red-600' : 'text-green-600' }}">
+                                <span>{{ $invoice->balanceDue() > 0 ? __('Balance Due') : __('Settled') }}</span>
+                                <span>₹{{ number_format($invoice->balanceDue(), 2) }}</span>
+                            </div>
+                        @else
+                            <div class="flex justify-between text-sm text-gray-500 border-t pt-1 mt-1">
+                                <span>{{ __('Previous Due') }}</span>
+                                <span class="{{ $previousDue > 0 ? 'text-red-600' : ($previousDue < 0 ? 'text-green-600' : 'text-gray-700') }}">
+                                    ₹{{ number_format(abs($previousDue), 2) }}{{ $previousDue < 0 ? ' CR' : '' }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between text-base font-semibold {{ $customerDue > 0 ? 'text-red-600' : 'text-green-600' }}">
+                                <span>{{ $customerDue > 0 ? __('Balance Due') : __('Settled / In Credit') }}</span>
+                                <span>₹{{ number_format(abs($customerDue), 2) }}{{ $customerDue < 0 ? ' CR' : '' }}</span>
+                            </div>
+                        @endif
                     </div>
                 </div>
 

@@ -15,7 +15,8 @@ class UpdateInvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_id' => ['required', 'exists:customers,id'],
+            'customer_id' => ['nullable', 'required_without:guest_customer_name', 'exists:customers,id'],
+            'guest_customer_name' => ['nullable', 'required_without:customer_id', 'string', 'max:255'],
             'invoice_date' => ['required', 'date'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'tax' => ['nullable', 'numeric', 'min:0'],

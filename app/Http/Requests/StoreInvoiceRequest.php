@@ -15,7 +15,10 @@ class StoreInvoiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_id' => ['required', 'exists:customers,id'],
+            // Exactly one of the two: a saved customer, or just a typed
+            // name for a one-off walk-in nobody wants a customer record for.
+            'customer_id' => ['nullable', 'required_without:guest_customer_name', 'exists:customers,id'],
+            'guest_customer_name' => ['nullable', 'required_without:customer_id', 'string', 'max:255'],
             'invoice_date' => ['required', 'date'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'tax' => ['nullable', 'numeric', 'min:0'],

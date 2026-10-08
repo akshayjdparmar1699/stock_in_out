@@ -5,7 +5,7 @@
 
     <div class="py-12" x-data="invoiceForm()">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <form method="POST" action="{{ route('invoices.update', $invoice) }}" @submit="if (lines.length === 0) { alert('{{ __('Add at least one item.') }}'); $event.preventDefault(); }">
+            <form method="POST" action="{{ route('invoices.update', $invoice) }}" @submit="if (lines.length === 0) { alert('{{ __('Add at least one item.') }}'); $event.preventDefault(); return; } if (!selectedCustomer && !(guestMode && guestCustomerName.trim())) { alert('{{ __('Pick a customer, or bill by name.') }}'); $event.preventDefault(); }">
                 @csrf
                 @method('PUT')
 
@@ -14,8 +14,9 @@
                     <h3 class="font-medium text-gray-700 mb-4">{{ __('1. Customer') }}</h3>
 
                     <input type="hidden" name="customer_id" :value="selectedCustomer ? selectedCustomer.id : ''">
+                    <input type="hidden" name="guest_customer_name" :value="guestMode ? guestCustomerName : ''">
 
-                    <template x-if="!selectedCustomer && !showCustomerForm">
+                    <template x-if="!selectedCustomer && !showCustomerForm && !guestMode">
                         <div class="relative">
                             <x-text-input type="text" class="w-full" placeholder="{{ __('Search customer by name or phone...') }}"
                                 x-model="customerQuery" @input.debounce.300ms="searchCustomers()" autocomplete="off" />
@@ -58,7 +59,27 @@
                                         {{ __('+ Create new customer') }}
                                     </button>
                                 </p>
+
+                                <p class="text-xs text-gray-400 px-4 py-3 border-t border-gray-100">
+                                    {{ __("Don't want to save their details?") }}
+                                    <button type="button" class="text-indigo-600 hover:underline" @click="guestMode = true; guestCustomerName = customerQuery; customerQuery = ''">
+                                        {{ __('Just bill by name') }}
+                                    </button>
+                                </p>
                             </div>
+                        </div>
+                    </template>
+
+                    <template x-if="guestMode">
+                        <div class="border border-amber-200 bg-amber-50 rounded-md p-4 space-y-2">
+                            <x-input-label for="guest_name_display" :value="__('Customer Name')" />
+                            <x-text-input id="guest_name_display" type="text" class="w-full" x-model="guestCustomerName" placeholder="{{ __('e.g. Ramesh (walk-in)') }}" />
+                            <p class="text-xs text-amber-700">
+                                {{ __("No customer record will be saved — their name just appears on this bill. We won't be able to track any balance for them, so if they don't pay in full now, you'll need to remember it yourself.") }}
+                            </p>
+                            <button type="button" class="text-sm text-indigo-600 hover:underline" @click="guestMode = false; guestCustomerName = ''">
+                                {{ __('Cancel — search for a customer instead') }}
+                            </button>
                         </div>
                     </template>
 
@@ -307,6 +328,8 @@
                 showCustomerForm: false,
                 customerError: '',
                 newCustomer: { name: '', phone: '', email: '', address: '', opening_balance: 0, credit_limit: 0 },
+                guestMode: {{ $guestCustomerName ? 'true' : 'false' }},
+                guestCustomerName: {{ \Illuminate\Support\Js::from($guestCustomerName ?? '') }},
 
                 allItems: @json($items),
                 itemQuery: '',

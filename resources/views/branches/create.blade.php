@@ -6,7 +6,7 @@
     <div class="py-12">
         <div class="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm rounded-lg p-6">
-                <form method="POST" action="{{ route('branches.store') }}" class="space-y-4" x-data="{ copyItems: {{ old('copy_items') ? 'true' : 'false' }} }">
+                <form method="POST" action="{{ route('branches.store') }}" enctype="multipart/form-data" class="space-y-4" x-data="{ copyItems: {{ old('copy_items') ? 'true' : 'false' }} }">
                     @csrf
                     @include('branches.partials.form', ['branch' => null])
 

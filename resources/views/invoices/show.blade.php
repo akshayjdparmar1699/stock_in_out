@@ -147,12 +147,12 @@
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-6">
                     <div>
                         <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{{ __('Scan & Pay') }}</div>
-                        <img src="{{ asset('images/payment-qr.png') }}" alt="{{ __('Payment QR code') }}" class="w-32 h-32">
+                        <img src="{{ $invoice->branch->paymentQrUrl() }}" alt="{{ __('Payment QR code') }}" class="w-32 h-32">
                         <div class="mt-2 text-xs text-gray-500 leading-relaxed">
-                            <div class="font-medium text-gray-700">HDFC Bank</div>
-                            <div>{{ __('A/c No') }}: 50200097420397</div>
-                            <div>{{ __('A/c Holder') }}: Om Sai Aalubhandar</div>
-                            <div>IFSC: HDFC0004196</div>
+                            <div class="font-medium text-gray-700">{{ $invoice->branch->paymentBankName() }}</div>
+                            <div>{{ __('A/c No') }}: {{ $invoice->branch->paymentAccountNumber() }}</div>
+                            <div>{{ __('A/c Holder') }}: {{ $invoice->branch->paymentAccountHolderName() }}</div>
+                            <div>IFSC: {{ $invoice->branch->paymentIfscCode() }}</div>
                         </div>
                     </div>
                     <div class="w-72 space-y-1">

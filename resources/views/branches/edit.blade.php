@@ -6,7 +6,7 @@
     <div class="py-12">
         <div class="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm rounded-lg p-6">
-                <form method="POST" action="{{ route('branches.update', $branch) }}" class="space-y-4">
+                <form method="POST" action="{{ route('branches.update', $branch) }}" enctype="multipart/form-data" class="space-y-4">
                     @csrf
                     @method('PUT')
                     @include('branches.partials.form', ['branch' => $branch])

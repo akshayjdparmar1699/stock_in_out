@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\BranchContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class BranchController extends Controller
@@ -40,7 +41,11 @@ class BranchController extends Controller
         $data = $request->validated();
         $companyId = auth()->user()->company_id;
         $copyFromBranchId = $request->boolean('copy_items') ? $data['copy_from_branch_id'] : null;
-        unset($data['copy_items'], $data['copy_from_branch_id']);
+        unset($data['copy_items'], $data['copy_from_branch_id'], $data['qr_code_photo'], $data['remove_qr_code']);
+
+        if ($request->hasFile('qr_code_photo')) {
+            $data['qr_code_path'] = $request->file('qr_code_photo')->store('branch-qr-codes', 'public');
+        }
 
         $branch = Branch::create([...$data, 'company_id' => $companyId]);
 
@@ -78,7 +83,19 @@ class BranchController extends Controller
         abort_unless($branch->company_id === auth()->user()->company_id, 404);
 
         $data = $request->validated();
-        unset($data['copy_items'], $data['copy_from_branch_id']);
+        unset($data['copy_items'], $data['copy_from_branch_id'], $data['qr_code_photo'], $data['remove_qr_code']);
+
+        if ($request->hasFile('qr_code_photo')) {
+            if ($branch->qr_code_path) {
+                Storage::disk('public')->delete($branch->qr_code_path);
+            }
+            $data['qr_code_path'] = $request->file('qr_code_photo')->store('branch-qr-codes', 'public');
+        } elseif ($request->boolean('remove_qr_code')) {
+            if ($branch->qr_code_path) {
+                Storage::disk('public')->delete($branch->qr_code_path);
+            }
+            $data['qr_code_path'] = null;
+        }
 
         $branch->update($data);
 

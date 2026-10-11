@@ -93,12 +93,12 @@
     <div class="payment-section">
         <div class="payment-qr">
             <div class="qr-label">Scan &amp; Pay</div>
-            <img src="{{ 'data:image/png;base64,'.base64_encode(file_get_contents(public_path('images/payment-qr.png'))) }}" alt="Payment QR">
+            <img src="{{ 'data:'.$invoice->branch->paymentQrMimeType().';base64,'.base64_encode(file_get_contents($invoice->branch->paymentQrPath())) }}" alt="Payment QR">
             <div class="bank-details">
-                <div class="bank-name">HDFC Bank</div>
-                <div>A/c No: 50200097420397</div>
-                <div>A/c Holder: Om Sai Aalubhandar</div>
-                <div>IFSC: HDFC0004196</div>
+                <div class="bank-name">{{ $invoice->branch->paymentBankName() }}</div>
+                <div>A/c No: {{ $invoice->branch->paymentAccountNumber() }}</div>
+                <div>A/c Holder: {{ $invoice->branch->paymentAccountHolderName() }}</div>
+                <div>IFSC: {{ $invoice->branch->paymentIfscCode() }}</div>
             </div>
         </div>
 

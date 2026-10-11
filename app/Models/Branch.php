@@ -7,10 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Branch extends Model
 {
     use HasFactory;
+
+    protected const DEFAULT_BANK_NAME = 'HDFC Bank';
+
+    protected const DEFAULT_ACCOUNT_NUMBER = '50200097420397';
+
+    protected const DEFAULT_ACCOUNT_HOLDER_NAME = 'Om Sai Aalubhandar';
+
+    protected const DEFAULT_IFSC_CODE = 'HDFC0004196';
 
     protected $fillable = [
         'company_id',
@@ -19,6 +28,11 @@ class Branch extends Model
         'address',
         'phone',
         'is_active',
+        'qr_code_path',
+        'bank_name',
+        'account_number',
+        'account_holder_name',
+        'ifsc_code',
     ];
 
     protected function casts(): array
@@ -71,5 +85,49 @@ class Branch extends Model
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
+    }
+
+    /**
+     * Falls back to the original single-branch defaults so a branch with no
+     * payment details of its own keeps showing what it always showed,
+     * instead of a blank QR/bank block.
+     */
+    public function paymentQrUrl(): string
+    {
+        return $this->qr_code_path
+            ? Storage::disk('public')->url($this->qr_code_path)
+            : asset('images/payment-qr.png');
+    }
+
+    public function paymentQrPath(): string
+    {
+        return $this->qr_code_path
+            ? Storage::disk('public')->path($this->qr_code_path)
+            : public_path('images/payment-qr.png');
+    }
+
+    public function paymentQrMimeType(): string
+    {
+        return mime_content_type($this->paymentQrPath()) ?: 'image/png';
+    }
+
+    public function paymentBankName(): string
+    {
+        return $this->bank_name ?: self::DEFAULT_BANK_NAME;
+    }
+
+    public function paymentAccountNumber(): string
+    {
+        return $this->account_number ?: self::DEFAULT_ACCOUNT_NUMBER;
+    }
+
+    public function paymentAccountHolderName(): string
+    {
+        return $this->account_holder_name ?: self::DEFAULT_ACCOUNT_HOLDER_NAME;
+    }
+
+    public function paymentIfscCode(): string
+    {
+        return $this->ifsc_code ?: self::DEFAULT_IFSC_CODE;
     }
 }

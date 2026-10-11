@@ -24,6 +24,12 @@ class StoreBranchRequest extends FormRequest
             ],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'account_number' => ['nullable', 'string', 'max:50'],
+            'account_holder_name' => ['nullable', 'string', 'max:255'],
+            'ifsc_code' => ['nullable', 'string', 'max:20'],
+            'qr_code_photo' => ['nullable', 'image', 'max:2048'],
+            'remove_qr_code' => ['nullable', 'boolean'],
             'copy_items' => ['nullable', 'boolean'],
             'copy_from_branch_id' => [
                 'nullable',

@@ -3,6 +3,10 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 class="font-semibold text-lg sm:text-xl text-gray-800 leading-tight truncate">{{ __('Invoice') }} {{ $invoice->invoice_number }}</h2>
             <div class="flex flex-wrap gap-2 print:hidden">
+                <a href="{{ route('invoices.create') }}" onclick="window.showCubeLoader()"
+                    class="inline-flex items-center px-3 sm:px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">
+                    {{ __('+ New Bill') }}
+                </a>
                 <a href="{{ route('invoices.edit', $invoice) }}" onclick="window.showCubeLoader()"
                     class="inline-flex items-center px-3 sm:px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50">
                     {{ __('Edit') }}

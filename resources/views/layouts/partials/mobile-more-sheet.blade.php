@@ -87,25 +87,6 @@
             </div>
 
             <div class="mt-6 pt-4 border-t border-gray-200 space-y-3">
-                @if (Auth::user()->isAdmin())
-                    <form method="POST" action="{{ route('branches.switch') }}">
-                        @csrf
-                        <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 px-1">{{ __('Branch') }}</label>
-                        <select name="branch_id" onchange="window.showCubeLoader(); this.form.submit()" class="w-full rounded-lg border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            @foreach (\App\Models\Branch::where('company_id', Auth::user()->company_id)->orderBy('name')->get() as $branch)
-                                <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>
-                                    {{ $branch->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </form>
-                @else
-                    <div class="px-1">
-                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('Branch') }}</p>
-                        <p class="text-sm text-gray-700">{{ \App\Services\BranchContext::current()?->name }}</p>
-                    </div>
-                @endif
-
                 <div x-data="{ installable: false, showIosHint: false }"
                     x-init="window.addEventListener('pwa-installable', () => installable = true); window.addEventListener('pwa-installed', () => installable = false); installable = !!window.deferredInstallPrompt; showIosHint = window.isIosInstallable && !localStorage.getItem('pwaIosHintDismissed')">
                     <button type="button" x-show="installable" style="display: none;" @click="window.promptPwaInstall()"
@@ -122,22 +103,6 @@
                     </div>
                 </div>
 
-                <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100">
-                    <span class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-semibold shrink-0">
-                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-                    </span>
-                    <span class="min-w-0 flex-1">
-                        <span class="block text-sm font-medium text-gray-800 truncate">{{ Auth::user()->name }}</span>
-                        <span class="block text-xs text-gray-400 truncate">{{ Auth::user()->email }}</span>
-                    </span>
-                </a>
-
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
-                        {{ __('Log Out') }}
-                    </button>
-                </form>
             </div>
         </div>
     </div>

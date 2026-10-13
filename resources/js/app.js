@@ -83,6 +83,56 @@ window.pwaInstallBanner = function () {
 };
 
 /**
+ * The notification bell's dropdown — fetches the current branch's unread
+ * count on load (so the badge is right without opening anything) and the
+ * full list only once the dropdown is actually opened, since the list
+ * itself also re-syncs server-side on every fetch.
+ */
+window.notificationBell = function () {
+    return {
+        open: false,
+        loading: false,
+        unreadCount: 0,
+        notifications: [],
+
+        init() {
+            this.refreshCount();
+        },
+
+        async refreshCount() {
+            try {
+                const res = await fetch('/notifications', { headers: { Accept: 'application/json' } });
+                const data = await res.json();
+                this.unreadCount = data.unread_count;
+                this.notifications = data.notifications;
+            } catch (e) {
+                // Silently skip — a failed background refresh shouldn't show an error to the user.
+            }
+        },
+
+        async toggle() {
+            this.open = !this.open;
+            if (this.open) {
+                this.loading = true;
+                await this.refreshCount();
+                this.loading = false;
+            }
+        },
+
+        async markAllRead() {
+            await fetch('/notifications/read-all', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    Accept: 'application/json',
+                },
+            });
+            await this.refreshCount();
+        },
+    };
+};
+
+/**
  * ---------------------------------------------------------------------
  * Global "something is happening" feedback, so a slow request (cold
  * Render instance, cross-region DB) never looks like a dead click —

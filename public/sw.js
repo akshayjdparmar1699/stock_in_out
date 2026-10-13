@@ -47,3 +47,43 @@ self.addEventListener('fetch', (event) => {
         })
     );
 });
+
+// Shows the OS/browser-level notification a server push triggers. The
+// payload is plain JSON (title/body/url) the server sends — nothing
+// fancy, since this app never needs rich media in a push.
+self.addEventListener('push', (event) => {
+    let data = { title: 'Stock In Out', body: '' };
+    try {
+        data = event.data ? event.data.json() : data;
+    } catch (e) {
+        // Non-JSON payload (shouldn't happen from our own server) — fall back to the default.
+    }
+
+    event.waitUntil(
+        self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+            data: { url: data.url || '/dashboard' },
+        })
+    );
+});
+
+// Focuses an already-open tab on that URL if one exists, instead of
+// always opening a new one, so tapping a notification doesn't pile up
+// extra tabs/windows.
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const url = event.notification.data?.url || '/dashboard';
+
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+            for (const client of clients) {
+                if (client.url === url && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            return self.clients.openWindow(url);
+        })
+    );
+});

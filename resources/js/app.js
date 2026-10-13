@@ -31,6 +31,54 @@ window.promptPwaInstall = async function () {
 window.isPwaStandalone = window.navigator.standalone === true
     || window.matchMedia('(display-mode: standalone)').matches;
 
+/**
+ * Real push notifications (low stock / over credit limit — the two
+ * conditions a save can detect the instant it happens) on top of the
+ * in-app bell. Browser permission is asked for explicitly via a button
+ * tap, never on page load, and subscribing is a no-op if the browser
+ * doesn't support it (desktop Safari, very old browsers) or the server
+ * hasn't configured VAPID keys yet (no public key in the meta tag).
+ */
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+}
+
+window.canUsePushNotifications = 'serviceWorker' in navigator && 'PushManager' in window
+    && !!document.querySelector('meta[name="vapid-public-key"]')?.content;
+
+window.pushPermissionState = window.canUsePushNotifications ? Notification.permission : 'unsupported';
+
+window.subscribeToPushNotifications = async function () {
+    if (!window.canUsePushNotifications) return false;
+
+    const permission = await Notification.requestPermission();
+    window.pushPermissionState = permission;
+    if (permission !== 'granted') return false;
+
+    const registration = await navigator.serviceWorker.ready;
+    const vapidPublicKey = document.querySelector('meta[name="vapid-public-key"]').content;
+
+    const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
+
+    await fetch('/push-subscriptions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            Accept: 'application/json',
+        },
+        body: JSON.stringify(subscription.toJSON()),
+    });
+
+    return true;
+};
+
 // iOS Safari never fires beforeinstallprompt — there is no programmatic
 // install API there at all, only the manual Share > Add to Home Screen
 // flow — so the "Install App" button above can never appear on an
@@ -94,9 +142,17 @@ window.notificationBell = function () {
         loading: false,
         unreadCount: 0,
         notifications: [],
+        canUsePush: window.canUsePushNotifications,
+        pushPermission: window.pushPermissionState,
 
         init() {
             this.refreshCount();
+        },
+
+        async enablePush() {
+            const granted = await window.subscribeToPushNotifications();
+            this.pushPermission = window.pushPermissionState;
+            return granted;
         },
 
         async refreshCount() {

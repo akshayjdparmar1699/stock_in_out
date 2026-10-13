@@ -9,6 +9,7 @@ use App\Models\ItemStock;
 use App\Models\StockBatch;
 use App\Models\StockMovement;
 use App\Services\BranchContext;
+use App\Services\NotificationService;
 use App\Services\PerPagePreference;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -211,7 +212,20 @@ class StockController extends Controller
             $movement->delete();
         });
 
+        $this->notifyBranch();
+
         return redirect()->route('stock.index')->with('status', 'Stock entry deleted.');
+    }
+
+    /**
+     * A manual entry edited down or deleted can newly cross the low-stock
+     * line just like a sale can, so the same re-sync/push runs here.
+     */
+    private function notifyBranch(): void
+    {
+        if ($branch = BranchContext::current()) {
+            NotificationService::sync($branch);
+        }
     }
 
     public function edit(StockMovement $movement): View
@@ -277,6 +291,8 @@ class StockController extends Controller
                 'reason' => $data['reason'] ?? null,
             ]);
         });
+
+        $this->notifyBranch();
 
         return redirect()->route('stock.index')->with('status', 'Stock entry updated.');
     }

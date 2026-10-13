@@ -15,6 +15,7 @@ use App\Models\StockBatchAllocation;
 use App\Models\StockMovement;
 use App\Services\AdminAlertService;
 use App\Services\BranchContext;
+use App\Services\NotificationService;
 use App\Services\PerPagePreference;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -179,6 +180,8 @@ class InvoiceController extends Controller
             return $invoice;
         });
 
+        $this->notifyBranch();
+
         $redirect = redirect()->route('invoices.show', $invoice)->with('status', "Invoice {$invoice->invoice_number} created.");
 
         // Only a saved Customer carries a balance between visits — a
@@ -309,7 +312,22 @@ class InvoiceController extends Controller
             ]);
         });
 
+        $this->notifyBranch();
+
         return redirect()->route('invoices.show', $invoice)->with('status', "Invoice {$invoice->invoice_number} updated.");
+    }
+
+    /**
+     * Re-syncs the current branch's notifications right after a save that
+     * could newly cross a low-stock or over-credit-limit line, so a push
+     * goes out the moment it happens rather than whenever someone next
+     * opens the bell.
+     */
+    private function notifyBranch(): void
+    {
+        if ($branch = BranchContext::current()) {
+            NotificationService::sync($branch);
+        }
     }
 
     private function assertCustomerInBranch(int $customerId, int $branchId): void

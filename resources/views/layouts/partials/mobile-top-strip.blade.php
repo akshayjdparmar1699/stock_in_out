@@ -39,6 +39,14 @@
                     </button>
                 </div>
 
+                <button type="button" x-show="canUsePush && pushPermission === 'default'" style="display: none;" @click="enablePush()"
+                    class="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-b border-gray-100">
+                    <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                    </svg>
+                    {{ __('Turn on alerts for this device') }}
+                </button>
+
                 <div class="max-h-80 overflow-y-auto divide-y divide-gray-50">
                     <template x-if="!loading && notifications.length === 0">
                         <p class="px-4 py-6 text-sm text-gray-400 text-center">{{ __("You're all caught up") }}</p>

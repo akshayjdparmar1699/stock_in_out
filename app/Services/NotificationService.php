@@ -6,6 +6,7 @@ use App\Models\AppNotification;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\ItemStock;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -22,6 +23,14 @@ class NotificationService
 {
     private const INACTIVE_DAYS = 3;
 
+    /**
+     * Syncs the branch's notification rows and pushes a real device
+     * notification for whatever's genuinely new this call — called lazily
+     * when the bell is opened, but also called straight from
+     * invoice/stock/payment saves so low-stock and credit-limit alerts
+     * reach a phone the instant they become true, not just whenever
+     * someone next opens the app.
+     */
     public static function sync(Branch $branch): void
     {
         $current = collect()
@@ -42,21 +51,45 @@ class NotificationService
 
         $existingKeys = $existing->map(fn (AppNotification $n) => $n->type.'|'.$n->dedupe_key)->flip();
 
-        $toInsert = $current
-            ->reject(fn (array $row) => $existingKeys->has($row['type'].'|'.$row['dedupe_key']))
-            ->map(fn (array $row) => [
-                'branch_id' => $branch->id,
-                'type' => $row['type'],
-                'dedupe_key' => $row['dedupe_key'],
-                'title' => $row['title'],
-                'body' => $row['body'] ?? null,
-                'url' => $row['url'] ?? null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $newRows = $current->reject(fn (array $row) => $existingKeys->has($row['type'].'|'.$row['dedupe_key']));
 
-        if ($toInsert->isNotEmpty()) {
-            AppNotification::insert($toInsert->all());
+        if ($newRows->isEmpty()) {
+            return;
+        }
+
+        AppNotification::insert($newRows->map(fn (array $row) => [
+            'branch_id' => $branch->id,
+            'type' => $row['type'],
+            'dedupe_key' => $row['dedupe_key'],
+            'title' => $row['title'],
+            'body' => $row['body'] ?? null,
+            'url' => $row['url'] ?? null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])->all());
+
+        self::pushNew($branch, $newRows);
+    }
+
+    /**
+     * Pushed to every admin of the company (they oversee all branches) plus
+     * whichever staff member is assigned to this specific branch — not to
+     * every staff member company-wide, since a condition at one branch
+     * isn't that branch's business.
+     */
+    private static function pushNew(Branch $branch, Collection $newRows): void
+    {
+        $recipients = User::query()
+            ->where('company_id', $branch->company_id)
+            ->where(fn ($q) => $q->where('role', User::ROLE_ADMIN)->orWhere('branch_id', $branch->id))
+            ->get();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        foreach ($newRows as $row) {
+            PushNotificationService::sendToUsers($recipients, $row['title'], $row['body'] ?? '', $row['url'] ?? null);
         }
     }
 

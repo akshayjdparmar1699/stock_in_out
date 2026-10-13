@@ -11,6 +11,7 @@ use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Services\AdminAlertService;
 use App\Services\BranchContext;
+use App\Services\NotificationService;
 use App\Services\PerPagePreference;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -118,6 +119,8 @@ class CustomerController extends Controller
             auth()->user()->isAdmin() && $branchIds ? $branchIds : [BranchContext::id()]
         );
 
+        $this->notifyBranch();
+
         if ($request->wantsJson()) {
             $customer->due = $customer->dueAmount();
 
@@ -197,6 +200,8 @@ class CustomerController extends Controller
 
                 $customer->decrement('credit_balance', $data['amount']);
             });
+
+            $this->notifyBranch();
 
             return redirect()->route('customers.show', $customer)
                 ->with('status', "Refund of ₹".number_format($data['amount'], 2)." recorded for \"{$customer->name}\".");
@@ -411,7 +416,21 @@ class CustomerController extends Controller
             $customer->branches()->sync($branchIds);
         }
 
+        $this->notifyBranch();
+
         return redirect()->route('customers.index')->with('status', "Customer \"{$customer->name}\" updated.");
+    }
+
+    /**
+     * Lowering a credit limit (or raising an opening balance) here can
+     * newly cross the over-limit line the same way an invoice can, so this
+     * re-syncs/pushes the same way those do.
+     */
+    private function notifyBranch(): void
+    {
+        if ($branch = BranchContext::current()) {
+            NotificationService::sync($branch);
+        }
     }
 
     public function destroy(Customer $customer): RedirectResponse

@@ -48,9 +48,11 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// Shows the OS/browser-level notification a server push triggers. The
-// payload is plain JSON (title/body/url) the server sends — nothing
-// fancy, since this app never needs rich media in a push.
+// Shows the OS/browser-level notification a server push triggers, and
+// also tells any already-open tab directly — some browsers suppress or
+// soft-pedal the OS notification banner while the app itself is the
+// focused, visible tab, so relying on showNotification() alone misses
+// exactly the case where someone's actively looking at the app.
 self.addEventListener('push', (event) => {
     let data = { title: 'Stock In Out', body: '' };
     try {
@@ -60,12 +62,22 @@ self.addEventListener('push', (event) => {
     }
 
     event.waitUntil(
-        self.registration.showNotification(data.title, {
-            body: data.body,
-            icon: '/icons/icon-192.png',
-            badge: '/icons/icon-192.png',
-            data: { url: data.url || '/dashboard' },
-        })
+        Promise.all([
+            self.registration.showNotification(data.title, {
+                body: data.body,
+                icon: '/icons/icon-192.png',
+                badge: '/icons/icon-192.png',
+                data: { url: data.url || '/dashboard' },
+            }),
+            self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+                clients.forEach((client) => client.postMessage({
+                    type: 'push-received',
+                    title: data.title,
+                    body: data.body,
+                    url: data.url || '/dashboard',
+                }));
+            }),
+        ])
     );
 });
 

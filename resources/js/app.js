@@ -147,6 +147,7 @@ window.notificationBell = function () {
 
         init() {
             this.refreshCount();
+            window.addEventListener('push-received', () => this.refreshCount());
         },
 
         async enablePush() {
@@ -480,5 +481,55 @@ window.sharePdf = async function ({ url, filename, title = '', text = '' }) {
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
 };
+
+/**
+ * In-app banner for a push notification that arrives while a tab is
+ * already open — some browsers suppress the OS-level banner for the
+ * focused tab, so this is the thing that actually guarantees the person
+ * sees it without having to background the app first. Built with
+ * textContent (not innerHTML) since title/body can contain whatever a
+ * customer or item was named.
+ */
+function showPushToast({ title, body, url }) {
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;top:1rem;left:1rem;right:1rem;max-width:20rem;margin-left:auto;'
+        + 'z-index:9999;background:#fff;border:1px solid #e5e7eb;border-radius:0.5rem;'
+        + 'box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);'
+        + 'padding:1rem;cursor:pointer;display:flex;align-items:flex-start;gap:0.75rem;'
+        + 'font-family:inherit;';
+
+    const iconWrap = document.createElement('div');
+    iconWrap.style.cssText = 'width:2rem;height:2rem;border-radius:9999px;background:#e0e7ff;'
+        + 'display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+    iconWrap.innerHTML = '<svg style="width:1.25rem;height:1.25rem;color:#4f46e5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>';
+
+    const textWrap = document.createElement('div');
+    textWrap.style.cssText = 'min-width:0;flex:1;';
+
+    const titleEl = document.createElement('p');
+    titleEl.style.cssText = 'font-size:0.875rem;font-weight:600;color:#1f2937;margin:0;'
+        + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    titleEl.textContent = title;
+
+    const bodyEl = document.createElement('p');
+    bodyEl.style.cssText = 'font-size:0.75rem;color:#6b7280;margin:0.125rem 0 0 0;';
+    bodyEl.textContent = body;
+
+    textWrap.append(titleEl, bodyEl);
+    toast.append(iconWrap, textWrap);
+
+    toast.addEventListener('click', () => { window.location.href = url; });
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 6000);
+}
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'push-received') {
+            showPushToast(event.data);
+            window.dispatchEvent(new Event('push-received'));
+        }
+    });
+}
 
 Alpine.start();

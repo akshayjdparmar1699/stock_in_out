@@ -14,7 +14,7 @@
     <div x-show="moreOpen"
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0"
         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-y-0" x-transition:leave-end="translate-y-full"
-        class="fixed inset-x-0 bottom-0 top-12 bg-gray-50 rounded-t-2xl shadow-xl flex flex-col">
+        class="fixed inset-x-0 bottom-0 bg-gray-50 rounded-t-2xl shadow-xl flex flex-col" style="max-height: 85vh;">
 
         <div class="shrink-0 flex items-center justify-between px-4 py-4 border-b border-gray-100 bg-white rounded-t-2xl">
             <h2 class="font-semibold text-gray-800">{{ __('More') }}</h2>
@@ -25,7 +25,7 @@
             </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto px-4 py-4" style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);">
+        <div class="overflow-y-auto px-4 py-4" style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);">
             <div class="grid grid-cols-3 gap-3">
                 <a href="{{ route('items.index') }}" class="{{ $moreLinkClass(request()->routeIs('items.*')) }}">
                     <svg class="{{ $moreIconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -103,6 +103,15 @@
                     </div>
                 </div>
 
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0110.5 3h6a2.25 2.25 0 012.25 2.25v13.5A2.25 2.25 0 0116.5 21h-6a2.25 2.25 0 01-2.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                        </svg>
+                        {{ __('Log Out') }}
+                    </button>
+                </form>
             </div>
         </div>
     </div>

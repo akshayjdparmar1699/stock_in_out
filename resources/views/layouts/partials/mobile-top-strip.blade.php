@@ -61,24 +61,8 @@
             </div>
         </div>
 
-        <div x-data="{ profileOpen: false }" class="relative">
-            <button type="button" @click="profileOpen = !profileOpen" aria-label="{{ __('Profile menu') }}" class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-semibold shrink-0">
-                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-            </button>
-
-            <div x-show="profileOpen" @click.outside="profileOpen = false" style="display: none;"
-                x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
-                class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden z-50">
-                <div class="px-4 py-2.5 border-b border-gray-100">
-                    <p class="text-sm font-medium text-gray-800 truncate">{{ Auth::user()->name }}</p>
-                    <p class="text-xs text-gray-400 truncate">{{ Auth::user()->email }}</p>
-                </div>
-                <a href="{{ route('profile.edit') }}" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">{{ __('Profile') }}</a>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">{{ __('Log Out') }}</button>
-                </form>
-            </div>
-        </div>
+        <a href="{{ route('profile.edit') }}" aria-label="{{ __('Profile') }}" class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-semibold shrink-0">
+            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+        </a>
     </div>
 </div>

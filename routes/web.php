@@ -23,6 +23,29 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
+// Generated rather than a static file so the app name matches whatever
+// this deployment's APP_NAME is set to (e.g. "Wholesale Na Vepari" on
+// one domain, "Stock In Out" on another) instead of being baked in once.
+Route::get('/manifest.json', function () {
+    return response()->json([
+        'name' => config('app.name'),
+        'short_name' => config('app.name'),
+        'description' => 'Manage stock and billing across every branch, from one place.',
+        'start_url' => '/dashboard',
+        'scope' => '/',
+        'display' => 'standalone',
+        'background_color' => '#f4f4f5',
+        'theme_color' => '#4f46e5',
+        'orientation' => 'portrait-primary',
+        'icons' => [
+            ['src' => '/icons/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => '/icons/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+            ['src' => '/icons/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'maskable'],
+            ['src' => '/icons/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
+        ],
+    ]);
+})->name('manifest');
+
 // Temporary diagnostic route to see the live container's own filesystem
 // state for public/icons without needing shell access on the host (not
 // available on the free Render plan) — remove once the icons 404 is

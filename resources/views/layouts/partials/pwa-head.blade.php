@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Stock In Out">
+<meta name="apple-mobile-web-app-title" content="{{ config('app.name') }}">
 
 <script>
     if ('serviceWorker' in navigator) {

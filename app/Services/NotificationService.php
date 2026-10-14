@@ -107,7 +107,7 @@ class NotificationService
                 'type' => 'low_stock',
                 'dedupe_key' => (string) $stock->item_id,
                 'title' => "Low stock: {$stock->item->name}",
-                'body' => rtrim(rtrim((string) $stock->quantity, '0'), '.')." {$stock->item->unit} left",
+                'body' => rtrim(rtrim((string) $stock->quantity, '0'), '.')." {$stock->item->unit} left — {$branch->name}",
                 'url' => route('stock.index'),
             ]);
     }
@@ -131,7 +131,7 @@ class NotificationService
                 'type' => 'inactive_customer',
                 'dedupe_key' => (string) $row['customer']->id,
                 'title' => "No purchase from {$row['customer']->name} in ".self::INACTIVE_DAYS.'+ days',
-                'body' => 'Last purchase: '.$row['last_date']->format('d M Y'),
+                'body' => 'Last purchase: '.$row['last_date']->format('d M Y')." — {$branch->name}",
                 'url' => route('customers.show', $row['customer']),
             ])
             ->values();
@@ -180,7 +180,7 @@ class NotificationService
                 'type' => 'credit_limit',
                 'dedupe_key' => (string) $row['customer']->id,
                 'title' => "{$row['customer']->name} is over their credit limit",
-                'body' => '₹'.number_format($row['due'], 2).' owed, time to collect',
+                'body' => '₹'.number_format($row['due'], 2).' owed, time to collect — '.$branch->name,
                 'url' => route('customers.show', $row['customer']),
             ])
             ->values();

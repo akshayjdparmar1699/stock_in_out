@@ -52,6 +52,12 @@
                         @isset($header)
                             <div class="flex-1 min-w-0">{{ $header }}</div>
                         @endisset
+
+                        @unless (Auth::user()->isSuperAdmin())
+                            <div class="hidden lg:block shrink-0">
+                                @include('layouts.partials.notification-bell')
+                            </div>
+                        @endunless
                     </div>
                 </div>
 

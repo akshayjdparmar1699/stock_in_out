@@ -3,8 +3,8 @@
     x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-4"
     class="fixed inset-x-0 bottom-0 z-50 p-4 flex justify-center pointer-events-none">
     <div class="pointer-events-auto max-w-sm w-full bg-white rounded-xl shadow-xl border border-gray-200 p-4 flex items-start gap-3">
-        <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
-            <x-application-logo class="w-6 h-6 text-white" />
+        <div class="w-10 h-10 shrink-0">
+            <x-application-logo class="w-10 h-10" />
         </div>
         <div class="flex-1 min-w-0">
             <div class="text-sm font-semibold text-gray-800">{{ __('Install') }} {{ config('app.name') }}</div>

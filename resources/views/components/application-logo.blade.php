@@ -1,5 +1,7 @@
-<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" {{ $attributes }}>
-    <path d="M24 4L42 13V35L24 44L6 35V13L24 4Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round" fill="currentColor" fill-opacity="0.12" />
-    <path d="M6 13L24 22M24 22L42 13M24 22V44" stroke="currentColor" stroke-width="3" stroke-linejoin="round" />
-    <path d="M15 8.5L33 17.5" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" {{ $attributes }}>
+    <rect x="2" y="2" width="44" height="44" rx="12" fill="#4F46E5" />
+    <circle cx="15" cy="13" r="2.6" fill="#FFFFFF" />
+    <path d="M15 19L21 31" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
+    <path d="M21 31L33 16" stroke="#F59E0B" stroke-width="4" stroke-linecap="round" />
+    <path d="M24 15L34 15L34 25" stroke="#F59E0B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
 </svg>

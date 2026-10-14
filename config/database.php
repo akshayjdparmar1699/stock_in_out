@@ -99,6 +99,26 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        // A second, independent connection to the original Postgres database —
+        // used only by the one-off `data:copy-to-mysql` command when standing
+        // up a new MySQL-backed deployment from the existing Supabase data.
+        // Deliberately separate env vars so it can coexist with a primary
+        // DB_* connection pointed at MySQL (or any other driver) without
+        // either one overwriting the other's settings.
+        'pgsql_source' => [
+            'driver' => 'pgsql',
+            'host' => env('SOURCE_DB_HOST'),
+            'port' => env('SOURCE_DB_PORT', '5432'),
+            'database' => env('SOURCE_DB_DATABASE'),
+            'username' => env('SOURCE_DB_USERNAME'),
+            'password' => env('SOURCE_DB_PASSWORD'),
+            'charset' => env('SOURCE_DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('SOURCE_DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

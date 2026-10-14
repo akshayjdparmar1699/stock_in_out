@@ -95,5 +95,11 @@
         </div>
 
         @include('layouts.partials.pwa-install-banner')
+
+        @unless (Auth::user()->isSuperAdmin())
+            @if (session('just_logged_in'))
+                @include('layouts.partials.login-push-prompt')
+            @endif
+        @endunless
     </body>
 </html>

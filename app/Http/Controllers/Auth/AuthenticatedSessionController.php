@@ -32,7 +32,11 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended(route('companies.index', absolute: false));
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Flagged here rather than guessed from "just hit /dashboard", since
+        // the intended-redirect could land anywhere — this fires exactly
+        // once, on the page a fresh login actually lands on.
+        return redirect()->intended(route('dashboard', absolute: false))
+            ->with('just_logged_in', true);
     }
 
     /**

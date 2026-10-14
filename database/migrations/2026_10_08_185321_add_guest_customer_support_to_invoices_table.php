@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -16,7 +15,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement('ALTER TABLE invoices ALTER COLUMN customer_id DROP NOT NULL');
+        Schema::table('invoices', function (Blueprint $table) {
+            $table->unsignedBigInteger('customer_id')->nullable()->change();
+        });
 
         Schema::table('invoices', function (Blueprint $table) {
             $table->string('guest_customer_name')->nullable()->after('customer_id');
@@ -29,6 +30,8 @@ return new class extends Migration
             $table->dropColumn('guest_customer_name');
         });
 
-        DB::statement('ALTER TABLE invoices ALTER COLUMN customer_id SET NOT NULL');
+        Schema::table('invoices', function (Blueprint $table) {
+            $table->unsignedBigInteger('customer_id')->nullable(false)->change();
+        });
     }
 };

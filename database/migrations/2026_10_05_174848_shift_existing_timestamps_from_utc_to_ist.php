@@ -32,8 +32,19 @@ return new class extends Migration
         'expenses', 'users', 'branch_customer', 'branch_staff_member',
     ];
 
+    /**
+     * A one-time correction for the original Postgres database only — a
+     * fresh database on another driver (e.g. MySQL, set up by copying
+     * already-corrected data across) has nothing to shift, and the raw
+     * SQL below (double-quoted identifiers, INTERVAL arithmetic) is
+     * Postgres syntax that would fail on MySQL anyway.
+     */
     public function up(): void
     {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::transaction(function () {
             foreach (self::TABLES as $table) {
                 DB::statement('UPDATE "'.$table.'" SET
@@ -50,6 +61,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::transaction(function () {
             foreach (self::TABLES as $table) {
                 DB::statement('UPDATE "'.$table.'" SET

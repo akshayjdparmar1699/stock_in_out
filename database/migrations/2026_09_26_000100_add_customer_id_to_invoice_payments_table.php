@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -13,7 +12,9 @@ return new class extends Migration
         // (or partly) unmatched to any invoice — e.g. paying down their
         // opening balance, or paying more than everything currently owed.
         // Such a row has no invoice_id and points at the customer directly.
-        DB::statement('ALTER TABLE invoice_payments ALTER COLUMN invoice_id DROP NOT NULL');
+        Schema::table('invoice_payments', function (Blueprint $table) {
+            $table->unsignedBigInteger('invoice_id')->nullable()->change();
+        });
 
         Schema::table('invoice_payments', function (Blueprint $table) {
             $table->foreignId('customer_id')->nullable()->after('invoice_id')->constrained()->cascadeOnDelete();
@@ -34,6 +35,8 @@ return new class extends Migration
             $table->dropColumn('from_credit_balance');
         });
 
-        DB::statement('ALTER TABLE invoice_payments ALTER COLUMN invoice_id SET NOT NULL');
+        Schema::table('invoice_payments', function (Blueprint $table) {
+            $table->unsignedBigInteger('invoice_id')->nullable(false)->change();
+        });
     }
 };

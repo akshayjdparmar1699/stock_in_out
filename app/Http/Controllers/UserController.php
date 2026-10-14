@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Sql;
+
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Branch;
 use App\Models\User;
@@ -21,7 +23,7 @@ class UserController extends Controller
             ->with('branch')
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('email', 'ilike', $term));
+                $query->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('email', Sql::caseInsensitiveLike(), $term));
             })
             ->orderBy('name')
             ->paginate(PerPagePreference::get())

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Sql;
+
 use App\Models\StockBatch;
 use App\Services\BranchContext;
 use App\Services\PerPagePreference;
@@ -18,7 +20,7 @@ class BatchController extends Controller
             ->where('branch_id', $branchId)
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->whereHas('item', fn ($q) => $q->where('name', 'ilike', $term)->orWhere('sku', 'ilike', $term));
+                $query->whereHas('item', fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('sku', Sql::caseInsensitiveLike(), $term));
             })
             ->with(['item', 'sourceMovement'])
             ->latest('received_at')

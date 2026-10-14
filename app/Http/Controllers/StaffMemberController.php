@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Sql;
+
 use App\Http\Requests\StoreStaffMemberRequest;
 use App\Http\Requests\UpdateStaffMemberRequest;
 use App\Models\Branch;
@@ -26,7 +28,7 @@ class StaffMemberController extends Controller
             ->when($status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->where('name', 'ilike', $term);
+                $query->where('name', Sql::caseInsensitiveLike(), $term);
             })
             ->orderByRaw("type = 'partner' desc")
             ->orderBy('name')

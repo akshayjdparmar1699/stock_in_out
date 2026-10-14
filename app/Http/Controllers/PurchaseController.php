@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Sql;
+
 use App\Http\Requests\StorePurchasePaymentRequest;
 use App\Http\Requests\StorePurchaseRequest;
 use App\Models\Item;
@@ -52,7 +54,7 @@ class PurchaseController extends Controller
             ->with('supplier')
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->whereHas('supplier', fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term));
+                $query->whereHas('supplier', fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term));
             })
             ->when($from && $to, fn ($q) => $q->whereBetween('purchase_date', [$from, $to]))
             ->latest('purchase_date')

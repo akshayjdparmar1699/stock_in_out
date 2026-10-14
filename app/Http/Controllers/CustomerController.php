@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Sql;
+
 use App\Http\Requests\StoreCustomerPaymentRequest;
 use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
@@ -37,7 +39,7 @@ class CustomerController extends Controller
             ->when($status === 'inactive', fn ($q) => $q->where('is_active', false))
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term));
+                $query->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term));
             })
             ->orderBy('name')
             ->paginate(PerPagePreference::get())
@@ -468,7 +470,7 @@ class CustomerController extends Controller
 
         $customers = Customer::query()
             ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
-            ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term))
+            ->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term))
             ->orderBy('name')
             ->limit(10)
             ->get(['id', 'name', 'phone', 'email', 'address', 'opening_balance', 'credit_balance', 'is_active'])

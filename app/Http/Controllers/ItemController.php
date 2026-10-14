@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Sql;
+
 use App\Http\Requests\StoreItemRequest;
 use App\Http\Requests\UpdateItemRequest;
 use App\Models\Item;
@@ -30,7 +32,7 @@ class ItemController extends Controller
             ->whereHas('stocks', fn ($q) => $q->where('branch_id', $branchId))
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('sku', 'ilike', $term));
+                $query->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('sku', Sql::caseInsensitiveLike(), $term));
             })
             ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
             ->orderBy('name')
@@ -219,7 +221,7 @@ class ItemController extends Controller
         $items = Item::query()
             ->where('company_id', auth()->user()->company_id)
             ->where('is_active', true)
-            ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('sku', 'ilike', $term))
+            ->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('sku', Sql::caseInsensitiveLike(), $term))
             ->when($request->boolean('in_stock_only'), fn ($q) => $q->whereHas('stocks', fn ($q2) => $q2->where('branch_id', $branchId)))
             ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
             ->limit(10)

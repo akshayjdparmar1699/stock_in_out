@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Sql;
+
 use App\Http\Requests\StoreSupplierPaymentRequest;
 use App\Http\Requests\StoreSupplierRequest;
 use App\Http\Requests\UpdateSupplierRequest;
@@ -25,7 +27,7 @@ class SupplierController extends Controller
             ->where('company_id', auth()->user()->company_id)
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term));
+                $query->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term));
             })
             ->orderBy('name')
             ->paginate(PerPagePreference::get())
@@ -346,7 +348,7 @@ class SupplierController extends Controller
         $suppliers = Supplier::query()
             ->where('company_id', auth()->user()->company_id)
             ->where('is_active', true)
-            ->where(fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term))
+            ->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term))
             ->orderBy('name')
             ->limit(10)
             ->get(['id', 'name', 'phone', 'address', 'opening_balance', 'credit_balance'])

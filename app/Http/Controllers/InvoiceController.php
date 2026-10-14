@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Sql;
+
 use App\Http\Requests\StoreInvoicePaymentRequest;
 use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
@@ -56,7 +58,7 @@ class InvoiceController extends Controller
             ->with('customer')
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.$request->string('q').'%';
-                $query->whereHas('customer', fn ($q) => $q->where('name', 'ilike', $term)->orWhere('phone', 'ilike', $term));
+                $query->whereHas('customer', fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term));
             })
             ->when($from && $to, fn ($q) => $q->whereBetween('invoice_date', [$from, $to]))
             ->latest('invoice_date')

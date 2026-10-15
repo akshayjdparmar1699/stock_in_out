@@ -8,56 +8,19 @@
         @include('layouts.partials.sidebar-links')
     </nav>
 
-    <div class="px-3 py-4 border-t border-gray-100 space-y-3">
-        @unless (Auth::user()->isSuperAdmin())
-            @if (Auth::user()->isAdmin())
-                <form method="POST" action="{{ route('branches.switch') }}">
-                    @csrf
-                    <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1 px-1">{{ __('Branch') }}</label>
-                    <select name="branch_id" onchange="window.showCubeLoader(); this.form.submit()" class="w-full rounded-lg border-gray-300 text-sm focus:border-brand-500 focus:ring-brand-500">
-                        @foreach (\App\Models\Branch::where('company_id', Auth::user()->company_id)->orderBy('name')->get() as $branch)
-                            <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>
-                                {{ $branch->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </form>
-            @else
-                <div class="px-1">
-                    <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">{{ __('Branch') }}</p>
-                    <p class="text-sm text-gray-700">{{ \App\Services\BranchContext::current()?->name }}</p>
-                </div>
-            @endif
-        @endunless
-
-        <div x-data="{ open: false }" class="relative">
-            <button @click="open = !open" class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 text-left">
-                <span class="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-semibold shrink-0">
+    <div class="px-3 py-4 border-t border-gray-100">
+        <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 {{ request()->routeIs('profile.edit') ? 'bg-brand-50' : '' }}">
+            <span class="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-semibold shrink-0 overflow-hidden">
+                @if (Auth::user()->avatarUrl())
+                    <img src="{{ Auth::user()->avatarUrl() }}" alt="" class="w-full h-full object-cover">
+                @else
                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-                </span>
-                <span class="min-w-0 flex-1">
-                    <span class="block text-sm font-medium text-gray-800 truncate">{{ Auth::user()->name }}</span>
-                    <span class="block text-xs text-gray-400 truncate">{{ Auth::user()->email }}</span>
-                </span>
-                <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 9l3.75 6" transform="rotate(180 12 12)" />
-                </svg>
-            </button>
-
-            <div x-show="open" @click.outside="open = false"
-                    x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
-                    class="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-100 rounded-lg shadow-lg overflow-hidden"
-                    style="display: none;">
-                <a href="{{ route('profile.edit') }}" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                    {{ __('Profile') }}
-                </a>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                        {{ __('Log Out') }}
-                    </button>
-                </form>
-            </div>
-        </div>
+                @endif
+            </span>
+            <span class="min-w-0 flex-1">
+                <span class="block text-sm font-medium text-gray-800 truncate">{{ Auth::user()->name }}</span>
+                <span class="block text-xs text-gray-400 truncate">{{ __('My profile') }}</span>
+            </span>
+        </a>
     </div>
 </aside>

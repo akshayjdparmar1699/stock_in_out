@@ -22,8 +22,12 @@
     <div class="flex items-center gap-1 shrink-0">
         @include('layouts.partials.notification-bell')
 
-        <a href="{{ route('profile.edit') }}" aria-label="{{ __('Profile') }}" class="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-semibold shrink-0">
-            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+        <a href="{{ route('profile.edit') }}" aria-label="{{ __('Profile') }}" class="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-semibold shrink-0 overflow-hidden">
+            @if (Auth::user()->avatarUrl())
+                <img src="{{ Auth::user()->avatarUrl() }}" alt="" class="w-full h-full object-cover">
+            @else
+                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+            @endif
         </a>
     </div>
 </div>

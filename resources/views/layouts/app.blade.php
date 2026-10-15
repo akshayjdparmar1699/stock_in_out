@@ -32,12 +32,12 @@
             <div class="lg:pl-64 flex flex-col min-h-screen">
                 <!-- Top bar -->
                 <div class="sticky top-0 z-30 bg-white border-b border-gray-100">
-                    @unless (Auth::user()->isSuperAdmin() || request()->routeIs('dashboard'))
+                    @unless (Auth::user()->isSuperAdmin() || request()->routeIs('dashboard', 'profile.edit'))
                         <!-- Mobile top strip: branch switcher, notifications, profile -->
                         @include('layouts.partials.mobile-top-strip')
                     @endunless
 
-                    <div class="{{ request()->routeIs('dashboard') ? 'hidden lg:flex' : 'flex' }} items-center gap-4 px-4 sm:px-6 lg:px-6 py-4">
+                    <div class="{{ request()->routeIs('dashboard', 'profile.edit') ? 'hidden lg:flex' : 'flex' }} items-center gap-4 px-4 sm:px-6 lg:px-6 py-4">
                         @if (Auth::user()->isSuperAdmin())
                             <form method="POST" action="{{ route('logout') }}" class="lg:hidden">
                                 @csrf

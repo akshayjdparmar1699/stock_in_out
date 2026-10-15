@@ -24,7 +24,7 @@
 </div>
 
 @if ($lowStockCount > 0)
-    <a href="{{ route('stock.index') }}" class="lg:hidden flex items-center justify-between gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3 shadow-sm">
+    <a href="{{ route('stock.index') }}" class="lg:hidden mt-6 flex items-center justify-between gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3 shadow-sm">
         <div class="flex items-center gap-3 min-w-0">
             <span class="shrink-0 w-9 h-9 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">

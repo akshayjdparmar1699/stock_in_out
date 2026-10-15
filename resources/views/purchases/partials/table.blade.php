@@ -14,7 +14,7 @@
         <tbody class="divide-y divide-gray-100">
             @forelse ($purchases as $purchase)
                 <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.showCubeLoader(); window.location='{{ route('purchases.show', $purchase) }}'">
-                    <td class="px-6 py-4 text-sm font-medium text-indigo-700 hover:underline">{{ $purchase->purchase_number }}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-brand-700 hover:underline">{{ $purchase->purchase_number }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $purchase->purchase_date->format('d M Y') }}, {{ $purchase->created_at->format('h:i A') }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $purchase->supplier->name }}</td>
                     <td class="px-6 py-4 text-sm text-gray-700">₹{{ number_format($purchase->total, 2) }}</td>
@@ -27,7 +27,7 @@
                         ])>{{ ucfirst($purchase->status) }}</span>
                     </td>
                     <td class="px-6 py-4 text-right text-sm" @click.stop>
-                        <a href="{{ route('purchases.edit', $purchase) }}" onclick="window.showCubeLoader()" class="text-indigo-600 hover:underline mr-3">{{ __('Edit') }}</a>
+                        <a href="{{ route('purchases.edit', $purchase) }}" onclick="window.showCubeLoader()" class="text-brand-600 hover:underline mr-3">{{ __('Edit') }}</a>
                         <form method="POST" action="{{ route('purchases.destroy', $purchase) }}">
                             @csrf
                             @method('DELETE')

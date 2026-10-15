@@ -6,7 +6,7 @@
                 <a href="{{ route('items.edit', $item) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">
                     {{ __('Edit Item') }}
                 </a>
-                <a href="{{ route('purchases.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+                <a href="{{ route('purchases.create') }}" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
                     {{ __('+ New Purchase') }}
                 </a>
             </div>

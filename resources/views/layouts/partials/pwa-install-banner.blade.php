@@ -16,7 +16,7 @@
             </p>
             <div class="mt-3 flex gap-2">
                 <button type="button" x-show="!isIos" style="display: none;" @click="install()"
-                    class="px-3 py-1.5 rounded-md bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700">
+                    class="px-3 py-1.5 rounded-md bg-brand-600 text-white text-xs font-medium hover:bg-brand-700">
                     {{ __('Install') }}
                 </button>
                 <button type="button" @click="dismiss()" class="px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 text-xs font-medium hover:bg-gray-50">

@@ -13,6 +13,14 @@
                 </div>
             </div>
 
+            @unless (Auth::user()->isSuperAdmin())
+                <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                    <div class="max-w-xl">
+                        @include('profile.partials.branch-settings-form')
+                    </div>
+                </div>
+            @endunless
+
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
                     @include('profile.partials.notification-settings-form')

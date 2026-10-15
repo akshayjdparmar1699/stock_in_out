@@ -16,7 +16,7 @@
             @forelse ($batches as $batch)
                 <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.showCubeLoader(); window.location='{{ route('batches.show', $batch) }}'">
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $batch->received_at->format('d M Y, h:i A') }}</td>
-                    <td class="px-6 py-4 text-sm font-medium text-indigo-700 hover:underline">{{ $batch->item->name }}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-brand-700 hover:underline">{{ $batch->item->name }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">
                         @if ($batch->sourceMovement?->referenceLabel() === 'View purchase')
                             {{ __('Supplier purchase') }}

@@ -1,6 +1,117 @@
 import Alpine from 'alpinejs';
+import {
+    Chart,
+    BarController,
+    DoughnutController,
+    LineController,
+    BarElement,
+    ArcElement,
+    LineElement,
+    PointElement,
+    CategoryScale,
+    LinearScale,
+    Tooltip,
+    Filler,
+} from 'chart.js';
+
+Chart.register(
+    BarController, DoughnutController, LineController,
+    BarElement, ArcElement, LineElement, PointElement,
+    CategoryScale, LinearScale, Tooltip, Filler
+);
 
 window.Alpine = Alpine;
+
+/**
+ * Small, server-data-driven chart components for the dashboard — kept
+ * generic (labels/values/colors in, a Chart.js instance out) rather than
+ * dashboard-specific, so any future chart just reuses one of these two
+ * instead of writing fresh Chart.js config each time.
+ */
+window.barChart = function ({ labels, values, colors }) {
+    return {
+        chart: null,
+        render(canvas) {
+            this.chart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{ data: values, backgroundColor: colors, borderRadius: 6, maxBarThickness: 56 }],
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { ticks: { callback: (v) => '₹' + Number(v).toLocaleString('en-IN') } },
+                    },
+                },
+            });
+        },
+    };
+};
+
+window.donutChart = function ({ labels, values, colors }) {
+    return {
+        chart: null,
+        render(canvas) {
+            this.chart = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }],
+                },
+                options: {
+                    responsive: true,
+                    cutout: '62%',
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 12, font: { size: 11 } } } },
+                },
+            });
+        },
+    };
+};
+
+window.lineChart = function ({ labels, sales, profit }) {
+    return {
+        chart: null,
+        render(canvas) {
+            this.chart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Sales',
+                            data: sales,
+                            borderColor: '#6a00d9',
+                            backgroundColor: 'rgba(106, 0, 217, 0.1)',
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#6a00d9',
+                        },
+                        {
+                            label: 'Profit',
+                            data: profit,
+                            borderColor: '#16a34a',
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#16a34a',
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { ticks: { callback: (v) => '₹' + (Number(v) / 1000).toLocaleString('en-IN') + 'k' } },
+                    },
+                },
+            });
+        },
+    };
+};
 
 /**
  * Capture the browser's install prompt so we can trigger it from our own
@@ -208,7 +319,7 @@ function showPageProgress() {
         bar = document.createElement('div');
         bar.id = 'page-progress-bar';
         bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;width:0%;'
-            + 'background:#4f46e5;z-index:9999;box-shadow:0 0 8px rgba(79,70,229,.6);'
+            + 'background:#6a00d9;z-index:9999;box-shadow:0 0 8px rgba(106, 0, 217,.6);'
             + 'transition:width .3s ease-out,opacity .2s ease-in;';
         document.body.appendChild(bar);
     }
@@ -260,7 +371,7 @@ function ensureCubeLoaderStyles() {
     style.textContent = `
         #page-loading-overlay { position: fixed; inset: 0; z-index: 9998; display: none;
             align-items: center; justify-content: center; background: rgba(255,255,255,.55); }
-        #page-loading-overlay .cube-loader { width: 32px; height: 32px; background: #4f46e5;
+        #page-loading-overlay .cube-loader { width: 32px; height: 32px; background: #6a00d9;
             animation: cube-loader-spin 1.1s infinite cubic-bezier(.6,.2,.4,.8); }
         @keyframes cube-loader-spin {
             0%   { transform: rotate(0deg) scale(1); border-radius: 15%; }
@@ -321,7 +432,7 @@ function showAjaxSpinner(el) {
     overlay.className = 'ajax-spinner-overlay';
     overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;'
         + 'background:rgba(255,255,255,.5);min-height:4rem;';
-    overlay.innerHTML = spinnerSvg('w-8 h-8 text-indigo-600');
+    overlay.innerHTML = spinnerSvg('w-8 h-8 text-brand-600');
     el.appendChild(overlay);
 }
 
@@ -501,7 +612,7 @@ function showPushToast({ title, body, url }) {
     const iconWrap = document.createElement('div');
     iconWrap.style.cssText = 'width:2rem;height:2rem;border-radius:9999px;background:#e0e7ff;'
         + 'display:flex;align-items:center;justify-content:center;flex-shrink:0;';
-    iconWrap.innerHTML = '<svg style="width:1.25rem;height:1.25rem;color:#4f46e5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>';
+    iconWrap.innerHTML = '<svg style="width:1.25rem;height:1.25rem;color:#6a00d9" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>';
 
     const textWrap = document.createElement('div');
     textWrap.style.cssText = 'min-width:0;flex:1;';

@@ -1,5 +1,5 @@
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#4f46e5">
+<meta name="theme-color" content="#6a00d9">
 
 @php $iconVersion = 2; @endphp
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png?v={{ $iconVersion }}">

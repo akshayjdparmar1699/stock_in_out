@@ -42,7 +42,7 @@
             <div>
                 <p class="text-sm text-gray-500 mb-3">{{ __('Notifications are currently off on this device.') }}</p>
                 <button type="button" @click="enable()" :disabled="enabling"
-                    class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg">
+                    class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg">
                     <span x-show="!enabling">{{ __('Enable Notifications') }}</span>
                     <span x-show="enabling" style="display: none;">{{ __('Enabling…') }}</span>
                 </button>

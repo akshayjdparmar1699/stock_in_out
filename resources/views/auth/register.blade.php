@@ -23,7 +23,7 @@
 
                     <div class="mt-4">
                         <x-input-label for="role" :value="__('Role')" />
-                        <select id="role" name="role" x-model="role" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select id="role" name="role" x-model="role" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             <option value="staff">{{ __('Staff (assigned to one branch)') }}</option>
                             <option value="admin">{{ __('Admin (access to all branches)') }}</option>
                         </select>
@@ -32,7 +32,7 @@
 
                     <div class="mt-4" x-show="role === 'staff'">
                         <x-input-label for="branch_id" :value="__('Branch')" />
-                        <select id="branch_id" name="branch_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select id="branch_id" name="branch_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             <option value="">{{ __('Select branch') }}</option>
                             @foreach ($branches as $branch)
                                 <option value="{{ $branch->id }}" @selected(old('branch_id') == $branch->id)>{{ $branch->name }}</option>

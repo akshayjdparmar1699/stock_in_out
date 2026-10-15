@@ -37,7 +37,7 @@
 
                                 <p class="text-sm text-gray-500 px-4 py-3" x-show="supplierResults.length === 0">
                                     {{ __('No supplier found.') }}
-                                    <button type="button" class="text-indigo-600 hover:underline" @click="showSupplierForm = true; newSupplier.name = supplierQuery">
+                                    <button type="button" class="text-brand-600 hover:underline" @click="showSupplierForm = true; newSupplier.name = supplierQuery">
                                         {{ __('+ Create new supplier') }}
                                     </button>
                                 </p>
@@ -60,7 +60,7 @@
                                     <div class="text-sm font-semibold" :class="(selectedSupplier.due || 0) > 0 ? 'text-red-600' : 'text-green-600'"
                                         x-text="'₹' + Math.abs(selectedSupplier.due || 0).toFixed(2) + ((selectedSupplier.due || 0) < 0 ? ' CR' : '')"></div>
                                 </div>
-                                <button type="button" class="text-sm text-indigo-600 hover:underline" @click="selectedSupplier = null; supplierQuery = ''">
+                                <button type="button" class="text-sm text-brand-600 hover:underline" @click="selectedSupplier = null; supplierQuery = ''">
                                     {{ __('Change') }}
                                 </button>
                             </div>
@@ -101,7 +101,7 @@
                     <h3 class="font-medium text-gray-700 mb-4">{{ __('2. Items Received') }}</h3>
 
                     <div class="mb-3">
-                        <select class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        <select class="w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500"
                             @change="selectFromDropdown($event)">
                             <option value="">{{ __('-- Select an item --') }}</option>
                             @foreach ($items as $item)
@@ -146,13 +146,13 @@
                                             <div class="text-xs text-gray-400" x-text="'= ' + (line.quantityUnit === 'alt' ? (line.quantity / line.altUnitRatio) : (line.quantity * line.altUnitRatio)).toFixed(4) + ' ' + (line.quantityUnit === 'alt' ? line.unit : line.altUnit)"></div>
                                             <div class="flex rounded-md border border-gray-300 overflow-hidden text-xs">
                                                 <button type="button" @click="line.quantityUnit = 'base'; line.unit_cost = null"
-                                                    class="px-2 py-0.5" :class="line.quantityUnit === 'base' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600'" x-text="line.unit"></button>
+                                                    class="px-2 py-0.5" :class="line.quantityUnit === 'base' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600'" x-text="line.unit"></button>
                                                 <button type="button" @click="line.quantityUnit = 'alt'; line.unit_cost = null"
-                                                    class="px-2 py-0.5 border-l border-gray-300" :class="line.quantityUnit === 'alt' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600'" x-text="line.altUnit"></button>
+                                                    class="px-2 py-0.5 border-l border-gray-300" :class="line.quantityUnit === 'alt' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600'" x-text="line.altUnit"></button>
                                             </div>
                                         </div>
                                     </template>
-                                    <button type="button" class="text-xs text-indigo-600 hover:underline block mt-1" @click="line.showAltConfig = !line.showAltConfig"
+                                    <button type="button" class="text-xs text-brand-600 hover:underline block mt-1" @click="line.showAltConfig = !line.showAltConfig"
                                         x-text="line.altUnit ? ('Alt unit: ' + line.altUnit) : '+ Set alt unit'"></button>
                                     <input type="hidden" :name="`items[${index}][item_id]`" :value="line.item_id">
                                     <input type="hidden" :name="`items[${index}][quantity_unit]`" :value="line.quantityUnit">
@@ -162,12 +162,12 @@
                                     <div>
                                         <label class="text-xs text-gray-500">{{ __('Alternate Selling Unit (e.g. kg)') }}</label>
                                         <input type="text" x-model="line.altUnit" :name="`items[${index}][alt_unit]`" placeholder="{{ __('e.g. kg') }}"
-                                            class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                                     </div>
                                     <div>
                                         <label class="text-xs text-gray-500">{{ __('1 unit = ? alt unit') }}</label>
                                         <input type="number" step="0.0001" min="0" x-model.number="line.altUnitRatio" :name="`items[${index}][alt_unit_ratio]`" placeholder="{{ __('e.g. 50') }}"
-                                            class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                                     </div>
                                 </div>
 
@@ -229,7 +229,7 @@
                             </div>
                             <div>
                                 <x-input-label for="notes" :value="__('Notes (optional)')" />
-                                <textarea id="notes" name="notes" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ $purchase->notes }}</textarea>
+                                <textarea id="notes" name="notes" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">{{ $purchase->notes }}</textarea>
                             </div>
                             <p class="text-xs text-gray-400">{{ __('Payments already recorded on this purchase are not changed here — use the payment form on the purchase page for that.') }}</p>
                         </div>
@@ -241,11 +241,11 @@
                             </div>
                             <div class="flex justify-between items-center text-sm text-gray-600">
                                 <label for="discount">{{ __('Discount') }}</label>
-                                <input id="discount" name="discount" type="number" step="0.01" min="0" x-model.number="discount" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <input id="discount" name="discount" type="number" step="0.01" min="0" x-model.number="discount" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             </div>
                             <div class="flex justify-between items-center text-sm text-gray-600">
                                 <label for="tax">{{ __('Tax') }}</label>
-                                <input id="tax" name="tax" type="number" step="0.01" min="0" x-model.number="tax" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <input id="tax" name="tax" type="number" step="0.01" min="0" x-model.number="tax" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             </div>
                             <div class="flex justify-between items-center text-base font-semibold text-gray-900 border-t pt-2">
                                 <span>{{ __('Total') }}</span>

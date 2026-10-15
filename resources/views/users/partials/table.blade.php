@@ -24,7 +24,7 @@
                     <td class="px-6 py-4 text-sm">
                         <span @class([
                             'px-2 py-0.5 rounded-full text-xs font-medium',
-                            'bg-indigo-100 text-indigo-700' => $user->isAdmin(),
+                            'bg-brand-100 text-brand-700' => $user->isAdmin(),
                             'bg-gray-100 text-gray-600' => ! $user->isAdmin(),
                         ])>{{ ucfirst($user->role) }}</span>
                     </td>
@@ -48,7 +48,7 @@
                         @endif
                     </td>
                     <td class="px-6 py-4 text-right text-sm">
-                        <a href="{{ route('users.edit', $user) }}" class="text-indigo-600 hover:underline">{{ __('Edit') }}</a>
+                        <a href="{{ route('users.edit', $user) }}" class="text-brand-600 hover:underline">{{ __('Edit') }}</a>
                     </td>
                 </tr>
             @empty

@@ -31,6 +31,6 @@
     </form>
 
     <p class="text-center text-xs text-gray-400 mt-6 pt-6 border-t border-gray-100">
-        <a href="{{ route('login') }}" class="text-indigo-600 hover:text-indigo-800">{{ __('Back to login') }}</a>
+        <a href="{{ route('login') }}" class="text-brand-600 hover:text-brand-800">{{ __('Back to login') }}</a>
     </p>
 </x-guest-layout>

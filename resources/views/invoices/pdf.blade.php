@@ -10,7 +10,7 @@
         .brand-banner h1 { font-size: 19px; margin: 0 0 6px 0; white-space: nowrap; }
         .brand-banner .branch { color: #4b5563; font-size: 13px; }
         .banner-divider { border-top: 1.5px solid #1f2937; margin-top: 0; }
-        .invoice-title { font-size: 22px; font-weight: bold; color: #4f46e5; margin: 0 0 6px 0; }
+        .invoice-title { font-size: 22px; font-weight: bold; color: #6a00d9; margin: 0 0 6px 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .info-table td { vertical-align: top; padding-bottom: 16px; }
         .info-table .invoice-meta { text-align: right; white-space: nowrap; }

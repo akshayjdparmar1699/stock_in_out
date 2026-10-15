@@ -16,7 +16,7 @@
                         ₹{{ number_format(abs($due), 2) }}{{ $due < 0 ? ' CR' : '' }}
                     </div>
                 </div>
-                <a href="{{ route('suppliers.edit', $supplier) }}" class="text-sm text-indigo-600 hover:underline">{{ __('Edit Supplier') }}</a>
+                <a href="{{ route('suppliers.edit', $supplier) }}" class="text-sm text-brand-600 hover:underline">{{ __('Edit Supplier') }}</a>
             </div>
 
             <div class="bg-white shadow-sm rounded-lg p-6" x-data="{ type: '{{ old('type', 'paid') }}' }">
@@ -26,11 +26,11 @@
                     @csrf
                     <div class="w-full flex gap-4">
                         <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="radio" name="type" value="paid" x-model="type" class="text-indigo-600 focus:ring-indigo-500">
+                            <input type="radio" name="type" value="paid" x-model="type" class="text-brand-600 focus:ring-brand-500">
                             {{ __('We Paid Them') }}
                         </label>
                         <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="radio" name="type" value="received" x-model="type" class="text-indigo-600 focus:ring-indigo-500">
+                            <input type="radio" name="type" value="received" x-model="type" class="text-brand-600 focus:ring-brand-500">
                             {{ __('Refund Received From Them') }}
                         </label>
                     </div>

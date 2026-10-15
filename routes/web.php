@@ -35,7 +35,7 @@ Route::get('/manifest.json', function () {
         'scope' => '/',
         'display' => 'standalone',
         'background_color' => '#f4f4f5',
-        'theme_color' => '#4f46e5',
+        'theme_color' => '#6a00d9',
         'orientation' => 'portrait-primary',
         'icons' => [
             ['src' => '/icons/icon-192.png?v=2', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],

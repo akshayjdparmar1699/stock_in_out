@@ -4,7 +4,7 @@
             <form method="POST" action="{{ route('branches.switch') }}">
                 @csrf
                 <select name="branch_id" id="mobile-branch-switcher" onchange="window.showCubeLoader(); this.form.submit()"
-                    class="max-w-[170px] text-sm font-medium text-gray-700 border-0 bg-gray-100 rounded-full pl-3 pr-7 py-1.5 focus:ring-2 focus:ring-indigo-500 truncate">
+                    class="max-w-[170px] text-sm font-medium text-gray-700 border-0 bg-gray-100 rounded-full pl-3 pr-7 py-1.5 focus:ring-2 focus:ring-brand-500 truncate">
                     @foreach (\App\Models\Branch::where('company_id', Auth::user()->company_id)->orderBy('name')->get() as $branch)
                         <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>
                             {{ $branch->name }}
@@ -22,7 +22,7 @@
     <div class="flex items-center gap-1 shrink-0">
         @include('layouts.partials.notification-bell')
 
-        <a href="{{ route('profile.edit') }}" aria-label="{{ __('Profile') }}" class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-semibold shrink-0">
+        <a href="{{ route('profile.edit') }}" aria-label="{{ __('Profile') }}" class="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-sm font-semibold shrink-0">
             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
         </a>
     </div>

@@ -18,7 +18,7 @@
                     <td class="px-6 py-3 text-sm text-gray-500">{{ $allocation->movement->user->name ?? '—' }}</td>
                     <td class="px-6 py-3 text-sm text-right">
                         @if ($allocation->movement->referenceUrl())
-                            <a href="{{ $allocation->movement->referenceUrl() }}" class="text-indigo-600 hover:underline">{{ __($allocation->movement->referenceLabel()) }}</a>
+                            <a href="{{ $allocation->movement->referenceUrl() }}" class="text-brand-600 hover:underline">{{ __($allocation->movement->referenceLabel()) }}</a>
                         @endif
                     </td>
                 </tr>

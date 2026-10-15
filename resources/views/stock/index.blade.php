@@ -6,8 +6,8 @@
     <div class="py-12" x-data="{ deleteOpen: false, deleteForm: null, deleteLabel: '' }">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
-            <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 flex items-center justify-between gap-3">
-                <p class="text-sm text-indigo-900">
+            <div class="bg-brand-50 border border-brand-100 rounded-lg p-4 flex items-center justify-between gap-3">
+                <p class="text-sm text-brand-900">
                     {{ __('Restocking from a supplier? Use') }}
                     <a href="{{ route('purchases.create') }}" class="font-medium underline">{{ __('New Purchase') }}</a>
                     {{ __('to record their bill and payment properly. Use the form below only for manual corrections (no supplier bill).') }}
@@ -61,7 +61,7 @@
                     @csrf
                     <div class="w-full sm:w-auto sm:flex-1 sm:min-w-[220px]">
                         <x-input-label for="item_id" :value="__('Item')" />
-                        <select id="item_id" name="item_id" required x-model="itemId" @change="onItemChange()" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select id="item_id" name="item_id" required x-model="itemId" @change="onItemChange()" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             <option value="">{{ __('Select item') }}</option>
                             @foreach ($items as $item)
                                 <option value="{{ $item->id }}" @selected(old('item_id') == $item->id)>{{ $item->name }} ({{ $item->sku }})</option>
@@ -73,11 +73,11 @@
                     <input type="hidden" name="quantity_unit" :value="quantityUnit">
                     <div class="w-full flex gap-4" x-show="altUnit && altUnitRatio" style="display: none;">
                         <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="radio" value="base" x-model="quantityUnit" @change="onUnitToggle()" class="text-indigo-600 focus:ring-indigo-500">
+                            <input type="radio" value="base" x-model="quantityUnit" @change="onUnitToggle()" class="text-brand-600 focus:ring-brand-500">
                             <span x-text="unitLabel"></span>
                         </label>
                         <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="radio" value="alt" x-model="quantityUnit" @change="onUnitToggle()" class="text-indigo-600 focus:ring-indigo-500">
+                            <input type="radio" value="alt" x-model="quantityUnit" @change="onUnitToggle()" class="text-brand-600 focus:ring-brand-500">
                             <span x-text="altUnit"></span>
                         </label>
                     </div>
@@ -133,7 +133,7 @@
             <form method="GET" class="bg-white shadow-sm rounded-lg p-4 flex flex-wrap items-end gap-3">
                 <div class="flex-1 min-w-[200px]">
                     <x-input-label for="item_id" :value="__('Filter by item')" />
-                    <select id="item_id" name="item_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" onchange="this.form.submit()">
+                    <select id="item_id" name="item_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500" onchange="this.form.submit()">
                         <option value="">{{ __('All items') }}</option>
                         @foreach ($items as $item)
                             <option value="{{ $item->id }}" @selected($filterItemId === $item->id)>{{ $item->name }} ({{ $item->sku }})</option>

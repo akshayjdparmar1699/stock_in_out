@@ -18,7 +18,7 @@
         <div class="min-h-screen flex flex-col lg:flex-row">
 
             <!-- Branding panel -->
-            <div class="relative lg:w-[46%] bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-950 text-white px-6 sm:px-10 py-10 lg:py-16 flex flex-col overflow-hidden">
+            <div class="relative lg:w-[46%] bg-gradient-to-br from-brand-600 via-brand-700 to-violet-950 text-white px-6 sm:px-10 py-10 lg:py-16 flex flex-col overflow-hidden">
                 <div class="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-white/5"></div>
                 <div class="absolute bottom-0 -left-16 w-64 h-64 rounded-full bg-white/5"></div>
                 <div class="absolute bottom-24 right-10 w-40 h-40 rounded-full bg-white/5 hidden lg:block"></div>
@@ -39,7 +39,7 @@
                         <span class="text-amber-400">{{ __('Grow every branch.') }}</span>
                     </h1>
 
-                    <p class="mt-4 max-w-sm text-sm text-indigo-100">
+                    <p class="mt-4 max-w-sm text-sm text-brand-100">
                         {{ __('Billing, stock and customers for all your branches in one place, so you always know what sold, what is left and what to reorder.') }}
                     </p>
 
@@ -56,7 +56,7 @@
                     <div class="bg-white text-gray-800 rounded-2xl shadow-xl p-5">
                         <div class="flex items-center justify-between">
                             <span class="font-semibold text-sm">{{ __('New bill') }}</span>
-                            <span class="text-xs bg-indigo-50 text-indigo-700 rounded-full px-2.5 py-1">{{ __('Rajkot branch') }}</span>
+                            <span class="text-xs bg-brand-50 text-brand-700 rounded-full px-2.5 py-1">{{ __('Rajkot branch') }}</span>
                         </div>
                         <div class="mt-4 space-y-2.5 text-sm">
                             <div class="flex items-center justify-between">
@@ -81,35 +81,35 @@
                     <ul class="mt-8 space-y-5 text-sm">
                         <li class="flex items-start gap-3">
                             <span class="shrink-0 w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
-                                <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" /></svg>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" /></svg>
                             </span>
                             <span>
                                 <span class="block font-semibold">{{ __('Live stock for every branch') }}</span>
-                                <span class="block text-indigo-200 mt-0.5">{{ __('Each branch keeps its own real-time stock.') }}</span>
+                                <span class="block text-brand-200 mt-0.5">{{ __('Each branch keeps its own real-time stock.') }}</span>
                             </span>
                         </li>
                         <li class="flex items-start gap-3">
                             <span class="shrink-0 w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
-                                <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
                             </span>
                             <span>
                                 <span class="block font-semibold">{{ __('Customers in seconds') }}</span>
-                                <span class="block text-indigo-200 mt-0.5">{{ __('Search or add a customer right while billing.') }}</span>
+                                <span class="block text-brand-200 mt-0.5">{{ __('Search or add a customer right while billing.') }}</span>
                             </span>
                         </li>
                         <li class="flex items-start gap-3">
                             <span class="shrink-0 w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center">
-                                <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0 015.814-5.518l2.74-1.22m0 0l-5.94-2.281m5.94 2.28l-2.28 5.941" /></svg>
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0 015.814-5.518l2.74-1.22m0 0l-5.94-2.281m5.94 2.28l-2.28 5.941" /></svg>
                             </span>
                             <span>
                                 <span class="block font-semibold">{{ __('Zero manual updates') }}</span>
-                                <span class="block text-indigo-200 mt-0.5">{{ __('Stock changes the moment a bill is made.') }}</span>
+                                <span class="block text-brand-200 mt-0.5">{{ __('Stock changes the moment a bill is made.') }}</span>
                             </span>
                         </li>
                     </ul>
                 </div>
 
-                <div class="relative mt-auto pt-10 hidden lg:flex items-center justify-between text-xs text-indigo-200/70">
+                <div class="relative mt-auto pt-10 hidden lg:flex items-center justify-between text-xs text-brand-200/70">
                     <span>{{ __('Trusted by wholesalers running multiple branches') }}</span>
                     <span>&copy; {{ now()->year }} {{ config('app.name') }}</span>
                 </div>
@@ -126,8 +126,8 @@
                 <!-- Feature list: mobile only, shown below the card -->
                 <div class="w-full sm:max-w-sm mt-8 space-y-5 text-sm lg:hidden">
                     <div class="flex items-start gap-3">
-                        <span class="shrink-0 w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" /></svg>
+                        <span class="shrink-0 w-9 h-9 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" /></svg>
                         </span>
                         <span>
                             <span class="block font-semibold text-gray-800">{{ __('Live stock for every branch') }}</span>
@@ -135,8 +135,8 @@
                         </span>
                     </div>
                     <div class="flex items-start gap-3">
-                        <span class="shrink-0 w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                        <span class="shrink-0 w-9 h-9 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
                         </span>
                         <span>
                             <span class="block font-semibold text-gray-800">{{ __('Customers in seconds') }}</span>
@@ -144,8 +144,8 @@
                         </span>
                     </div>
                     <div class="flex items-start gap-3">
-                        <span class="shrink-0 w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0 015.814-5.518l2.74-1.22m0 0l-5.94-2.281m5.94 2.28l-2.28 5.941" /></svg>
+                        <span class="shrink-0 w-9 h-9 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0 015.814-5.518l2.74-1.22m0 0l-5.94-2.281m5.94 2.28l-2.28 5.941" /></svg>
                         </span>
                         <span>
                             <span class="block font-semibold text-gray-800">{{ __('Zero manual updates') }}</span>

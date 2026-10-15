@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Expenses') }}</h2>
-            <a href="{{ route('expenses.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+            <a href="{{ route('expenses.create') }}" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
                 {{ __('+ Add Expense') }}
             </a>
         </div>
@@ -15,7 +15,7 @@
                 <div class="inline-flex rounded-lg border border-gray-200 overflow-hidden text-sm bg-white">
                     @foreach (['all' => __('All'), 'today' => __('Today'), 'week' => __('This Week'), 'month' => __('This Month')] as $value => $label)
                         <a href="{{ route('expenses.index', array_filter(['period' => $value, 'category' => request('category'), 'staff_member_id' => request('staff_member_id')])) }}"
-                            class="px-3 py-1.5 {{ $activeQuickFilter === $value ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50' }}">
+                            class="px-3 py-1.5 {{ $activeQuickFilter === $value ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50' }}">
                             {{ $label }}
                         </a>
                     @endforeach
@@ -30,7 +30,7 @@
             <form method="GET" class="bg-white shadow-sm rounded-lg p-4 sm:p-5 grid grid-cols-1 sm:flex sm:flex-wrap sm:items-end gap-4 sm:gap-3">
                 <div class="w-full sm:w-auto">
                     <x-input-label for="category" :value="__('Category')" />
-                    <select id="category" name="category" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <select id="category" name="category" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                         <option value="">{{ __('All categories') }}</option>
                         @foreach ($categories as $value => $label)
                             <option value="{{ $value }}" @selected(request('category') === $value)>{{ $label }}</option>
@@ -39,7 +39,7 @@
                 </div>
                 <div class="w-full sm:w-auto">
                     <x-input-label for="staff_member_id" :value="__('Staff / Partner')" />
-                    <select id="staff_member_id" name="staff_member_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <select id="staff_member_id" name="staff_member_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                         <option value="">{{ __('Anyone') }}</option>
                         @foreach ($staffOptions as $member)
                             <option value="{{ $member->id }}" @selected((string) request('staff_member_id') === (string) $member->id)>{{ $member->name }}</option>

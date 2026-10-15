@@ -15,7 +15,7 @@
             @forelse ($items as $item)
                 @php $qty = $item->stocks->first()->quantity ?? 0; @endphp
                 <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.showCubeLoader(); window.location='{{ route('items.show', $item) }}'">
-                    <td class="px-6 py-4 text-sm font-medium text-indigo-700 hover:underline">{{ $item->name }}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-brand-700 hover:underline">{{ $item->name }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $item->sku }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">₹{{ number_format($item->selling_price, 2) }}</td>
                     <td class="px-6 py-4 text-sm {{ $qty <= $item->low_stock_threshold ? 'text-red-600 font-medium' : 'text-green-600 font-medium' }}">
@@ -29,7 +29,7 @@
                         @endif
                     </td>
                     <td class="px-6 py-4 text-right text-sm" onclick="event.stopPropagation()">
-                        <a href="{{ route('items.edit', $item) }}" class="text-indigo-600 hover:underline">{{ __('Edit') }}</a>
+                        <a href="{{ route('items.edit', $item) }}" class="text-brand-600 hover:underline">{{ __('Edit') }}</a>
                         <form method="POST" action="{{ route('items.destroy', $item) }}" class="inline">
                             @csrf
                             @method('DELETE')

@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Staff & Partners') }}</h2>
-            <a href="{{ route('staff.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+            <a href="{{ route('staff.create') }}" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
                 {{ __('+ Add Staff / Partner') }}
             </a>
         </div>
@@ -21,7 +21,7 @@
                 <div class="inline-flex rounded-lg border border-gray-200 overflow-hidden text-sm">
                     @foreach (['active' => __('Active'), 'inactive' => __('Inactive'), 'all' => __('All')] as $value => $label)
                         <a href="{{ route('staff.index', array_filter(['status' => $value, 'q' => request('q')])) }}"
-                            class="px-3 py-1.5 {{ $status === $value ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50' }}">
+                            class="px-3 py-1.5 {{ $status === $value ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50' }}">
                             {{ $label }}
                         </a>
                     @endforeach

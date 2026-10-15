@@ -14,7 +14,7 @@
                         <div class="border-t pt-4">
                             <label class="inline-flex items-start gap-2">
                                 <input type="checkbox" name="copy_items" value="1" x-model="copyItems"
-                                    class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                    class="mt-0.5 rounded border-gray-300 text-brand-600 shadow-sm focus:ring-brand-500">
                                 <span class="text-sm text-gray-700">
                                     {{ __('Copy items from an existing branch') }}
                                     <span class="block text-xs text-gray-400 mt-0.5">
@@ -25,7 +25,7 @@
 
                             <div class="mt-3" x-show="copyItems" style="display: none;">
                                 <x-input-label for="copy_from_branch_id" :value="__('Copy items from')" />
-                                <select id="copy_from_branch_id" name="copy_from_branch_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <select id="copy_from_branch_id" name="copy_from_branch_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                                     <option value="">{{ __('Select branch') }}</option>
                                     @foreach ($branches as $branch)
                                         <option value="{{ $branch->id }}" @selected(old('copy_from_branch_id') == $branch->id)>{{ $branch->name }}</option>

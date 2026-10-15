@@ -32,7 +32,7 @@
             <div>
                 <x-input-label for="password" :value="__('Password')" />
                 <div class="relative mt-1.5">
-                    <input id="password" class="block w-full pr-10 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg shadow-sm"
+                    <input id="password" class="block w-full pr-10 border-gray-300 focus:border-brand-500 focus:ring-brand-500 rounded-lg shadow-sm"
                         :type="showPassword ? 'text' : 'password'"
                         name="password" required autocomplete="current-password" placeholder="{{ __('Enter your password') }}">
                     <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600">
@@ -45,12 +45,12 @@
 
             <div class="flex items-center justify-between">
                 <label for="remember_me" class="inline-flex items-center">
-                    <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember" checked>
+                    <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-brand-600 shadow-sm focus:ring-brand-500" name="remember" checked>
                     <span class="ms-2 text-sm text-gray-600">{{ __('Keep me logged in') }}</span>
                 </label>
 
                 @if (Route::has('password.request'))
-                    <a class="text-sm text-indigo-600 hover:text-indigo-800" href="{{ route('password.request') }}">
+                    <a class="text-sm text-brand-600 hover:text-brand-800" href="{{ route('password.request') }}">
                         {{ __('Forgot password?') }}
                     </a>
                 @endif

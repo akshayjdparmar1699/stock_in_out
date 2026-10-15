@@ -15,7 +15,7 @@
                 @php $due = $dueBySupplierId[$supplier->id] ?? 0; @endphp
                 <tr>
                     <td class="px-6 py-4 text-sm text-gray-800">
-                        <a href="{{ route('suppliers.show', $supplier) }}" class="text-indigo-700 hover:underline font-medium">{{ $supplier->name }}</a>
+                        <a href="{{ route('suppliers.show', $supplier) }}" class="text-brand-700 hover:underline font-medium">{{ $supplier->name }}</a>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $supplier->phone ?? '—' }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $supplier->address ?? '—' }}</td>
@@ -23,7 +23,7 @@
                         ₹{{ number_format(abs($due), 2) }}{{ $due < 0 ? ' CR' : '' }}
                     </td>
                     <td class="px-6 py-4 text-right text-sm">
-                        <a href="{{ route('suppliers.edit', $supplier) }}" class="text-indigo-600 hover:underline">{{ __('Edit') }}</a>
+                        <a href="{{ route('suppliers.edit', $supplier) }}" class="text-brand-600 hover:underline">{{ __('Edit') }}</a>
                     </td>
                 </tr>
             @empty

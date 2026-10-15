@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Branches') }}</h2>
-            <a href="{{ route('branches.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+            <a href="{{ route('branches.create') }}" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
                 {{ __('+ Add Branch') }}
             </a>
         </div>
@@ -30,7 +30,7 @@
                                 <td class="px-6 py-4 text-sm text-gray-500">{{ $branch->phone ?? '—' }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-500">{{ $branch->users_count }}</td>
                                 <td class="px-6 py-4 text-right text-sm">
-                                    <a href="{{ route('branches.edit', $branch) }}" class="text-indigo-600 hover:underline">{{ __('Edit') }}</a>
+                                    <a href="{{ route('branches.edit', $branch) }}" class="text-brand-600 hover:underline">{{ __('Edit') }}</a>
                                     <form method="POST" action="{{ route('branches.destroy', $branch) }}" class="inline">
                                         @csrf
                                         @method('DELETE')

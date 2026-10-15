@@ -3,7 +3,7 @@
 @if ($attributes->get('type') === 'password')
     <div x-data="{ show: false }" {{ $attributes->only('class')->merge(['class' => 'relative']) }}>
         <input @disabled($disabled) :type="show ? 'text' : 'password'"
-            {{ $attributes->except(['type', 'class'])->merge(['class' => 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg shadow-sm py-2.5 pr-10 w-full']) }}>
+            {{ $attributes->except(['type', 'class'])->merge(['class' => 'border-gray-300 focus:border-brand-500 focus:ring-brand-500 rounded-lg shadow-sm py-2.5 pr-10 w-full']) }}>
         <button type="button" @click="show = !show" :aria-label="show ? 'Hide password' : 'Show password'" tabindex="-1"
             class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600">
             <svg x-show="!show" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -16,5 +16,5 @@
         </button>
     </div>
 @else
-    <input @disabled($disabled) {{ $attributes->merge(['class' => 'border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg shadow-sm py-2.5']) }}>
+    <input @disabled($disabled) {{ $attributes->merge(['class' => 'border-gray-300 focus:border-brand-500 focus:ring-brand-500 rounded-lg shadow-sm py-2.5']) }}>
 @endif

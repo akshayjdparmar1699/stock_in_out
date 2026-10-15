@@ -21,11 +21,11 @@
                         <x-input-label :value="__('Type')" />
                         <div class="mt-2 flex gap-4">
                             <label class="flex items-center gap-2">
-                                <input type="radio" name="type" value="staff" class="text-indigo-600 focus:ring-indigo-500" @checked(old('type', $staffMember->type) === 'staff')>
+                                <input type="radio" name="type" value="staff" class="text-brand-600 focus:ring-brand-500" @checked(old('type', $staffMember->type) === 'staff')>
                                 <span class="text-sm text-gray-700">{{ __('Staff (employee)') }}</span>
                             </label>
                             <label class="flex items-center gap-2">
-                                <input type="radio" name="type" value="partner" class="text-indigo-600 focus:ring-indigo-500" @checked(old('type', $staffMember->type) === 'partner')>
+                                <input type="radio" name="type" value="partner" class="text-brand-600 focus:ring-brand-500" @checked(old('type', $staffMember->type) === 'partner')>
                                 <span class="text-sm text-gray-700">{{ __('Partner') }}</span>
                             </label>
                         </div>
@@ -52,7 +52,7 @@
                                 @foreach ($branches as $branch)
                                     <label class="flex items-center gap-2">
                                         <input type="checkbox" name="branch_ids[]" value="{{ $branch->id }}"
-                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            class="rounded border-gray-300 text-brand-600 shadow-sm focus:ring-brand-500"
                                             @checked(collect($currentBranchIds)->contains($branch->id))>
                                         <span class="text-sm text-gray-700">{{ $branch->name }}</span>
                                     </label>

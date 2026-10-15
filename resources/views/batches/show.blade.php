@@ -15,7 +15,7 @@
                 <div class="text-sm text-gray-500 mb-4">
                     {{ __('Received on') }} {{ $batch->received_at->format('d M Y, h:i A') }}
                     @if ($batch->sourceMovement?->referenceUrl())
-                        &middot; <a href="{{ $batch->sourceMovement->referenceUrl() }}" class="text-indigo-600 hover:underline">{{ __($batch->sourceMovement->referenceLabel()) }}</a>
+                        &middot; <a href="{{ $batch->sourceMovement->referenceUrl() }}" class="text-brand-600 hover:underline">{{ __($batch->sourceMovement->referenceLabel()) }}</a>
                     @elseif ($batch->sourceMovement?->reason)
                         &middot; {{ $batch->sourceMovement->reason }}
                     @endif

@@ -4,7 +4,7 @@
             <h2 class="font-semibold text-lg sm:text-xl text-gray-800 leading-tight truncate">{{ __('Invoice') }} {{ $invoice->invoice_number }}</h2>
             <div class="flex flex-wrap gap-2 print:hidden">
                 <a href="{{ route('invoices.create') }}" onclick="window.showCubeLoader()"
-                    class="inline-flex items-center px-3 sm:px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700">
+                    class="inline-flex items-center px-3 sm:px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-md hover:bg-brand-700">
                     {{ __('+ New Bill') }}
                 </a>
                 <a href="{{ route('invoices.edit', $invoice) }}" onclick="window.showCubeLoader()"
@@ -93,7 +93,7 @@
                         <div class="text-sm text-gray-500">{{ $invoice->branch->phone }}</div>
                     </div>
                     <div class="text-right">
-                        <div class="text-xs font-semibold tracking-wide text-indigo-600 uppercase mb-1">{{ __('Invoice') }}</div>
+                        <div class="text-xs font-semibold tracking-wide text-brand-600 uppercase mb-1">{{ __('Invoice') }}</div>
                         <div class="text-sm text-gray-500">{{ __('Invoice #') }}</div>
                         <div class="font-medium text-gray-800">{{ $invoice->invoice_number }}</div>
                         <div class="text-sm text-gray-500 mt-2">{{ __('Date') }}</div>

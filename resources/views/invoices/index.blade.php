@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Invoices') }}</h2>
-            <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+            <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
                 {{ __('+ New Bill') }}
             </a>
         </div>
@@ -15,7 +15,7 @@
                 <div class="inline-flex rounded-lg border border-gray-200 overflow-hidden text-sm bg-white">
                     @foreach (['all' => __('All'), 'today' => __('Today'), 'week' => __('This Week'), 'month' => __('This Month')] as $value => $label)
                         <a href="{{ route('invoices.index', array_filter(['period' => $value, 'q' => request('q')])) }}"
-                            class="px-3 py-1.5 {{ $activeQuickFilter === $value ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50' }}">
+                            class="px-3 py-1.5 {{ $activeQuickFilter === $value ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50' }}">
                             {{ $label }}
                         </a>
                     @endforeach

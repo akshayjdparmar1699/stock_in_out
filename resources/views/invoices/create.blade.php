@@ -43,7 +43,7 @@
                                                         </div>
                                                         <div class="text-xs text-red-600">{{ __('Inactive customer — activate them first.') }}</div>
                                                     </div>
-                                                    <a :href="`{{ url('/customers') }}/${customer.id}/edit`" target="_blank" class="text-xs text-indigo-600 hover:underline shrink-0">
+                                                    <a :href="`{{ url('/customers') }}/${customer.id}/edit`" target="_blank" class="text-xs text-brand-600 hover:underline shrink-0">
                                                         {{ __('Activate') }}
                                                     </a>
                                                 </div>
@@ -54,21 +54,21 @@
 
                                 <p class="text-sm text-gray-500 px-4 py-3" x-show="customerResults.length === 0">
                                     {{ __('No customer found.') }}
-                                    <button type="button" class="text-indigo-600 hover:underline" @click="showCustomerForm = true; newCustomer.name = customerQuery">
+                                    <button type="button" class="text-brand-600 hover:underline" @click="showCustomerForm = true; newCustomer.name = customerQuery">
                                         {{ __('+ Create new customer') }}
                                     </button>
                                 </p>
 
                                 <p class="text-sm text-amber-600 px-4 py-3 border-t border-gray-100" x-show="exactNameMatch">
                                     {{ __('A customer with this exact name already exists above (check the phone/address to be sure). If this is a different person,') }}
-                                    <button type="button" class="text-indigo-600 hover:underline font-medium" @click="showCustomerForm = true; newCustomer.name = customerQuery">
+                                    <button type="button" class="text-brand-600 hover:underline font-medium" @click="showCustomerForm = true; newCustomer.name = customerQuery">
                                         {{ __('+ create a new customer with the same name') }}
                                     </button>
                                 </p>
 
                                 <p class="text-xs text-gray-400 px-4 py-3 border-t border-gray-100">
                                     {{ __("Don't want to save their details?") }}
-                                    <button type="button" class="text-indigo-600 hover:underline" @click="guestMode = true; guestCustomerName = customerQuery; customerQuery = ''">
+                                    <button type="button" class="text-brand-600 hover:underline" @click="guestMode = true; guestCustomerName = customerQuery; customerQuery = ''">
                                         {{ __('Just bill by name') }}
                                     </button>
                                 </p>
@@ -83,7 +83,7 @@
                             <p class="text-xs text-amber-700">
                                 {{ __("No customer record will be saved — their name just appears on this bill. We won't be able to track any balance for them, so if they don't pay in full now, you'll need to remember it yourself.") }}
                             </p>
-                            <button type="button" class="text-sm text-indigo-600 hover:underline" @click="guestMode = false; guestCustomerName = ''">
+                            <button type="button" class="text-sm text-brand-600 hover:underline" @click="guestMode = false; guestCustomerName = ''">
                                 {{ __('Cancel — search for a customer instead') }}
                             </button>
                         </div>
@@ -104,7 +104,7 @@
                                     <div class="text-sm font-semibold" :class="(selectedCustomer.due || 0) > 0 ? 'text-red-600' : 'text-green-600'"
                                         x-text="'₹' + Math.abs(selectedCustomer.due || 0).toFixed(2) + ((selectedCustomer.due || 0) < 0 ? ' CR' : ' due')"></div>
                                 </div>
-                                <button type="button" class="text-sm text-indigo-600 hover:underline" @click="selectedCustomer = null; customerQuery = ''">
+                                <button type="button" class="text-sm text-brand-600 hover:underline" @click="selectedCustomer = null; customerQuery = ''">
                                     {{ __('Change') }}
                                 </button>
                             </div>
@@ -153,7 +153,7 @@
                     <h3 class="font-medium text-gray-700 mb-4">{{ __('2. Items') }}</h3>
 
                     <div class="mb-3">
-                        <select class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        <select class="w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500"
                             @change="selectFromDropdown($event)">
                             <option value="">{{ __('-- Select an item --') }}</option>
                             @foreach ($items as $item)
@@ -195,9 +195,9 @@
                                     <div class="text-xs text-gray-400" x-text="'In stock: ' + availableStock(line) + ' ' + line.unit"></div>
                                     <div class="mt-1 inline-flex rounded-md border border-gray-300 overflow-hidden text-xs" x-show="line.altUnit">
                                         <button type="button" @click="setLineUnit(line, line.baseUnit)" class="px-2 py-0.5"
-                                            :class="line.unit === line.baseUnit ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'" x-text="line.baseUnit"></button>
+                                            :class="line.unit === line.baseUnit ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'" x-text="line.baseUnit"></button>
                                         <button type="button" @click="setLineUnit(line, line.altUnit)" class="px-2 py-0.5 border-l border-gray-300"
-                                            :class="line.unit === line.altUnit ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'" x-text="line.altUnit"></button>
+                                            :class="line.unit === line.altUnit ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'" x-text="line.altUnit"></button>
                                     </div>
                                     <input type="hidden" :name="`items[${index}][item_id]`" :value="line.item_id">
                                     <input type="hidden" :name="`items[${index}][unit]`" :value="line.unit">
@@ -261,7 +261,7 @@
                             </div>
                             <div>
                                 <x-input-label for="notes" :value="__('Notes (optional)')" />
-                                <textarea id="notes" name="notes" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                                <textarea id="notes" name="notes" rows="2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500"></textarea>
                             </div>
                         </div>
 
@@ -276,27 +276,27 @@
                                 <div class="flex items-center gap-2">
                                     <div class="inline-flex rounded-md border border-gray-300 overflow-hidden text-xs">
                                         <button type="button" @click="discountType = 'amount'"
-                                            class="px-2 py-1" :class="discountType === 'amount' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'">₹</button>
+                                            class="px-2 py-1" :class="discountType === 'amount' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'">₹</button>
                                         <button type="button" @click="discountType = 'percentage'"
-                                            class="px-2 py-1 border-l border-gray-300" :class="discountType === 'percentage' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'">%</button>
+                                            class="px-2 py-1 border-l border-gray-300" :class="discountType === 'percentage' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'">%</button>
                                     </div>
                                     <template x-if="discountType === 'percentage'">
                                         <input type="number" step="0.01" min="0" max="100" x-model.number="discountPercent" placeholder="0"
-                                            class="w-14 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                            class="w-14 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                                     </template>
                                     <input id="discount" name="discount" type="number" step="0.01" min="0" x-model.number="discount"
                                         :readonly="discountType === 'percentage'"
                                         :class="discountType === 'percentage' ? 'bg-gray-100 text-gray-500' : ''"
-                                        class="w-24 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                        class="w-24 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                                 </div>
                             </div>
                             <div class="flex justify-between items-center text-sm text-gray-600">
                                 <label for="tax">{{ __('Tax') }}</label>
-                                <input id="tax" name="tax" type="number" step="0.01" min="0" x-model.number="tax" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <input id="tax" name="tax" type="number" step="0.01" min="0" x-model.number="tax" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             </div>
                             <div class="flex justify-between items-center text-sm text-gray-600">
                                 <label for="transportation">{{ __('Transportation') }}</label>
-                                <input id="transportation" name="transportation" type="number" step="0.01" min="0" x-model.number="transportation" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <input id="transportation" name="transportation" type="number" step="0.01" min="0" x-model.number="transportation" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             </div>
                             <div class="flex justify-between items-center text-base font-semibold text-gray-900 border-t pt-2">
                                 <span>{{ __('Total') }}</span>
@@ -304,11 +304,11 @@
                             </div>
                             <div class="flex justify-between items-center text-sm text-gray-600">
                                 <label for="paid_amount">{{ __('Paid Amount') }}</label>
-                                <input id="paid_amount" name="paid_amount" type="number" step="0.01" min="0" x-model.number="paidAmount" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <input id="paid_amount" name="paid_amount" type="number" step="0.01" min="0" x-model.number="paidAmount" class="w-28 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             </div>
                             <div class="flex justify-end">
                                 <label class="inline-flex items-center gap-2 text-xs text-gray-500">
-                                    <input type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" @change="paidAmount = $event.target.checked ? total : 0">
+                                    <input type="checkbox" class="rounded border-gray-300 text-brand-600 shadow-sm focus:ring-brand-500" @change="paidAmount = $event.target.checked ? total : 0">
                                     {{ __('Received full payment now') }}
                                 </label>
                             </div>

@@ -22,7 +22,7 @@
                 @endphp
                 <tr>
                     <td class="px-6 py-4 text-sm text-gray-800">
-                        <a href="{{ route('customers.show', $customer) }}" class="text-indigo-700 hover:underline font-medium">{{ $customer->name }}</a>
+                        <a href="{{ route('customers.show', $customer) }}" class="text-brand-700 hover:underline font-medium">{{ $customer->name }}</a>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $customer->phone }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $customer->address ?? '—' }}</td>
@@ -60,7 +60,7 @@
                         </form>
                     </td>
                     <td class="px-6 py-4 text-right text-sm">
-                        <a href="{{ route('customers.edit', $customer) }}" class="text-indigo-600 hover:underline">{{ __('Edit') }}</a>
+                        <a href="{{ route('customers.edit', $customer) }}" class="text-brand-600 hover:underline">{{ __('Edit') }}</a>
                         <form method="POST" action="{{ route('customers.destroy', $customer) }}" class="inline">
                             @csrf
                             @method('DELETE')

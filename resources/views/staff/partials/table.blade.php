@@ -20,7 +20,7 @@
                 <tr>
                     <td class="px-6 py-4 text-sm font-medium text-gray-800">{{ $member->name }}</td>
                     <td class="px-6 py-4 text-sm">
-                        <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $member->isPartner() ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600' }}">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $member->isPartner() ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-600' }}">
                             {{ $member->isPartner() ? __('Partner') : __('Staff') }}
                         </span>
                     </td>
@@ -55,7 +55,7 @@
                         </form>
                     </td>
                     <td class="px-6 py-4 text-right text-sm">
-                        <a href="{{ route('staff.edit', $member) }}" class="text-indigo-600 hover:underline">{{ __('Edit') }}</a>
+                        <a href="{{ route('staff.edit', $member) }}" class="text-brand-600 hover:underline">{{ __('Edit') }}</a>
                     </td>
                 </tr>
             @empty

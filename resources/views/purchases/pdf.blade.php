@@ -9,7 +9,7 @@
         .header h1 { font-size: 20px; margin: 0 0 4px 0; }
         .header .branch { color: #4b5563; }
         .header .invoice-meta { text-align: right; }
-        .invoice-title { font-size: 22px; font-weight: bold; color: #4f46e5; margin: 0 0 6px 0; }
+        .invoice-title { font-size: 22px; font-weight: bold; color: #6a00d9; margin: 0 0 6px 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .info-table td { vertical-align: top; padding-bottom: 16px; }
         .info-label { color: #6b7280; font-size: 10px; text-transform: uppercase; margin-bottom: 2px; }

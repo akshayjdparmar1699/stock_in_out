@@ -62,7 +62,7 @@
                                 @foreach ($branches as $branch)
                                     <label class="flex items-center gap-2">
                                         <input type="checkbox" name="branch_ids[]" value="{{ $branch->id }}"
-                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                            class="rounded border-gray-300 text-brand-600 shadow-sm focus:ring-brand-500"
                                             @checked(collect($currentBranchIds)->contains($branch->id))>
                                         <span class="text-sm text-gray-700">{{ $branch->name }}</span>
                                     </label>

@@ -11,7 +11,7 @@
 
                     <div>
                         <x-input-label for="category" :value="__('Category')" />
-                        <select id="category" name="category" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select id="category" name="category" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             @foreach ($categories as $value => $label)
                                 <option value="{{ $value }}" @selected(old('category') === $value)>{{ $label }}</option>
                             @endforeach
@@ -21,7 +21,7 @@
 
                     <div>
                         <x-input-label for="staff_member_id" :value="__('Staff / Partner (optional)')" />
-                        <select id="staff_member_id" name="staff_member_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select id="staff_member_id" name="staff_member_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             <option value="">{{ __('Not tied to a person') }}</option>
                             @foreach ($staffOptions as $member)
                                 <option value="{{ $member->id }}" @selected((string) old('staff_member_id') === (string) $member->id)>

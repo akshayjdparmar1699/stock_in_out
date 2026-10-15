@@ -1,6 +1,6 @@
 @php
     $tabClass = fn (bool $active) => $active
-        ? 'flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-indigo-600'
+        ? 'flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-brand-600'
         : 'flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-gray-500';
 @endphp
 

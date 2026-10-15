@@ -73,6 +73,23 @@ class AdminAlertService
         return 'https://wa.me/'.$number.'?text='.rawurlencode($message);
     }
 
+    /**
+     * Same direct-to-customer pattern as creditLimitCustomerUrl() — a
+     * friendly nudge to come back, not an internal alert to the admin.
+     */
+    public static function inactiveCustomerDirectUrl(Customer $customer): ?string
+    {
+        $number = self::normalizeIndianPhone($customer->phone);
+
+        if (! $number) {
+            return null;
+        }
+
+        $message = "Hi {$customer->name}, it's been a few days since your last order with us — let us know if you'd like to place one!";
+
+        return 'https://wa.me/'.$number.'?text='.rawurlencode($message);
+    }
+
     private static function normalizeIndianPhone(?string $phone): ?string
     {
         $digits = preg_replace('/\D+/', '', (string) $phone);

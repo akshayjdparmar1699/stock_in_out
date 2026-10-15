@@ -1,6 +1,6 @@
 @php
     $linkClass = fn (bool $active) => $active
-        ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700'
+        ? 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-brand-50 text-brand-700'
         : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900';
     $iconClass = 'w-5 h-5 shrink-0';
 @endphp

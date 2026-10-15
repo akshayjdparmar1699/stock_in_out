@@ -79,6 +79,10 @@ class DashboardController extends Controller
                 'totalStockValue' => $this->totalStockValue($branchId),
                 'lowStockCount' => $this->lowStockItemsQuery($branchId)->count(),
             ]),
+            'trend' => view('dashboard.partials.trend', $this->salesProfitTrend($branchId) + [
+                'lowStockCount' => $this->lowStockItemsQuery($branchId)->count(),
+                'totalStockValue' => $this->totalStockValue($branchId),
+            ]),
             'dues' => view('dashboard.partials.dues', [
                 'customerDueTotal' => $this->customerDueTotal($branchId),
                 'supplierDueTotal' => $this->supplierDueTotal($branchId),
@@ -116,25 +120,16 @@ class DashboardController extends Controller
             'over-limit' => view('dashboard.partials.over-limit', [
                 'overLimitCustomers' => $this->paginateCollection($this->buildOverLimitCustomers($branch, $branchId), $request, 'over_limit_page'),
             ]),
-            'expense-breakdown' => (function () use ($branchId, $from, $to, $period) {
-                $expenseBreakdown = Expense::query()
-                    ->where('branch_id', $branchId)
-                    ->when($from, fn ($q) => $q->whereBetween('expense_date', [$from, $to]))
-                    ->selectRaw('category, COALESCE(SUM(amount), 0) as total')
-                    ->groupBy('category')
-                    ->pluck('total', 'category');
+            'expenses' => (function () use ($branchId, $request) {
+                $recentExpenses = Expense::query()->where('branch_id', $branchId)->with(['staffMember', 'user'])
+                    ->latest('expense_date')->latest('id')
+                    ->paginate(self::PER_PAGE, ['*'], 'expenses_page')->withQueryString();
 
-                return view('dashboard.partials.expense-breakdown', [
-                    'period' => $period,
-                    'expenseBreakdown' => $expenseBreakdown,
-                    'expenseTotal' => (float) $expenseBreakdown->sum(),
+                return view('dashboard.partials.expenses', [
+                    'recentExpenses' => $recentExpenses,
+                    'totalShown' => (float) $recentExpenses->getCollection()->sum('amount'),
                 ]);
             })(),
-            'expenses' => view('dashboard.partials.expenses', [
-                'recentExpenses' => Expense::query()->where('branch_id', $branchId)->with(['staffMember', 'user'])
-                    ->latest('expense_date')->latest('id')
-                    ->paginate(self::PER_PAGE, ['*'], 'expenses_page')->withQueryString(),
-            ]),
             default => abort(404),
         };
     }
@@ -170,6 +165,55 @@ class DashboardController extends Controller
             ->value('profit');
     }
 
+    /**
+     * Always the trailing 7 calendar days regardless of the period switcher
+     * above it — a trend line needs a fixed window to be readable, and "last
+     * 7 days" reads the same whether today happens to be a Monday or not.
+     */
+    private function salesProfitTrend(int $branchId): array
+    {
+        $from = now()->subDays(6)->startOfDay();
+        $to = now()->endOfDay();
+
+        $salesByDate = Invoice::query()
+            ->where('branch_id', $branchId)
+            ->whereBetween('invoice_date', [$from, $to])
+            ->selectRaw('DATE(invoice_date) as d, COALESCE(SUM(total), 0) as total')
+            ->groupBy('d')
+            ->pluck('total', 'd');
+
+        $profitByDate = DB::table('invoice_items')
+            ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
+            ->join('items', 'items.id', '=', 'invoice_items.item_id')
+            ->where('invoices.branch_id', $branchId)
+            ->whereBetween('invoices.invoice_date', [$from, $to])
+            ->selectRaw('DATE(invoices.invoice_date) as d, COALESCE(SUM(
+                invoice_items.total - COALESCE(
+                    (SELECT SUM(stock_batch_allocations.quantity * stock_batches.unit_cost)
+                     FROM stock_batch_allocations
+                     JOIN stock_batches ON stock_batches.id = stock_batch_allocations.stock_batch_id
+                     WHERE stock_batch_allocations.stock_movement_id = invoice_items.stock_movement_id),
+                    invoice_items.base_quantity * items.purchase_price
+                )
+            ), 0) as profit')
+            ->groupBy('d')
+            ->pluck('profit', 'd');
+
+        $labels = [];
+        $sales = [];
+        $profit = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $day = now()->subDays($i);
+            $key = $day->format('Y-m-d');
+            $labels[] = $i === 0 ? $day->format('j M') : $day->format('j');
+            $sales[] = round((float) ($salesByDate[$key] ?? 0), 2);
+            $profit[] = round((float) ($profitByDate[$key] ?? 0), 2);
+        }
+
+        return compact('labels', 'sales', 'profit');
+    }
+
     private function totalStockValue(int $branchId): float
     {
         return (float) (ItemStock::query()
@@ -179,12 +223,24 @@ class DashboardController extends Controller
             ->value('value') ?? 0);
     }
 
+    /**
+     * One query with correlated subqueries instead of Customer::dueAmount()
+     * run per customer (two queries each) — with a few hundred customers
+     * over a remote connection, the per-customer version took upwards of
+     * ten seconds; this is the same fix already applied in
+     * NotificationService for the identical N+1.
+     */
     private function customerDueTotal(int $branchId): float
     {
         return (float) Customer::query()
             ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
-            ->get()
-            ->sum(fn (Customer $c) => $c->dueAmount());
+            ->selectRaw('COALESCE(SUM(
+                opening_balance
+                + (SELECT COALESCE(SUM(total), 0) FROM invoices WHERE invoices.customer_id = customers.id)
+                - (SELECT COALESCE(SUM(paid_amount), 0) FROM invoices WHERE invoices.customer_id = customers.id)
+                - credit_balance
+            ), 0) as total_due')
+            ->value('total_due');
     }
 
     private function supplierDueTotal(int $branchId): float
@@ -234,26 +290,49 @@ class DashboardController extends Controller
                 'customer' => $row['customer'],
                 'last_date' => $row['last_date'],
                 'last_invoice_created_at' => $row['last_invoice_created_at'],
-                'whatsapp_url' => AdminAlertService::inactiveCustomerUrl($branch, $row['customer'], $row['last_date']->format('d M Y')),
+                'whatsapp_url' => AdminAlertService::inactiveCustomerDirectUrl($row['customer']),
             ]);
     }
 
+    /**
+     * Same correlated-subquery fix as customerDueTotal() above — this one
+     * previously called Customer::isOverCreditLimit() and dueAmount() per
+     * customer inside a PHP filter/map, which is the exact N+1 pattern
+     * that took 11+ seconds against a few hundred customers remotely.
+     */
     private function buildOverLimitCustomers(?Branch $branch, int $branchId)
     {
         if (! $branch) {
             return collect();
         }
 
+        $invoicedSub = DB::table('invoices')
+            ->selectRaw('COALESCE(SUM(total), 0)')
+            ->whereColumn('invoices.customer_id', 'customers.id');
+
+        $paidSub = DB::table('invoices')
+            ->selectRaw('COALESCE(SUM(paid_amount), 0)')
+            ->whereColumn('invoices.customer_id', 'customers.id');
+
         return Customer::query()
             ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
             ->where('is_active', true)
             ->where('credit_limit', '>', 0)
+            ->select('customers.*')
+            ->selectSub($invoicedSub, 'invoiced_total')
+            ->selectSub($paidSub, 'paid_total')
             ->get()
-            ->filter(fn (Customer $customer) => $customer->isOverCreditLimit())
             ->map(fn (Customer $customer) => [
                 'customer' => $customer,
-                'due' => $customer->dueAmount(),
+                'due' => round(
+                    (float) $customer->opening_balance
+                    + (float) $customer->invoiced_total
+                    - (float) $customer->paid_total
+                    - (float) $customer->credit_balance,
+                    2
+                ),
             ])
+            ->filter(fn (array $row) => $row['due'] > (float) $row['customer']->credit_limit)
             ->sortByDesc('due')
             ->values()
             ->map(fn (array $row) => [

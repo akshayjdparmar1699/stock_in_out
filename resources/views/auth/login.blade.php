@@ -6,11 +6,10 @@
                 class="flex-1 text-sm font-medium rounded-lg py-2 transition">
                 {{ __('Log in') }}
             </button>
-            <button type="button" @click="tab = 'trial'"
-                :class="tab === 'trial' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'"
-                class="flex-1 text-sm font-medium rounded-lg py-2 transition">
+            <a href="{{ route('get-started') }}"
+                class="flex-1 text-center text-sm font-medium rounded-lg py-2 transition text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm">
                 {{ __('Start free trial') }}
-            </button>
+            </a>
         </div>
 
         <div class="mb-8">
@@ -63,7 +62,7 @@
 
         <div class="relative mt-7 pt-6 border-t border-gray-100 text-center">
             <p class="text-xs text-gray-400 mb-4">{{ __('New to :app?', ['app' => config('app.name')]) }}</p>
-            <a href="mailto:{{ config('mail.from.address', 'hello@example.com') }}?subject={{ urlencode('Free trial - '.config('app.name')) }}"
+            <a href="{{ route('get-started') }}"
                 class="block w-full text-center bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold text-sm rounded-lg px-4 py-2.5 transition">
                 {{ __('Start your free trial') }}
             </a>

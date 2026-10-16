@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <title>{{ __('Pricing') }} — {{ config('app.name') }}</title>
+
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
+
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    </head>
+    @php
+        $trialPlan = $plans->firstWhere('key', \App\Models\Plan::KEY_FREE_TRIAL);
+    @endphp
+    <body class="font-sans text-gray-900 antialiased bg-gray-50"
+        x-data="{
+            selectedPlan: {{ $plans->firstWhere('is_popular', true)?->id ?? $plans->first()->id }},
+            plans: {{ \Illuminate\Support\Js::from($plans->map(fn ($p) => [
+                'id' => $p->id,
+                'key' => $p->key,
+                'name' => $p->name,
+                'price' => $p->price,
+                'period' => $p->billing_period === 'trial' ? ('for ' . $p->trial_days . ' days') : ($p->billing_period === 'yearly' ? '/ year' : '/ month'),
+                'branchText' => $p->hasUnlimitedBranches() ? 'unlimited branches' : '1 branch',
+                'cta' => $p->isFreeTrial() ? 'Start trial' : ('Continue with ' . $p->name),
+            ])) }},
+            get plan() { return this.plans.find((p) => p.id === this.selectedPlan); },
+        }">
+
+        <!-- Top bar -->
+        <div class="bg-white border-b border-gray-100">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <a href="{{ route('get-started') }}" class="hidden lg:flex items-center gap-2.5 shrink-0">
+                    <x-application-logo class="w-8 h-8" />
+                    <span class="font-semibold text-gray-800">{{ config('app.name') }}</span>
+                </a>
+
+                <a href="{{ url()->previous() === url()->current() ? url('/') : url()->previous() }}" aria-label="{{ __('Back') }}" class="lg:hidden w-9 h-9 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                </a>
+
+                <!-- Desktop step indicator -->
+                <div class="hidden lg:flex items-center gap-3 text-sm">
+                    <span class="flex items-center gap-2 font-semibold text-brand-700">
+                        <span class="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs">1</span>
+                        {{ __('Choose plan') }}
+                    </span>
+                    <span class="w-10 h-px bg-gray-200"></span>
+                    <span class="flex items-center gap-2 text-gray-400">
+                        <span class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-xs">2</span>
+                        {{ __('Business details') }}
+                    </span>
+                    <span class="w-10 h-px bg-gray-200"></span>
+                    <span class="flex items-center gap-2 text-gray-400">
+                        <span class="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-xs">3</span>
+                        {{ __('Start billing') }}
+                    </span>
+                </div>
+
+                <!-- Mobile step dots -->
+                <div class="lg:hidden flex items-center gap-1.5">
+                    <span class="w-5 h-1.5 rounded-full bg-[#FFB020]"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-200"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-200"></span>
+                </div>
+
+                <a href="{{ route('login') }}" class="text-sm font-medium text-gray-600">
+                    {{ __('Already have an account?') }} <span class="text-brand-600 hover:text-brand-700 underline">{{ __('Log in') }}</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Hero -->
+        <div class="relative bg-gradient-to-br from-brand-600 to-brand-800 text-white px-4 sm:px-6 lg:px-8 pt-10 pb-28 lg:pb-32 overflow-hidden">
+            <div class="absolute -left-20 bottom-0 w-64 h-64 rounded-full bg-white/5"></div>
+            <div class="absolute -right-16 top-10 w-56 h-56 rounded-full bg-white/5 hidden lg:block"></div>
+
+            <div class="relative max-w-3xl mx-auto text-center">
+                <span class="hidden lg:inline-flex items-center gap-2 text-xs font-medium bg-white/10 rounded-full px-3 py-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#FFB020]"></span>
+                    {{ __('Start for :price, upgrade when you are ready', ['price' => '₹'.$trialPlan->price]) }}
+                </span>
+
+                <p class="lg:hidden text-xs font-semibold tracking-wide text-[#FFB020]">{{ __('STEP 1 OF 3') }}</p>
+
+                <h1 class="mt-4 lg:mt-5 text-3xl lg:text-5xl font-extrabold leading-tight">
+                    <span class="lg:hidden">{{ __('Pick your') }} <span class="text-[#FFB020]">{{ __('plan') }}</span></span>
+                    <span class="hidden lg:inline">{{ __('Pick the plan that fits') }} <span class="text-[#FFB020]">{{ __('your business') }}</span></span>
+                </h1>
+
+                <p class="mt-4 text-white/80 text-sm lg:text-base max-w-xl mx-auto">
+                    <span class="lg:hidden">{{ __('Try everything for :days days for just :price.', ['days' => $trialPlan->trial_days, 'price' => '₹'.$trialPlan->price]) }}</span>
+                    <span class="hidden lg:inline">{{ __('Try everything for :days days for just :price. Choose Silver for one branch or Gold for all your branches.', ['days' => $trialPlan->trial_days, 'price' => '₹'.$trialPlan->price]) }}</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Plan cards -->
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 lg:-mt-24 relative">
+            <div class="flex flex-col-reverse gap-5 lg:grid lg:grid-cols-3 lg:gap-6 lg:items-stretch">
+                @foreach ($plans as $plan)
+                    @php $isGold = (bool) $plan->is_popular; @endphp
+                    <div class="relative rounded-2xl p-6 flex flex-col {{ $isGold ? 'bg-gradient-to-br from-brand-600 to-brand-800 border-2 border-[#FFB020] shadow-xl lg:-mt-3' : 'bg-white border border-gray-200 shadow-sm' }}">
+                        @if ($isGold)
+                            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FFB020] text-brand-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide whitespace-nowrap">{{ __('Most popular') }}</span>
+                        @endif
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 {{ $plan->isFreeTrial() ? 'bg-green-50 text-green-700' : ($isGold ? 'bg-[#FFB020] text-white' : 'bg-gray-100 text-gray-600') }}">
+                                    {{ $plan->isFreeTrial() ? $plan->trial_days : strtoupper(substr($plan->name, 0, 1)) }}
+                                </span>
+                                <h3 class="font-bold text-lg truncate {{ $isGold ? 'text-white' : 'text-gray-900' }}">{{ $plan->name }}</h3>
+                            </div>
+                            <button type="button" @click="selectedPlan = {{ $plan->id }}" aria-label="{{ __('Select') }} {{ $plan->name }}"
+                                class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
+                                :class="selectedPlan === {{ $plan->id }} ? '{{ $isGold ? 'border-[#FFB020]' : 'border-brand-600' }}' : '{{ $isGold ? 'border-white/30' : 'border-gray-300' }}'">
+                                <span x-show="selectedPlan === {{ $plan->id }}" style="display:none" class="w-2.5 h-2.5 rounded-full {{ $isGold ? 'bg-[#FFB020]' : 'bg-brand-600' }}"></span>
+                            </button>
+                        </div>
+
+                        <p class="text-sm mt-3 {{ $isGold ? 'text-white/80' : 'text-gray-500' }}">{{ $plan->tagline }}</p>
+
+                        <div class="mt-5 flex items-end gap-1.5 flex-wrap">
+                            <span class="text-3xl font-extrabold {{ $isGold ? 'text-white' : 'text-gray-900' }}">&#8377;{{ number_format($plan->price) }}</span>
+                            <span class="text-sm mb-1 {{ $isGold ? 'text-white/70' : 'text-gray-400' }}">
+                                {{ $plan->isFreeTrial() ? __('for :days days', ['days' => $plan->trial_days]) : ($plan->billing_period === 'yearly' ? __('/ year') : __('/ month')) }}
+                            </span>
+                        </div>
+
+                        <span class="inline-block mt-3 self-start px-3 py-1 rounded-full text-xs font-medium {{ $plan->isFreeTrial() ? 'bg-green-50 text-green-700' : ($isGold ? 'bg-white/15 text-white' : 'bg-brand-50 text-brand-700') }}">
+                            {{ $plan->hasUnlimitedBranches() ? __('Unlimited branches') : __('1 branch') }}{{ $plan->isFreeTrial() ? __(' · :days days only', ['days' => $plan->trial_days]) : '' }}
+                        </span>
+
+                        <div class="border-t mt-5 pt-4 space-y-2.5 flex-1 {{ $isGold ? 'border-white/15' : 'border-gray-100' }}">
+                            @foreach ($plan->features as $feature)
+                                <div class="flex items-start gap-2 text-sm {{ $isGold ? 'text-white/90' : 'text-gray-700' }}">
+                                    <svg class="w-4 h-4 mt-0.5 shrink-0 {{ $isGold ? 'text-[#FFB020]' : 'text-green-600' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                                    <span>{{ $feature }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <button type="button" @click="selectedPlan = {{ $plan->id }}"
+                            class="mt-6 w-full py-2.5 rounded-lg font-semibold text-sm transition-colors {{ $isGold ? 'bg-[#FFB020] text-brand-900 hover:brightness-95' : 'bg-white border-2 border-brand-600 text-brand-700 hover:bg-brand-50' }}">
+                            {{ $plan->isFreeTrial() ? __('Start trial for :price', ['price' => '₹'.$plan->price]) : __('Choose :name', ['name' => $plan->name]) }}
+                        </button>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Trust row -->
+            <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-8 text-sm text-gray-500">
+                <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{{ __('Trial is just :price', ['price' => '₹'.$trialPlan->price]) }}</span>
+                <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{{ __('Cancel anytime') }}</span>
+                <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{{ __('Your data stays safe when you upgrade') }}</span>
+            </div>
+        </div>
+
+        <!-- Compare plans -->
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 lg:mt-20 pb-6">
+            <h2 class="text-2xl lg:text-3xl font-bold text-center text-gray-900">{{ __('Compare plans') }}</h2>
+            <p class="text-center text-gray-500 text-sm mt-2">{{ __('All plans include the full billing and stock system.') }}</p>
+
+            @php
+                $trial = $plans->firstWhere('key', \App\Models\Plan::KEY_FREE_TRIAL);
+                $silver = $plans->firstWhere('key', \App\Models\Plan::KEY_SILVER);
+                $gold = $plans->firstWhere('key', \App\Models\Plan::KEY_GOLD);
+                $check = '<svg class="w-4 h-4 text-green-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';
+                $dash = '<span class="text-gray-300">&middot;</span>';
+            @endphp
+
+            <!-- Desktop table -->
+            <div class="hidden lg:block mt-8 bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-100 text-left text-xs text-gray-400 uppercase tracking-wide">
+                            <th class="px-6 py-4 font-medium">{{ __('Feature') }}</th>
+                            <th class="px-6 py-4 font-medium">{{ __('Free trial') }}</th>
+                            <th class="px-6 py-4 font-medium">{{ __('Silver') }}</th>
+                            <th class="px-6 py-4 font-medium bg-brand-50/60 text-brand-700">{{ __('Gold') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        <tr>
+                            <td class="px-6 py-3.5 text-gray-700">{{ __('Price') }}</td>
+                            <td class="px-6 py-3.5">&#8377;{{ $trial->price }}</td>
+                            <td class="px-6 py-3.5">&#8377;{{ number_format($silver->price) }} / {{ __('year') }}</td>
+                            <td class="px-6 py-3.5 bg-brand-50/60 font-semibold text-brand-700">&#8377;{{ number_format($gold->price) }} / {{ __('year') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-3.5 text-gray-700">{{ __('How long') }}</td>
+                            <td class="px-6 py-3.5">{{ __(':days days', ['days' => $trial->trial_days]) }}</td>
+                            <td class="px-6 py-3.5">{{ __('Yearly') }}</td>
+                            <td class="px-6 py-3.5 bg-brand-50/60 font-semibold text-brand-700">{{ __('Yearly') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-3.5 text-gray-700">{{ __('Branches') }}</td>
+                            <td class="px-6 py-3.5">{{ $trial->branch_limit }}</td>
+                            <td class="px-6 py-3.5">{{ $silver->branch_limit }}</td>
+                            <td class="px-6 py-3.5 bg-brand-50/60 font-semibold text-brand-700">{{ __('Unlimited') }}</td>
+                        </tr>
+                        @foreach ([
+                            __('Billing and invoices'),
+                            __('Stock, items and batches'),
+                            __('Customers, suppliers, credit limits'),
+                            __('Purchases and expenses'),
+                            __('Alerts and WhatsApp reminders'),
+                        ] as $row)
+                            <tr>
+                                <td class="px-6 py-3.5 text-gray-700">{{ $row }}</td>
+                                <td class="px-6 py-3.5">{!! $check !!}</td>
+                                <td class="px-6 py-3.5">{!! $check !!}</td>
+                                <td class="px-6 py-3.5 bg-brand-50/60">{!! $check !!}</td>
+                            </tr>
+                        @endforeach
+                        <tr>
+                            <td class="px-6 py-3.5 text-gray-700">{{ __('Separate stock for each branch') }}</td>
+                            <td class="px-6 py-3.5">{!! $dash !!}</td>
+                            <td class="px-6 py-3.5">{!! $dash !!}</td>
+                            <td class="px-6 py-3.5 bg-brand-50/60">{!! $check !!}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile table -->
+            <div class="lg:hidden mt-6 bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="border-b border-gray-100 text-left text-gray-400">
+                            <th class="px-3 py-3 font-medium">{{ __('Feature') }}</th>
+                            <th class="px-3 py-3 font-medium">{{ __('Free') }}</th>
+                            <th class="px-3 py-3 font-medium">{{ __('Silver') }}</th>
+                            <th class="px-3 py-3 font-medium text-brand-700">{{ __('Gold') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        <tr>
+                            <td class="px-3 py-3 text-gray-700">{{ __('Branches') }}</td>
+                            <td class="px-3 py-3">{{ $trial->branch_limit }}</td>
+                            <td class="px-3 py-3">{{ $silver->branch_limit }}</td>
+                            <td class="px-3 py-3 font-semibold text-brand-700">&#8734;</td>
+                        </tr>
+                        <tr>
+                            <td class="px-3 py-3 text-gray-700">{{ __('How long') }}</td>
+                            <td class="px-3 py-3">{{ __(':days days', ['days' => $trial->trial_days]) }}</td>
+                            <td class="px-3 py-3">{{ __('Yearly') }}</td>
+                            <td class="px-3 py-3 font-semibold text-brand-700">{{ __('Yearly') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-3 py-3 text-gray-700">{{ __('Billing and stock') }}</td>
+                            <td class="px-3 py-3">{!! $check !!}</td>
+                            <td class="px-3 py-3">{!! $check !!}</td>
+                            <td class="px-3 py-3">{!! $check !!}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-3 py-3 text-gray-700">{{ __('Alerts and reminders') }}</td>
+                            <td class="px-3 py-3">{!! $check !!}</td>
+                            <td class="px-3 py-3">{!! $check !!}</td>
+                            <td class="px-3 py-3">{!! $check !!}</td>
+                        </tr>
+                        <tr>
+                            <td class="px-3 py-3 text-gray-700">{{ __('Stock per branch') }}</td>
+                            <td class="px-3 py-3">{!! $dash !!}</td>
+                            <td class="px-3 py-3">{!! $dash !!}</td>
+                            <td class="px-3 py-3">{!! $check !!}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 lg:mt-16 pb-28 lg:pb-16">
+            <h2 class="text-2xl lg:text-3xl font-bold text-center text-gray-900">{{ __('Common questions') }}</h2>
+
+            @php
+                $faqs = [
+                    ['q' => __('What happens after 14 days?'), 'a' => __('Your free trial ends and you choose Silver or Gold to keep working. All your bills, stock and customers stay exactly as they are.')],
+                    ['q' => __('Can I switch from Silver to Gold later?'), 'a' => __('Yes. Upgrade any time when you open a new branch. Your existing branch and data move over automatically.')],
+                    ['q' => __('What does "1 branch" mean in Silver?'), 'a' => __('You can run one shop or godown with full billing and stock. Gold lets you add as many branches as you need.')],
+                    ['q' => __('Why does the free trial cost :price?', ['price' => '₹'.$trialPlan->price]), 'a' => __('It is a small charge just to verify your payment method and keep the trial free of spam signups — not a subscription charge.')],
+                ];
+            @endphp
+
+            <!-- Desktop grid -->
+            <div class="hidden lg:grid lg:grid-cols-3 gap-4 mt-8">
+                @foreach ($faqs as $faq)
+                    <div class="bg-white rounded-xl border border-gray-100 p-5">
+                        <p class="font-semibold text-gray-900 text-sm">{{ $faq['q'] }}</p>
+                        <p class="text-sm text-gray-500 mt-1.5">{{ $faq['a'] }}</p>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Mobile accordion -->
+            <div class="lg:hidden mt-6 bg-white rounded-xl border border-gray-100 divide-y divide-gray-50" x-data="{ open: 0 }">
+                @foreach ($faqs as $i => $faq)
+                    <div>
+                        <button type="button" @click="open = open === {{ $i }} ? null : {{ $i }}" class="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left">
+                            <span class="font-medium text-gray-900 text-sm">{{ $faq['q'] }}</span>
+                            <svg class="w-4 h-4 text-gray-400 shrink-0 transition-transform" :class="open === {{ $i }} && 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                        </button>
+                        <div x-show="open === {{ $i }}" style="display: none;" class="px-4 pb-3.5 text-sm text-gray-500">
+                            {{ $faq['a'] }}
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Sticky bottom bar -->
+        <div class="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] z-40">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:py-4 flex items-center justify-between gap-4">
+                <div class="min-w-0">
+                    <p class="text-xs text-gray-400">{{ __('Selected plan') }}</p>
+                    <p class="font-semibold text-gray-900 text-sm lg:text-base truncate">
+                        <span x-text="plan.name"></span> &middot; <span x-text="plan.price > 0 ? ('₹' + plan.price.toLocaleString('en-IN') + ' ' + plan.period) : ('₹0 ' + plan.period)"></span>
+                        <span class="hidden lg:inline"> &middot; <span x-text="plan.branchText"></span></span>
+                    </p>
+                </div>
+                <a :href="'{{ route('get-started.details') }}?plan=' + selectedPlan"
+                    class="shrink-0 inline-flex items-center justify-center px-5 lg:px-6 py-2.5 lg:py-3 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-lg">
+                    <span x-text="plan.cta"></span>
+                </a>
+            </div>
+        </div>
+    </body>
+</html>

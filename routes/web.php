@@ -6,6 +6,8 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\GetStartedController;
+use App\Http\Controllers\RazorpayWebhookController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\NotificationController;
@@ -98,6 +100,14 @@ Route::get('/__debug-icons', function () {
         })(),
     ]);
 });
+
+Route::get('/get-started', [GetStartedController::class, 'index'])->name('get-started');
+Route::get('/get-started/details', [GetStartedController::class, 'details'])->name('get-started.details');
+Route::post('/get-started/details', [GetStartedController::class, 'storeDetails'])->name('get-started.details.store');
+Route::get('/get-started/billing', [GetStartedController::class, 'billing'])->name('get-started.billing');
+Route::post('/get-started/billing/verify', [GetStartedController::class, 'verifyPayment'])->name('get-started.billing.verify');
+
+Route::post('/razorpay/webhook', [RazorpayWebhookController::class, 'handle'])->name('razorpay.webhook');
 
 Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');

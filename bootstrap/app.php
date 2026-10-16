@@ -18,6 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'not_super_admin' => \App\Http\Middleware\RedirectSuperAdminToCompanies::class,
         ]);
 
+        // Razorpay posts this server-to-server with no session/CSRF token of
+        // ours — it's authenticated instead by verifying the webhook
+        // signature inside the controller.
+        $middleware->validateCsrfTokens(except: [
+            'razorpay/webhook',
+        ]);
+
         // Render (and most PaaS hosts) terminate HTTPS at their edge and
         // forward plain HTTP internally, so trust their proxy and read the
         // X-Forwarded-* headers, otherwise every generated URL (assets,

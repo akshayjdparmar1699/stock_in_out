@@ -10,6 +10,12 @@ class InvoicePayment extends Model
 {
     use HasFactory;
 
+    public const MODE_CASH = 'cash';
+
+    public const MODE_UPI = 'upi';
+
+    public const MODE_BANK = 'bank';
+
     protected $fillable = [
         'invoice_id',
         'customer_id',
@@ -17,6 +23,7 @@ class InvoicePayment extends Model
         'amount',
         'type',
         'note',
+        'mode',
         'batch_id',
         'from_credit_balance',
     ];

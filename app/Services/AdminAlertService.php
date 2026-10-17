@@ -74,6 +74,46 @@ class AdminAlertService
     }
 
     /**
+     * A general "please clear your due" nudge for any customer with a
+     * positive balance — not tied to them being over their credit limit,
+     * unlike creditLimitCustomerUrl() above.
+     */
+    public static function paymentReminderUrl(Customer $customer, float $due): ?string
+    {
+        $number = self::normalizeIndianPhone($customer->phone);
+
+        if (! $number) {
+            return null;
+        }
+
+        $message = "Hi {$customer->name}, your outstanding balance with us is ₹".number_format($due, 2)
+            .". Please clear this at your earliest convenience. Thank you.";
+
+        return 'https://wa.me/'.$number.'?text='.rawurlencode($message);
+    }
+
+    /**
+     * A short receipt sent to the customer right after their payment is
+     * recorded, so they have a WhatsApp record of what was paid and what
+     * (if anything) they still owe.
+     */
+    public static function paymentReceiptUrl(Customer $customer, float $amount, float $balanceAfter): ?string
+    {
+        $number = self::normalizeIndianPhone($customer->phone);
+
+        if (! $number) {
+            return null;
+        }
+
+        $message = "Hi {$customer->name}, we've received your payment of ₹".number_format($amount, 2).". ";
+        $message .= $balanceAfter > 0
+            ? 'Your remaining balance is ₹'.number_format($balanceAfter, 2).'.'
+            : 'Your account is fully settled. Thank you!';
+
+        return 'https://wa.me/'.$number.'?text='.rawurlencode($message);
+    }
+
+    /**
      * Same direct-to-customer pattern as creditLimitCustomerUrl() — a
      * friendly nudge to come back, not an internal alert to the admin.
      */

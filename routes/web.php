@@ -142,6 +142,7 @@ Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::resource('batches', BatchController::class)->only(['index', 'show']);
 
     Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
+    Route::get('/customers/export', [CustomerController::class, 'export'])->name('customers.export');
     Route::patch('/customers/{customer}/toggle-active', [CustomerController::class, 'toggleActive'])->name('customers.toggle-active');
     Route::get('/customers/{customer}/statement-pdf', [CustomerController::class, 'statementPdf'])->name('customers.statement-pdf');
     Route::post('/customers/{customer}/payments', [CustomerController::class, 'storePayment'])->name('customers.payments.store');

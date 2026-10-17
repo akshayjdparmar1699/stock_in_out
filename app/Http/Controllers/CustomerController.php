@@ -11,6 +11,7 @@ use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
+use App\Models\InvoiceItem;
 use App\Services\AdminAlertService;
 use App\Services\BranchContext;
 use App\Services\NotificationService;
@@ -20,6 +21,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\StreamedResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -29,29 +32,143 @@ class CustomerController extends Controller
 {
     public function index(Request $request): View
     {
-        $branchId = BranchContext::id();
-        $status = $request->string('status', 'active')->toString();
+        ['all' => $all, 'due' => $dueByCustomerId, 'filter' => $filter] = $this->filteredCustomers($request);
 
-        $customers = Customer::query()
+        $stats = $this->statsFor($all, $dueByCustomerId);
+
+        $filtered = $all->filter(fn (Customer $customer) => $this->matchesFilter($customer, $filter, $dueByCustomerId))->values();
+
+        $perPage = PerPagePreference::get();
+        $page = $request->integer('page', 1);
+
+        $customers = new LengthAwarePaginator(
+            $filtered->forPage($page, $perPage)->values(),
+            $filtered->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        $lastBillByCustomerId = $this->lastBillDatesFor($customers->getCollection());
+
+        if ($request->ajax()) {
+            return view('customers.partials.table', ['customers' => $customers, 'dueByCustomerId' => $dueByCustomerId, 'lastBillByCustomerId' => $lastBillByCustomerId]);
+        }
+
+        return view('customers.index', [
+            'customers' => $customers,
+            'filter' => $filter,
+            'dueByCustomerId' => $dueByCustomerId,
+            'lastBillByCustomerId' => $lastBillByCustomerId,
+            'stats' => $stats,
+            'totalCount' => $all->count(),
+            'branch' => BranchContext::current(),
+        ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        ['all' => $all, 'due' => $dueByCustomerId, 'filter' => $filter] = $this->filteredCustomers($request);
+
+        $filtered = $all->filter(fn (Customer $customer) => $this->matchesFilter($customer, $filter, $dueByCustomerId))->values();
+
+        return response()->streamDownload(function () use ($filtered, $dueByCustomerId) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Name', 'Phone', 'Village / City', 'Branches', 'Balance Due', 'Credit Limit', 'Status']);
+
+            foreach ($filtered as $customer) {
+                fputcsv($out, [
+                    $customer->name,
+                    $customer->phone,
+                    $customer->address,
+                    $customer->branches->pluck('name')->implode(', '),
+                    number_format($dueByCustomerId[$customer->id] ?? 0, 2),
+                    number_format((float) $customer->credit_limit, 2),
+                    $customer->is_active ? 'Active' : 'Inactive',
+                ]);
+            }
+
+            fclose($out);
+        }, 'customers.csv');
+    }
+
+    /**
+     * Shared branch+search query behind both index() and export() — loads
+     * every matching customer unpaginated (shop customer lists are small
+     * enough that this is cheap) so the filter tabs/stat counts and CSV
+     * export can be computed from the exact same due-amount snapshot.
+     *
+     * @return array{all: Collection<int, Customer>, due: array<int, float>, filter: string}
+     */
+    private function filteredCustomers(Request $request): array
+    {
+        $branchId = BranchContext::id();
+        $search = $request->string('q')->toString();
+
+        $all = Customer::query()
             ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
             ->with('branches')
-            ->when($status === 'active', fn ($q) => $q->where('is_active', true))
-            ->when($status === 'inactive', fn ($q) => $q->where('is_active', false))
-            ->when($request->filled('q'), function ($query) use ($request) {
-                $term = '%'.$request->string('q').'%';
+            ->when($search !== '', function ($query) use ($search) {
+                $term = '%'.$search.'%';
                 $query->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term));
             })
             ->orderBy('name')
-            ->paginate(PerPagePreference::get())
-            ->withQueryString();
+            ->get();
 
-        $dueByCustomerId = $this->dueAmountsFor($customers->getCollection());
+        return [
+            'all' => $all,
+            'due' => $this->dueAmountsFor($all),
+            'filter' => $request->string('filter', 'all')->toString(),
+        ];
+    }
 
-        if ($request->ajax()) {
-            return view('customers.partials.table', ['customers' => $customers, 'dueByCustomerId' => $dueByCustomerId]);
+    /**
+     * @param  array<int, float>  $dueByCustomerId
+     */
+    private function matchesFilter(Customer $customer, string $filter, array $dueByCustomerId): bool
+    {
+        $due = $dueByCustomerId[$customer->id] ?? 0.0;
+
+        return match ($filter) {
+            'udhaar' => $customer->is_active && $due > 0,
+            'over_limit' => $customer->is_active && (float) $customer->credit_limit > 0 && $due > (float) $customer->credit_limit,
+            'settled' => $customer->is_active && $due <= 0,
+            'inactive' => ! $customer->is_active,
+            default => true,
+        };
+    }
+
+    /**
+     * @param  Collection<int, Customer>  $all
+     * @param  array<int, float>  $dueByCustomerId
+     * @return array{udhaar_count: int, udhaar_total: float, over_limit_count: int, settled_count: int, inactive_count: int}
+     */
+    private function statsFor(Collection $all, array $dueByCustomerId): array
+    {
+        $stats = ['udhaar_count' => 0, 'udhaar_total' => 0.0, 'over_limit_count' => 0, 'settled_count' => 0, 'inactive_count' => 0];
+
+        foreach ($all as $customer) {
+            if (! $customer->is_active) {
+                $stats['inactive_count']++;
+
+                continue;
+            }
+
+            $due = $dueByCustomerId[$customer->id] ?? 0.0;
+
+            if ($due > 0) {
+                $stats['udhaar_count']++;
+                $stats['udhaar_total'] += $due;
+
+                if ((float) $customer->credit_limit > 0 && $due > (float) $customer->credit_limit) {
+                    $stats['over_limit_count']++;
+                }
+            } else {
+                $stats['settled_count']++;
+            }
         }
 
-        return view('customers.index', ['customers' => $customers, 'status' => $status, 'dueByCustomerId' => $dueByCustomerId]);
+        return $stats;
     }
 
     /**
@@ -87,6 +204,28 @@ class CustomerController extends Controller
 
             return [$customer->id => $due];
         })->all();
+    }
+
+    /**
+     * Most recent invoice date per customer, for the "Last Bill" column —
+     * one grouped query instead of an N+1 per row.
+     *
+     * @param  Collection<int, Customer>  $customers
+     * @return array<int, \Illuminate\Support\Carbon>
+     */
+    private function lastBillDatesFor(Collection $customers): array
+    {
+        if ($customers->isEmpty()) {
+            return [];
+        }
+
+        return Invoice::query()
+            ->whereIn('customer_id', $customers->pluck('id'))
+            ->selectRaw('customer_id, MAX(invoice_date) as last_date')
+            ->groupBy('customer_id')
+            ->pluck('last_date', 'customer_id')
+            ->map(fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date) : null)
+            ->all();
     }
 
     /**
@@ -137,16 +276,40 @@ class CustomerController extends Controller
         abort_unless($this->belongsToCurrentCompany($customer), 404);
 
         $due = $customer->dueAmount();
-        $branch = BranchContext::current();
+        $entries = $this->buildLedger($customer);
+        $thisMonth = now()->format('F');
 
         return view('customers.show', [
             'customer' => $customer,
-            'entries' => $this->buildLedger($customer)->reverse()->values(),
+            'entries' => $entries->reverse()->values(),
             'due' => $due,
-            'creditLimitAdminUrl' => ($branch && $customer->isOverCreditLimit())
-                ? AdminAlertService::creditLimitUrl($branch, $customer, $due, (float) $customer->credit_limit)
-                : null,
+            'thisMonthLabel' => $thisMonth,
+            'billedThisMonth' => $entries->where('type', 'billed')->filter(fn (array $e) => $e['date']->isCurrentMonth())->sum('amount'),
+            'receivedThisMonth' => $entries->where('type', 'received')->filter(fn (array $e) => $e['date']->isCurrentMonth())->sum('amount'),
+            'lastBillDate' => $entries->where('type', 'billed')->sortByDesc('date')->first()['date'] ?? null,
+            'lastPaymentDate' => $entries->where('type', 'received')->sortByDesc('date')->first()['date'] ?? null,
+            'usualItems' => $this->usualItemsFor($customer),
         ]);
+    }
+
+    /**
+     * The 2-3 items this customer buys most often, by total quantity
+     * across all their invoices — purely informational context on their
+     * profile, not stored anywhere of its own.
+     */
+    private function usualItemsFor(Customer $customer): string
+    {
+        return InvoiceItem::query()
+            ->whereHas('invoice', fn ($q) => $q->where('customer_id', $customer->id))
+            ->selectRaw('item_id, SUM(quantity) as qty')
+            ->groupBy('item_id')
+            ->orderByDesc('qty')
+            ->limit(3)
+            ->with('item:id,name')
+            ->get()
+            ->pluck('item.name')
+            ->filter()
+            ->implode(', ');
     }
 
     public function statementPdf(Customer $customer): Response
@@ -197,6 +360,7 @@ class CustomerController extends Controller
                     'user_id' => auth()->id(),
                     'amount' => $data['amount'],
                     'type' => 'received',
+                    'mode' => $data['mode'] ?? null,
                     'note' => $data['note'] ?? null,
                 ]);
 
@@ -232,6 +396,7 @@ class CustomerController extends Controller
                     'user_id' => auth()->id(),
                     'amount' => $apply,
                     'note' => $data['note'] ?? null,
+                    'mode' => $data['mode'] ?? null,
                     'batch_id' => $batchId,
                 ]);
 
@@ -254,6 +419,7 @@ class CustomerController extends Controller
                     'user_id' => auth()->id(),
                     'amount' => $remaining,
                     'note' => $data['note'] ?? null,
+                    'mode' => $data['mode'] ?? null,
                     'batch_id' => $batchId,
                 ]);
 
@@ -261,8 +427,11 @@ class CustomerController extends Controller
             }
         });
 
+        $receiptUrl = AdminAlertService::paymentReceiptUrl($customer, (float) $data['amount'], $customer->refresh()->dueAmount());
+
         return redirect()->route('customers.show', $customer)
-            ->with('status', "Payment of ₹".number_format($data['amount'], 2)." recorded for \"{$customer->name}\".");
+            ->with('status', "Payment of ₹".number_format($data['amount'], 2)." recorded for \"{$customer->name}\".")
+            ->with('open_whatsapp_url', $receiptUrl);
     }
 
     /**

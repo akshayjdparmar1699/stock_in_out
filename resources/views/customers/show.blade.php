@@ -223,7 +223,7 @@
         </div>
 
         {{-- Mobile sticky action bar --}}
-        <div class="lg:hidden fixed inset-x-0 bottom-16 z-30 bg-white border-t border-gray-100 px-4 py-3 flex gap-3" style="padding-bottom: env(safe-area-inset-bottom);">
+        <div class="lg:hidden fixed inset-x-0 bottom-16 z-30 bg-white border-t border-gray-100 px-4 py-3 flex gap-3 transform-gpu" style="padding-bottom: env(safe-area-inset-bottom);">
             <button type="button" @click="payModalOpen = true" class="flex-1 px-4 py-2.5 border border-brand-600 text-brand-700 text-sm font-semibold rounded-lg text-center">
                 {{ __('Receive payment') }}
             </button>

@@ -95,14 +95,13 @@
                     <p class="text-xs font-semibold tracking-wide text-gray-400 uppercase">{{ __('Basic Details') }}</p>
 
                     <div>
-                        <x-input-label for="m_name" :value="__('Customer / shop name')" />
-                        <span class="text-red-500">*</span>
+                        <x-input-label for="m_name">{{ __('Customer / shop name') }} <span class="text-red-500">*</span></x-input-label>
                         <x-text-input id="m_name" name="name" type="text" class="mt-1 block w-full" :value="old('name')" placeholder="{{ __('e.g. Patel Kirana Store') }}" required />
                         <x-input-error :messages="$errors->get('name')" class="mt-2" />
                     </div>
 
                     <div>
-                        <x-input-label :value="__('Phone number')" /><span class="text-red-500">*</span>
+                        <x-input-label>{{ __('Phone number') }} <span class="text-red-500">*</span></x-input-label>
                         <div class="mt-1 flex gap-2">
                             <span class="shrink-0 inline-flex items-center px-3 rounded-md bg-gray-100 text-gray-600 text-sm font-medium">+91</span>
                             <x-text-input id="m_phone" name="phone" type="tel" class="block w-full" :value="old('phone')" placeholder="98765 43210" required />
@@ -115,7 +114,7 @@
                     </div>
 
                     <div>
-                        <x-input-label for="m_address" :value="__('Village / city')" /> <span class="text-gray-400 text-xs">({{ __('optional') }})</span>
+                        <x-input-label for="m_address">{{ __('Village / city') }} <span class="text-gray-400 text-xs font-normal">({{ __('optional') }})</span></x-input-label>
                         <x-text-input id="m_address" name="address" type="text" class="mt-1 block w-full" :value="old('address')" placeholder="{{ __('e.g. Kodinar') }}" />
                         <x-input-error :messages="$errors->get('address')" class="mt-2" />
                     </div>
@@ -135,7 +134,7 @@
                     </div>
 
                     <div>
-                        <x-input-label for="m_credit_limit" :value="__('Credit limit')" /> <span class="text-gray-400 text-xs">({{ __('optional') }})</span>
+                        <x-input-label for="m_credit_limit">{{ __('Credit limit') }} <span class="text-gray-400 text-xs font-normal">({{ __('optional') }})</span></x-input-label>
                         <div class="relative mt-1">
                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
                             <x-text-input id="m_credit_limit" name="credit_limit" type="number" step="0.01" min="0" class="block w-full pl-7" :value="old('credit_limit')" placeholder="{{ __('No limit') }}" />
@@ -166,7 +165,7 @@
         </form>
     </div>
 
-    <div class="lg:hidden fixed inset-x-0 bottom-16 z-30 bg-white border-t border-gray-100 px-4 py-3" style="padding-bottom: env(safe-area-inset-bottom);">
+    <div class="lg:hidden fixed inset-x-0 bottom-16 z-30 bg-white border-t border-gray-100 px-4 py-3 transform-gpu" style="padding-bottom: env(safe-area-inset-bottom);">
         <button type="submit" form="mobile-customer-form" class="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold text-sm rounded-lg py-3">
             {{ __('Save Customer') }}
         </button>

@@ -1,10 +1,18 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Expenses') }}</h2>
-            <a href="{{ route('expenses.create') }}" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
-                {{ __('+ Add Expense') }}
-            </a>
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <x-application-logo class="lg:hidden w-9 h-9 shrink-0" />
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Expenses') }}</h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="lg:hidden">
+                    @include('layouts.partials.notification-bell')
+                </div>
+                <a href="{{ route('expenses.create') }}" class="hidden lg:inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
+                    {{ __('+ Add Expense') }}
+                </a>
+            </div>
         </div>
     </x-slot>
 

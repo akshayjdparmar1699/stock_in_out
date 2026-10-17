@@ -4,7 +4,7 @@
         : 'flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-gray-500';
 @endphp
 
-<nav class="lg:hidden print:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-gray-200 flex"
+<nav class="lg:hidden print:hidden fixed inset-x-0 bottom-0 z-40 bg-white border-t border-gray-200 flex transform-gpu"
     style="padding-bottom: env(safe-area-inset-bottom);">
     <a href="{{ route('dashboard') }}" class="{{ $tabClass(request()->routeIs('dashboard')) }}">
         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

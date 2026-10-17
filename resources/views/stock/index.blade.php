@@ -1,6 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Stock') }}</h2>
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <x-application-logo class="lg:hidden w-9 h-9 shrink-0" />
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Stock') }}</h2>
+            </div>
+            <div class="lg:hidden">
+                @include('layouts.partials.notification-bell')
+            </div>
+        </div>
     </x-slot>
 
     <div class="py-12" x-data="{ deleteOpen: false, deleteForm: null, deleteLabel: '' }">

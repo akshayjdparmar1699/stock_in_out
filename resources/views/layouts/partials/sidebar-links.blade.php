@@ -14,6 +14,13 @@
         </svg>
         {{ __('Companies') }}
     </a>
+
+    <a href="{{ route('leads.index') }}" class="{{ $linkClass(request()->routeIs('leads.*')) }}">
+        <svg class="{{ $iconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.584-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.124-2.995-2.708-3.228A48.35 48.35 0 0012 3c-2.392 0-4.744.175-7.042.513C3.374 3.746 2.25 5.14 2.25 6.741v6.018z" />
+        </svg>
+        {{ __('Leads') }}
+    </a>
 @else
 <a href="{{ route('dashboard') }}" class="{{ $linkClass(request()->routeIs('dashboard')) }}">
     <svg class="{{ $iconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

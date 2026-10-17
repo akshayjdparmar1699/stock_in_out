@@ -7,9 +7,11 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\GetStartedController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\RazorpayWebhookController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PreferenceController;
 use App\Http\Controllers\PushSubscriptionController;
@@ -21,9 +23,8 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return redirect()->route('dashboard');
-});
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::post('/contact', [LeadController::class, 'store'])->name('leads.store');
 
 // Generated rather than a static file so the app name matches whatever
 // this deployment's APP_NAME is set to (e.g. "Wholesale Na Vepari" on
@@ -170,6 +171,9 @@ Route::middleware(['auth', 'verified', 'super_admin'])->group(function () {
     Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
     Route::get('/companies/create', [CompanyController::class, 'create'])->name('companies.create');
     Route::post('/companies', [CompanyController::class, 'store'])->name('companies.store');
+
+    Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
+    Route::patch('/leads/{lead}/contacted', [LeadController::class, 'markContacted'])->name('leads.contacted');
 });
 
 Route::middleware('auth')->group(function () {

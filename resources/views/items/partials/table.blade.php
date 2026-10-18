@@ -6,8 +6,8 @@
     ];
 @endphp
 
-{{-- Desktop table --}}
-<div class="hidden lg:block bg-white shadow-sm rounded-lg overflow-hidden">
+{{-- Table view (always on desktop; mobile when toggled to table view) --}}
+<div class="bg-white shadow-sm rounded-lg overflow-hidden" :class="mobileView === 'table' ? 'block' : 'hidden lg:block'">
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -66,9 +66,6 @@
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex items-center justify-end gap-1.5" x-data="{ menuOpen: false }">
-                            <a href="{{ route('items.show', $item) }}#adjust-stock" class="inline-flex items-center px-3 py-1.5 rounded-md border border-brand-200 text-brand-700 text-xs font-semibold hover:bg-brand-50">
-                                {{ __('+ Stock') }}
-                            </a>
                             <a href="{{ route('items.edit', $item) }}" title="{{ __('Edit') }}" class="w-8 h-8 rounded-lg text-gray-500 flex items-center justify-center hover:bg-gray-100">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
                             </a>
@@ -103,7 +100,7 @@
 </div>
 
 {{-- Mobile cards --}}
-<div class="lg:hidden space-y-3">
+<div class="lg:hidden space-y-3" :class="mobileView === 'table' ? 'hidden' : 'block'">
     @forelse ($items as $item)
         @php
             $qty = $item->stocks->first()->quantity ?? 0;

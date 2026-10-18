@@ -3,26 +3,90 @@
         <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5">
                 <x-application-logo class="lg:hidden w-9 h-9 shrink-0" />
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Items') }}</h2>
+                <div>
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Items') }}</h2>
+                    <p class="hidden lg:block text-sm text-gray-400 mt-0.5">
+                        {{ $totalCount }} {{ __('items') }}
+                        @if ($branch)
+                            &middot; {{ $branch->name }}
+                        @endif
+                    </p>
+                </div>
             </div>
             <div class="flex items-center gap-2">
                 <div class="lg:hidden">
                     @include('layouts.partials.notification-bell')
                 </div>
-                <a href="{{ route('items.create') }}" class="hidden lg:inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
-                    {{ __('+ Add Item') }}
-                </a>
+                <div class="hidden lg:flex items-center gap-2">
+                    <a href="{{ route('items.create') }}" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
+                        {{ __('+ Add Item') }}
+                    </a>
+                </div>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-12" x-data="{ deleteOpen: false, deleteForm: null, deleteLabel: '' }">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+    <div class="py-6 sm:py-12" x-data="{ deleteOpen: false, deleteForm: null, deleteLabel: '' }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
-            <form method="GET" class="flex gap-2">
-                <x-text-input name="q" type="text" class="w-full sm:w-80" placeholder="{{ __('Search by name or SKU') }}" :value="request('q')" />
-                <x-secondary-button type="submit">{{ __('Search') }}</x-secondary-button>
-            </form>
+            {{-- Stat cards (desktop) --}}
+            <div class="hidden lg:grid lg:grid-cols-4 gap-4">
+                <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
+                    <span class="text-sm text-gray-500">{{ __('Total items') }}</span>
+                    <div class="text-2xl font-bold text-gray-900 mt-3">{{ $stats['total_items'] }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('in this branch') }}</div>
+                </div>
+                <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
+                    <span class="text-sm text-gray-500">{{ __('Stock value') }}</span>
+                    <div class="text-2xl font-bold text-gray-900 mt-3">&#8377;{{ number_format($stats['stock_value'], 0) }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('at selling price') }}</div>
+                </div>
+                <div class="bg-white shadow-sm rounded-xl p-5 border {{ $stats['low_stock_count'] > 0 ? 'border-amber-200' : 'border-gray-100' }}">
+                    <span class="text-sm text-gray-500">{{ __('Low stock') }}</span>
+                    <div class="text-2xl font-bold text-amber-600 mt-3">{{ $stats['low_stock_count'] }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('at or below alert level') }}</div>
+                </div>
+                <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
+                    <span class="text-sm text-gray-500">{{ __('Out of stock') }}</span>
+                    <div class="text-2xl font-bold text-red-600 mt-3">{{ $stats['out_of_stock_count'] }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('cannot be billed') }}</div>
+                </div>
+            </div>
+
+            {{-- Filters + search --}}
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <form method="GET" class="order-1 lg:order-2 flex gap-2 shrink-0">
+                    <input type="hidden" name="filter" value="{{ $filter }}">
+                    <x-text-input name="q" type="text" class="w-full lg:w-72" placeholder="{{ __('Search item or SKU') }}" :value="request('q')" />
+                    <x-secondary-button type="submit" class="hidden lg:inline-flex shrink-0">{{ __('Search') }}</x-secondary-button>
+                </form>
+
+                <div class="order-2 lg:order-1 flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 lg:mx-0 lg:px-0">
+                    @foreach ([
+                        'all' => __('All').' '.$totalCount,
+                        'low_stock' => __('Low stock').' '.$stats['low_stock_count'],
+                        'in_stock' => __('In stock').' '.$stats['in_stock_count'],
+                        'out_of_stock' => __('Out of stock').' '.$stats['out_of_stock_count'],
+                    ] as $value => $label)
+                        <a href="{{ route('items.index', array_filter(['filter' => $value, 'q' => request('q')])) }}"
+                            class="shrink-0 px-3.5 py-2 rounded-full text-sm font-medium whitespace-nowrap {{ $filter === $value ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50' }}">
+                            {{ $label }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Mobile stat cards --}}
+            <div class="lg:hidden grid grid-cols-2 gap-3">
+                <div class="bg-gradient-to-br from-brand-600 to-brand-700 text-white rounded-2xl p-4">
+                    <p class="text-xs text-white/70">{{ __('Stock value') }}</p>
+                    <p class="text-xl font-bold mt-0.5">&#8377;{{ number_format($stats['stock_value'], 0) }}</p>
+                </div>
+                <div class="bg-white border border-amber-200 rounded-2xl p-4">
+                    <p class="text-xs text-gray-500">{{ __('Low stock') }}</p>
+                    <p class="text-xl font-bold text-amber-600 mt-0.5">{{ $stats['low_stock_count'] }} {{ __('items') }}</p>
+                </div>
+            </div>
 
             <div x-data="listTable()">
                 <div x-ref="content" :class="loading && 'opacity-50'">
@@ -30,6 +94,11 @@
                 </div>
             </div>
         </div>
+
+        <a href="{{ route('items.create') }}" aria-label="{{ __('Add Item') }}"
+            class="lg:hidden fixed right-4 bottom-20 z-30 w-14 h-14 rounded-full bg-brand-600 text-white shadow-lg flex items-center justify-center hover:bg-brand-700 transform-gpu">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        </a>
 
         @include('partials.delete-confirm-modal')
     </div>

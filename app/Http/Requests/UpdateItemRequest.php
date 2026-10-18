@@ -17,7 +17,7 @@ class UpdateItemRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'sku' => [
-                'required', 'string', 'max:50',
+                'nullable', 'string', 'max:50',
                 Rule::unique('items', 'sku')->where('company_id', $this->user()?->company_id)->ignore($this->route('item')),
             ],
             'unit' => ['required', 'string', 'max:20'],

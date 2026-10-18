@@ -11,3 +11,14 @@
 .no-spinner[type='number'] {
     -moz-appearance: textfield;
 }
+
+/* Hide the scrollbar on horizontally-scrollable filter pill rows while
+   keeping them scrollable — the native track looks out of place under a
+   row of pills on desktop browsers (mobile browsers auto-hide it anyway). */
+.scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}

@@ -16,7 +16,7 @@ class StoreItemRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'sku' => ['required', 'string', 'max:50', Rule::unique('items', 'sku')->where('company_id', $this->user()?->company_id)],
+            'sku' => ['nullable', 'string', 'max:50', Rule::unique('items', 'sku')->where('company_id', $this->user()?->company_id)],
             'unit' => ['required', 'string', 'max:20'],
             'alt_unit' => ['nullable', 'string', 'max:20'],
             'alt_unit_ratio' => ['nullable', 'required_with:alt_unit', 'numeric', 'min:0.0001'],

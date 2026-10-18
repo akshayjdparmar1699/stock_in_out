@@ -32,7 +32,7 @@
             <div class="lg:pl-64 flex flex-col min-h-screen">
                 <!-- Top bar -->
                 <div class="sticky top-0 z-30 bg-white border-b border-gray-100">
-                    @unless (Auth::user()->isSuperAdmin() || request()->routeIs('dashboard', 'profile.edit', 'customers.index', 'customers.show', 'customers.create', 'customers.edit', 'items.index', 'invoices.index', 'stock.index', 'batches.index', 'purchases.index', 'suppliers.index', 'staff.index', 'expenses.index', 'branches.index', 'users.index'))
+                    @unless (Auth::user()->isSuperAdmin() || request()->routeIs('dashboard', 'profile.edit', 'customers.index', 'customers.show', 'customers.create', 'customers.edit', 'items.index', 'items.show', 'items.create', 'items.edit', 'invoices.index', 'stock.index', 'batches.index', 'purchases.index', 'suppliers.index', 'staff.index', 'expenses.index', 'branches.index', 'users.index'))
                         <!-- Mobile top strip: branch switcher, notifications, profile -->
                         @include('layouts.partials.mobile-top-strip')
                     @endunless

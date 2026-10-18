@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateStockRequest;
 use App\Models\Item;
 use App\Models\ItemStock;
 use App\Models\StockBatch;
+use App\Models\StockBatchAllocation;
 use App\Models\StockMovement;
 use App\Services\BranchContext;
 use App\Services\NotificationService;
@@ -102,8 +103,9 @@ class StockController extends Controller
     {
         $branchId = BranchContext::id();
         $data = $request->validated();
+        $type = $data['type'] ?? 'in';
 
-        DB::transaction(function () use ($data, $branchId) {
+        DB::transaction(function () use ($data, $branchId, $type) {
             $item = Item::whereKey($data['item_id'])->lockForUpdate()->first();
 
             if (array_key_exists('alt_unit', $data)) {
@@ -119,6 +121,25 @@ class StockController extends Controller
                 ['branch_id' => $branchId, 'item_id' => $data['item_id']],
                 ['quantity' => 0]
             );
+
+            if ($type === 'out') {
+                abort_if($quantity > (float) $stock->quantity, 422, 'Cannot remove more than the current stock.');
+
+                $stock->decrement('quantity', $quantity);
+
+                $movement = StockMovement::create([
+                    'branch_id' => $branchId,
+                    'item_id' => $data['item_id'],
+                    'user_id' => auth()->id(),
+                    'type' => 'out',
+                    'quantity' => $quantity,
+                    'reason' => $data['reason'] ?? 'Stock removed',
+                ]);
+
+                $this->allocateFromBatches($branchId, (int) $data['item_id'], $quantity, $movement->id);
+
+                return;
+            }
 
             $stock->increment('quantity', $quantity);
 
@@ -146,7 +167,44 @@ class StockController extends Controller
             ]);
         });
 
-        return redirect()->route('stock.index')->with('status', 'Stock added successfully.');
+        $this->notifyBranch();
+
+        return redirect()->back()->with('status', $type === 'out' ? 'Stock removed successfully.' : 'Stock added successfully.');
+    }
+
+    /**
+     * Deplete this item's oldest batches first (FIFO) to cover a manual
+     * stock removal, the same way a sale does — so cost-basis tracking
+     * doesn't silently drift when stock leaves outside of an invoice.
+     */
+    private function allocateFromBatches(int $branchId, int $itemId, float $quantity, int $movementId): void
+    {
+        $batches = StockBatch::query()
+            ->where('branch_id', $branchId)
+            ->where('item_id', $itemId)
+            ->where('quantity_remaining', '>', 0)
+            ->orderBy('received_at')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($batches as $batch) {
+            if ($quantity <= 0) {
+                break;
+            }
+
+            $take = min((float) $batch->quantity_remaining, $quantity);
+
+            $batch->decrement('quantity_remaining', $take);
+
+            StockBatchAllocation::create([
+                'stock_batch_id' => $batch->id,
+                'stock_movement_id' => $movementId,
+                'quantity' => $take,
+            ]);
+
+            $quantity -= $take;
+        }
     }
 
     /**
@@ -163,13 +221,15 @@ class StockController extends Controller
     {
         $ratio = $item->alt_unit_ratio !== null ? (float) $item->alt_unit_ratio : null;
 
+        $unitCost = (float) ($data['unit_cost'] ?? 0);
+
         if (($data['quantity_unit'] ?? 'base') !== 'alt' || ! $ratio) {
-            return [(float) $data['quantity'], (float) $data['unit_cost']];
+            return [(float) $data['quantity'], $unitCost];
         }
 
         return [
             round((float) $data['quantity'] / $ratio, 4),
-            round((float) $data['unit_cost'] * $ratio, 2),
+            round($unitCost * $ratio, 2),
         ];
     }
 

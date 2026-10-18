@@ -89,7 +89,7 @@
                     <x-secondary-button type="submit" class="hidden lg:inline-flex shrink-0">{{ __('Search') }}</x-secondary-button>
                 </form>
 
-                <div class="order-2 lg:order-1 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 lg:mx-0 lg:px-0">
+                <div class="order-2 lg:order-1 flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 lg:mx-0 lg:px-0">
                     @foreach ([
                         'all' => __('All').' '.$totalCount,
                         'udhaar' => __('Udhaar due').' '.$stats['udhaar_count'],

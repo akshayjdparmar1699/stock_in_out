@@ -131,6 +131,7 @@ Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active')->middleware('admin');
 
     Route::get('/items/search', [ItemController::class, 'search'])->name('items.search');
+    Route::get('/items/export', [ItemController::class, 'export'])->name('items.export');
     Route::resource('items', ItemController::class);
 
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');

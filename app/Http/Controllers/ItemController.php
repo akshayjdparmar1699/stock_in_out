@@ -18,6 +18,9 @@ use App\Services\PerPagePreference;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -25,30 +28,136 @@ class ItemController extends Controller
 {
     public function index(Request $request): View
     {
-        $branchId = BranchContext::id();
+        ['all' => $all, 'filter' => $filter] = $this->filteredItems($request);
 
-        $items = Item::query()
-            ->where('company_id', auth()->user()->company_id)
-            ->whereHas('stocks', fn ($q) => $q->where('branch_id', $branchId))
-            ->when($request->filled('q'), function ($query) use ($request) {
-                $term = '%'.$request->string('q').'%';
-                $query->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('sku', Sql::caseInsensitiveLike(), $term));
-            })
-            ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
-            ->orderBy('name')
-            ->paginate(PerPagePreference::get())
-            ->withQueryString();
+        $stats = $this->statsFor($all);
+
+        $filtered = $all->filter(fn (Item $item) => $this->matchesFilter($item, $filter))->values();
+
+        $perPage = PerPagePreference::get();
+        $page = $request->integer('page', 1);
+
+        $items = new LengthAwarePaginator(
+            $filtered->forPage($page, $perPage)->values(),
+            $filtered->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         if ($request->ajax()) {
             return view('items.partials.table', ['items' => $items]);
         }
 
-        return view('items.index', ['items' => $items, 'branchId' => $branchId]);
+        return view('items.index', [
+            'items' => $items,
+            'filter' => $filter,
+            'stats' => $stats,
+            'totalCount' => $all->count(),
+            'branch' => BranchContext::current(),
+        ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        ['all' => $all, 'filter' => $filter] = $this->filteredItems($request);
+
+        $filtered = $all->filter(fn (Item $item) => $this->matchesFilter($item, $filter))->values();
+
+        return response()->streamDownload(function () use ($filtered) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Name', 'SKU', 'Unit', 'Selling Price', 'Purchase Price', 'Stock', 'Loose Stock', 'Status']);
+
+            foreach ($filtered as $item) {
+                $qty = $item->stocks->first()->quantity ?? 0;
+
+                fputcsv($out, [
+                    $item->name,
+                    $item->sku,
+                    $item->unit,
+                    number_format($item->selling_price, 2),
+                    number_format($item->purchase_price, 2),
+                    $qty,
+                    $item->hasAltUnit() ? number_format($item->altUnitQuantity($qty), 2).' '.$item->alt_unit : '',
+                    $item->is_active ? 'Active' : 'Inactive',
+                ]);
+            }
+
+            fclose($out);
+        }, 'items.csv');
+    }
+
+    /**
+     * Shared branch+search query behind both index() and export() — loads
+     * every matching item unpaginated (shop item lists are small enough
+     * that this is cheap) so the filter tabs/stat counts and CSV export
+     * can be computed from the exact same stock snapshot.
+     *
+     * @return array{all: Collection<int, Item>, filter: string}
+     */
+    private function filteredItems(Request $request): array
+    {
+        $branchId = BranchContext::id();
+        $search = $request->string('q')->toString();
+
+        $all = Item::query()
+            ->where('company_id', auth()->user()->company_id)
+            ->whereHas('stocks', fn ($q) => $q->where('branch_id', $branchId))
+            ->when($search !== '', function ($query) use ($search) {
+                $term = '%'.$search.'%';
+                $query->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('sku', Sql::caseInsensitiveLike(), $term));
+            })
+            ->with(['stocks' => fn ($q) => $q->where('branch_id', $branchId)])
+            ->orderBy('name')
+            ->get();
+
+        return [
+            'all' => $all,
+            'filter' => $request->string('filter', 'all')->toString(),
+        ];
+    }
+
+    private function matchesFilter(Item $item, string $filter): bool
+    {
+        $qty = (float) ($item->stocks->first()->quantity ?? 0);
+
+        return match ($filter) {
+            'low_stock' => $qty <= (float) $item->low_stock_threshold,
+            'in_stock' => $qty > (float) $item->low_stock_threshold,
+            'out_of_stock' => $qty <= 0,
+            default => true,
+        };
+    }
+
+    /**
+     * @param  Collection<int, Item>  $all
+     * @return array{total_items: int, stock_value: float, low_stock_count: int, in_stock_count: int, out_of_stock_count: int}
+     */
+    private function statsFor(Collection $all): array
+    {
+        $stats = ['total_items' => $all->count(), 'stock_value' => 0.0, 'low_stock_count' => 0, 'in_stock_count' => 0, 'out_of_stock_count' => 0];
+
+        foreach ($all as $item) {
+            $qty = (float) ($item->stocks->first()->quantity ?? 0);
+            $stats['stock_value'] += $qty * (float) $item->selling_price;
+
+            if ($qty <= (float) $item->low_stock_threshold) {
+                $stats['low_stock_count']++;
+            } else {
+                $stats['in_stock_count']++;
+            }
+
+            if ($qty <= 0) {
+                $stats['out_of_stock_count']++;
+            }
+        }
+
+        return $stats;
     }
 
     public function create(): View
     {
-        return view('items.create');
+        return view('items.create', ['branch' => BranchContext::current()]);
     }
 
     /**
@@ -61,6 +170,7 @@ class ItemController extends Controller
     public function store(StoreItemRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $data['sku'] = $data['sku'] ?: null;
         $openingQuantity = (float) ($data['opening_quantity'] ?? 0);
         unset($data['opening_quantity']);
         $branchId = BranchContext::id();
@@ -114,9 +224,12 @@ class ItemController extends Controller
             ->where('item_id', $item->id)
             ->value('quantity') ?? 0;
 
+        $movementType = $request->string('type', 'all')->toString();
+
         $movements = StockMovement::query()
             ->where('branch_id', $branchId)
             ->where('item_id', $item->id)
+            ->when(in_array($movementType, ['in', 'out'], true), fn ($q) => $q->where('type', $movementType))
             ->with('user')
             ->latest()
             ->paginate(PerPagePreference::get())
@@ -145,7 +258,7 @@ class ItemController extends Controller
             ->all();
 
         if ($request->ajax()) {
-            return view('items.partials.history-table', ['movements' => $movements, 'item' => $item, 'remainingByMovement' => $remainingByMovement]);
+            return view('items.partials.history-table', ['movements' => $movements, 'item' => $item, 'remainingByMovement' => $remainingByMovement, 'movementType' => $movementType]);
         }
 
         $totals = StockMovement::query()
@@ -162,6 +275,8 @@ class ItemController extends Controller
             'totalOut' => (float) $totals->total_out,
             'movements' => $movements,
             'remainingByMovement' => $remainingByMovement,
+            'movementType' => $movementType,
+            'profitPerUnit' => (float) $item->selling_price - (float) $item->purchase_price,
         ]);
     }
 
@@ -176,7 +291,10 @@ class ItemController extends Controller
     {
         abort_unless($item->company_id === auth()->user()->company_id, 404);
 
-        $item->update(['is_active' => $request->boolean('is_active')] + $request->validated());
+        $data = $request->validated();
+        $data['sku'] = $data['sku'] ?: null;
+
+        $item->update(['is_active' => $request->boolean('is_active')] + $data);
 
         return redirect()->route('items.index')->with('status', "Item \"{$item->name}\" updated.");
     }

@@ -24,6 +24,7 @@ class StoreInvoiceRequest extends FormRequest
             'tax' => ['nullable', 'numeric', 'min:0'],
             'transportation' => ['nullable', 'numeric', 'min:0'],
             'paid_amount' => ['nullable', 'numeric', 'min:0'],
+            'mode' => ['nullable', 'in:cash,upi,bank'],
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.item_id' => ['required', Rule::exists('items', 'id')->where('company_id', $this->user()?->company_id)],

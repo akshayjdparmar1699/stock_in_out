@@ -27,13 +27,17 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InvoiceController extends Controller
 {
-    public function index(Request $request): View
+    /**
+     * Shared by index() and export() — date range + text search, scoped to
+     * the current branch. Status filtering is applied separately so the
+     * status-pill counts can be computed against the same base set.
+     */
+    private function filteredInvoicesQuery(Request $request, int $branchId)
     {
-        $branchId = BranchContext::id();
-
         $period = $request->string('period')->toString();
         $from = $request->filled('from') ? Carbon::parse($request->input('from'))->startOfDay() : null;
         $to = $request->filled('to') ? Carbon::parse($request->input('to'))->endOfDay() : null;
@@ -47,20 +51,70 @@ class InvoiceController extends Controller
             };
         }
 
+        return Invoice::query()
+            ->where('branch_id', $branchId)
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $term = '%'.$request->string('q').'%';
+                $query->where(function ($q) use ($term) {
+                    $q->whereHas('customer', fn ($cq) => $cq->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term))
+                        ->orWhere('guest_customer_name', Sql::caseInsensitiveLike(), $term)
+                        ->orWhere('invoice_number', Sql::caseInsensitiveLike(), $term);
+                });
+            })
+            ->when($from && $to, fn ($q) => $q->whereBetween('invoice_date', [$from, $to]));
+    }
+
+    public function index(Request $request): View
+    {
+        $branchId = BranchContext::id();
+
+        $period = $request->string('period')->toString();
         $activeQuickFilter = match (true) {
             $request->filled('from') || $request->filled('to') => null,
             $period !== '' => $period,
             default => 'all',
         };
 
-        $invoices = Invoice::query()
-            ->where('branch_id', $branchId)
-            ->with('customer')
-            ->when($request->filled('q'), function ($query) use ($request) {
-                $term = '%'.$request->string('q').'%';
-                $query->whereHas('customer', fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term));
-            })
-            ->when($from && $to, fn ($q) => $q->whereBetween('invoice_date', [$from, $to]))
+        $status = $request->string('status')->toString();
+        $baseQuery = $this->filteredInvoicesQuery($request, $branchId);
+
+        // Aggregated with SQL (not an in-memory collection) so a branch
+        // with years of invoice history under "All time" still loads fast —
+        // only the current page's rows are ever actually fetched below.
+        $statusCounts = (clone $baseQuery)
+            ->selectRaw('status, COUNT(*) as cnt')
+            ->groupBy('status')
+            ->pluck('cnt', 'status');
+
+        $totals = (clone $baseQuery)
+            ->selectRaw('
+                COALESCE(SUM(total), 0) as total_billed,
+                COALESCE(SUM(paid_amount), 0) as total_received,
+                COALESCE(SUM(CASE WHEN total > paid_amount THEN total - paid_amount ELSE 0 END), 0) as total_pending,
+                COUNT(*) as total_count,
+                SUM(CASE WHEN customer_id IS NULL THEN 1 ELSE 0 END) as walkin_count
+            ')
+            ->first();
+
+        $paidCount = (int) ($statusCounts['paid'] ?? 0);
+        $unpaidCount = (int) ($statusCounts['unpaid'] ?? 0);
+        $partialCount = (int) ($statusCounts['partial'] ?? 0);
+
+        $stats = [
+            'total_billed' => (float) $totals->total_billed,
+            'total_received' => (float) $totals->total_received,
+            'total_pending' => (float) $totals->total_pending,
+            'total_count' => (int) $totals->total_count,
+            'paid_count' => $paidCount,
+            'unpaid_count' => $unpaidCount,
+            'partial_count' => $partialCount,
+            'not_paid_count' => $unpaidCount + $partialCount,
+            'walkin_count' => (int) $totals->walkin_count,
+        ];
+
+        $invoices = (clone $baseQuery)
+            ->with('customer', 'branch')
+            ->when(in_array($status, ['paid', 'unpaid', 'partial'], true), fn ($q) => $q->where('status', $status))
             ->latest('invoice_date')
             ->latest('id')
             ->paginate(PerPagePreference::get())
@@ -73,7 +127,43 @@ class InvoiceController extends Controller
         return view('invoices.index', [
             'invoices' => $invoices,
             'activeQuickFilter' => $activeQuickFilter,
+            'status' => $status ?: 'all',
+            'stats' => $stats,
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $branchId = BranchContext::id();
+        $status = $request->string('status')->toString();
+
+        $invoices = $this->filteredInvoicesQuery($request, $branchId)
+            ->with('customer', 'branch')
+            ->when(in_array($status, ['paid', 'unpaid', 'partial'], true), fn ($q) => $q->where('status', $status))
+            ->latest('invoice_date')
+            ->latest('id')
+            ->get();
+
+        $filename = 'invoices-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($invoices) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Invoice #', 'Date', 'Customer', 'Total', 'Paid', 'Balance', 'Status']);
+
+            foreach ($invoices as $invoice) {
+                fputcsv($out, [
+                    $invoice->invoice_number,
+                    $invoice->invoice_date->format('d M Y'),
+                    $invoice->displayCustomerName(),
+                    number_format((float) $invoice->total, 2),
+                    number_format((float) $invoice->paid_amount, 2),
+                    number_format($invoice->balanceDue(), 2),
+                    ucfirst($invoice->status),
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 
     public function create(): View
@@ -98,7 +188,10 @@ class InvoiceController extends Controller
                 'stock' => (float) ($item->stocks->first()->quantity ?? 0),
             ]);
 
-        return view('invoices.create', ['items' => $items]);
+        return view('invoices.create', [
+            'items' => $items,
+            'nextInvoiceNumber' => $this->nextInvoiceNumber($branchId),
+        ]);
     }
 
     public function store(StoreInvoiceRequest $request): RedirectResponse
@@ -142,7 +235,8 @@ class InvoiceController extends Controller
                     'invoice_id' => $invoice->id,
                     'user_id' => auth()->id(),
                     'amount' => $paidAmount,
-                    'note' => 'Payment received at billing',
+                    'note' => 'Paid at billing',
+                    'mode' => $data['mode'] ?? null,
                 ]);
             }
 
@@ -195,7 +289,24 @@ class InvoiceController extends Controller
             $redirect->with('guest_credit_warning', true);
         }
 
+        if ($request->boolean('share_after_save')) {
+            $redirect->with('open_whatsapp_url', $this->whatsappShareUrl($invoice));
+        }
+
         return $redirect;
+    }
+
+    /**
+     * Mirrors AdminAlertService's own Indian-number normalization, but this
+     * one is sent as (or on behalf of) the shop to its own customer rather
+     * than to the admin, so it lives here instead of being reused from there.
+     */
+    private function whatsappShareUrl(Invoice $invoice): string
+    {
+        $digits = $invoice->customer?->phone ? preg_replace('/\D/', '', $invoice->customer->phone) : null;
+        $number = $digits && strlen($digits) >= 10 ? '91'.substr($digits, -10) : null;
+
+        return 'https://wa.me/'.$number.'?text='.rawurlencode($invoice->whatsappMessage());
     }
 
     /**
@@ -575,7 +686,8 @@ class InvoiceController extends Controller
                 'invoice_id' => $invoice->id,
                 'user_id' => auth()->id(),
                 'amount' => $data['amount'],
-                'note' => $data['note'] ?? null,
+                'note' => $data['note'] ?? 'Payment recorded',
+                'mode' => $data['mode'] ?? null,
             ]);
 
             $invoice->increment('paid_amount', $data['amount']);

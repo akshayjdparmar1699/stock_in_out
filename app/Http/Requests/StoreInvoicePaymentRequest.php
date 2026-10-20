@@ -16,6 +16,7 @@ class StoreInvoicePaymentRequest extends FormRequest
         return [
             'amount' => ['required', 'numeric', 'min:0.01'],
             'note' => ['nullable', 'string', 'max:255'],
+            'mode' => ['nullable', 'in:cash,upi,bank'],
         ];
     }
 }

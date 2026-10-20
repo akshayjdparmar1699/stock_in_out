@@ -150,6 +150,7 @@ Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::delete('/customers/{customer}/payments/{key}', [CustomerController::class, 'destroyPayment'])->name('customers.payments.destroy');
     Route::resource('customers', CustomerController::class);
 
+    Route::get('/invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
     Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
     Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])->name('invoices.payments.store');
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');

@@ -17,6 +17,7 @@ class PurchasePayment extends Model
         'amount',
         'type',
         'note',
+        'mode',
         'batch_id',
         'from_credit_balance',
     ];

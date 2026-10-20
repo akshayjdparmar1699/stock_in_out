@@ -23,13 +23,17 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PurchaseController extends Controller
 {
-    public function index(Request $request): View
+    /**
+     * Shared by index() and export() — date range + text search, scoped to
+     * the current branch. Status filtering is applied separately so the
+     * status-pill counts can be computed against the same base set.
+     */
+    private function filteredPurchasesQuery(Request $request, int $branchId)
     {
-        $branchId = BranchContext::id();
-
         $period = $request->string('period')->toString();
         $from = $request->filled('from') ? Carbon::parse($request->input('from'))->startOfDay() : null;
         $to = $request->filled('to') ? Carbon::parse($request->input('to'))->endOfDay() : null;
@@ -43,20 +47,68 @@ class PurchaseController extends Controller
             };
         }
 
+        return Purchase::query()
+            ->where('branch_id', $branchId)
+            ->when($request->filled('q'), function ($query) use ($request) {
+                $term = '%'.$request->string('q').'%';
+                $query->where(function ($q) use ($term) {
+                    $q->whereHas('supplier', fn ($sq) => $sq->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term))
+                        ->orWhere('purchase_number', Sql::caseInsensitiveLike(), $term);
+                });
+            })
+            ->when($from && $to, fn ($q) => $q->whereBetween('purchase_date', [$from, $to]));
+    }
+
+    public function index(Request $request): View
+    {
+        $branchId = BranchContext::id();
+
+        $period = $request->string('period')->toString();
         $activeQuickFilter = match (true) {
             $request->filled('from') || $request->filled('to') => null,
             $period !== '' => $period,
             default => 'all',
         };
 
-        $purchases = Purchase::query()
-            ->where('branch_id', $branchId)
+        $status = $request->string('status')->toString();
+        $baseQuery = $this->filteredPurchasesQuery($request, $branchId);
+
+        // Aggregated with SQL (not an in-memory collection) so a branch
+        // with years of purchase history under "All time" still loads fast —
+        // only the current page's rows are ever actually fetched below.
+        $statusCounts = (clone $baseQuery)
+            ->selectRaw('status, COUNT(*) as cnt')
+            ->groupBy('status')
+            ->pluck('cnt', 'status');
+
+        $totals = (clone $baseQuery)
+            ->selectRaw('
+                COALESCE(SUM(total), 0) as total_purchased,
+                COALESCE(SUM(paid_amount), 0) as total_paid,
+                COALESCE(SUM(CASE WHEN total > paid_amount THEN total - paid_amount ELSE 0 END), 0) as total_pending,
+                COUNT(*) as total_count,
+                COUNT(DISTINCT supplier_id) as supplier_count
+            ')
+            ->first();
+
+        $paidCount = (int) ($statusCounts['paid'] ?? 0);
+        $unpaidCount = (int) ($statusCounts['unpaid'] ?? 0);
+        $partialCount = (int) ($statusCounts['partial'] ?? 0);
+
+        $stats = [
+            'total_purchased' => (float) $totals->total_purchased,
+            'total_paid' => (float) $totals->total_paid,
+            'total_pending' => (float) $totals->total_pending,
+            'total_count' => (int) $totals->total_count,
+            'supplier_count' => (int) $totals->supplier_count,
+            'paid_count' => $paidCount,
+            'unpaid_count' => $unpaidCount,
+            'partial_count' => $partialCount,
+        ];
+
+        $purchases = (clone $baseQuery)
             ->with('supplier')
-            ->when($request->filled('q'), function ($query) use ($request) {
-                $term = '%'.$request->string('q').'%';
-                $query->whereHas('supplier', fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term));
-            })
-            ->when($from && $to, fn ($q) => $q->whereBetween('purchase_date', [$from, $to]))
+            ->when(in_array($status, ['paid', 'unpaid', 'partial'], true), fn ($q) => $q->where('status', $status))
             ->latest('purchase_date')
             ->latest('id')
             ->paginate(PerPagePreference::get())
@@ -66,7 +118,46 @@ class PurchaseController extends Controller
             return view('purchases.partials.table', ['purchases' => $purchases]);
         }
 
-        return view('purchases.index', ['purchases' => $purchases, 'activeQuickFilter' => $activeQuickFilter]);
+        return view('purchases.index', [
+            'purchases' => $purchases,
+            'activeQuickFilter' => $activeQuickFilter,
+            'status' => $status ?: 'all',
+            'stats' => $stats,
+        ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $branchId = BranchContext::id();
+        $status = $request->string('status')->toString();
+
+        $purchases = $this->filteredPurchasesQuery($request, $branchId)
+            ->with('supplier')
+            ->when(in_array($status, ['paid', 'unpaid', 'partial'], true), fn ($q) => $q->where('status', $status))
+            ->latest('purchase_date')
+            ->latest('id')
+            ->get();
+
+        $filename = 'purchases-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($purchases) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Purchase #', 'Date', 'Supplier', 'Total', 'Paid', 'Balance', 'Status']);
+
+            foreach ($purchases as $purchase) {
+                fputcsv($out, [
+                    $purchase->purchase_number,
+                    $purchase->purchase_date->format('d M Y'),
+                    $purchase->supplier->name,
+                    number_format((float) $purchase->total, 2),
+                    number_format((float) $purchase->paid_amount, 2),
+                    number_format($purchase->balanceDue(), 2),
+                    ucfirst($purchase->status),
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 
     public function create(): View
@@ -90,7 +181,10 @@ class PurchaseController extends Controller
                 'stock' => (float) ($item->stocks->first()->quantity ?? 0),
             ]);
 
-        return view('purchases.create', ['items' => $items]);
+        return view('purchases.create', [
+            'items' => $items,
+            'nextPurchaseNumber' => $this->nextPurchaseNumber($branchId),
+        ]);
     }
 
     public function store(StorePurchaseRequest $request): RedirectResponse
@@ -101,6 +195,7 @@ class PurchaseController extends Controller
         $purchase = DB::transaction(function () use ($data, $branchId) {
             $discount = (float) ($data['discount'] ?? 0);
             $tax = (float) ($data['tax'] ?? 0);
+            $transportation = (float) ($data['transportation'] ?? 0);
             $paidAmount = (float) ($data['paid_amount'] ?? 0);
 
             $purchase = Purchase::create([
@@ -112,6 +207,7 @@ class PurchaseController extends Controller
                 'subtotal' => 0,
                 'discount' => $discount,
                 'tax' => $tax,
+                'transportation' => $transportation,
                 'total' => 0,
                 'paid_amount' => $paidAmount,
                 'status' => 'unpaid',
@@ -119,7 +215,7 @@ class PurchaseController extends Controller
             ]);
 
             $subtotal = $this->applyLines($purchase, $branchId, $data['items']);
-            $total = round($subtotal - $discount + $tax, 2);
+            $total = round($subtotal - $discount + $tax + $transportation, 2);
 
             $purchase->update([
                 'subtotal' => $subtotal,
@@ -133,6 +229,7 @@ class PurchaseController extends Controller
                     'user_id' => auth()->id(),
                     'amount' => $paidAmount,
                     'note' => 'Payment made at purchase',
+                    'mode' => $data['mode'] ?? null,
                 ]);
             }
 
@@ -164,7 +261,21 @@ class PurchaseController extends Controller
             return $purchase;
         });
 
-        return redirect()->route('purchases.show', $purchase)->with('status', "Purchase {$purchase->purchase_number} recorded.");
+        $redirect = redirect()->route('purchases.show', $purchase)->with('status', "Purchase {$purchase->purchase_number} recorded.");
+
+        if ($request->boolean('share_after_save')) {
+            $redirect->with('open_whatsapp_url', $this->whatsappShareUrl($purchase));
+        }
+
+        return $redirect;
+    }
+
+    private function whatsappShareUrl(Purchase $purchase): string
+    {
+        $digits = $purchase->supplier?->phone ? preg_replace('/\D/', '', $purchase->supplier->phone) : null;
+        $number = $digits && strlen($digits) >= 10 ? '91'.substr($digits, -10) : null;
+
+        return 'https://wa.me/'.$number.'?text='.rawurlencode($purchase->shareMessage());
     }
 
     /**
@@ -242,9 +353,10 @@ class PurchaseController extends Controller
 
             $discount = (float) ($data['discount'] ?? 0);
             $tax = (float) ($data['tax'] ?? 0);
+            $transportation = (float) ($data['transportation'] ?? 0);
 
             $subtotal = $this->applyLines($purchase, $purchase->branch_id, $data['items']);
-            $total = round($subtotal - $discount + $tax, 2);
+            $total = round($subtotal - $discount + $tax + $transportation, 2);
 
             $purchase->update([
                 'supplier_id' => $data['supplier_id'],
@@ -252,6 +364,7 @@ class PurchaseController extends Controller
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'tax' => $tax,
+                'transportation' => $transportation,
                 'total' => $total,
                 'status' => $purchase->paid_amount >= $total ? 'paid' : ($purchase->paid_amount > 0 ? 'partial' : 'unpaid'),
                 'notes' => $data['notes'] ?? null,
@@ -464,6 +577,7 @@ class PurchaseController extends Controller
                 'user_id' => auth()->id(),
                 'amount' => $data['amount'],
                 'note' => $data['note'] ?? null,
+                'mode' => $data['mode'] ?? null,
             ]);
 
             $purchase->increment('paid_amount', $data['amount']);

@@ -161,6 +161,7 @@ Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::delete('/suppliers/{supplier}/payments/{key}', [SupplierController::class, 'destroyPayment'])->name('suppliers.payments.destroy');
     Route::resource('suppliers', SupplierController::class)->except(['destroy']);
 
+    Route::get('/purchases/export', [PurchaseController::class, 'export'])->name('purchases.export');
     Route::resource('purchases', PurchaseController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
     Route::post('/purchases/{purchase}/payments', [PurchaseController::class, 'storePayment'])->name('purchases.payments.store');
     Route::get('/purchases/{purchase}/pdf', [PurchaseController::class, 'pdf'])->name('purchases.pdf');

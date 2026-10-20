@@ -1,99 +1,180 @@
+@php
+    $avatarPalette = [
+        'bg-orange-100 text-orange-700', 'bg-purple-100 text-purple-700', 'bg-blue-100 text-blue-700',
+        'bg-green-100 text-green-700', 'bg-pink-100 text-pink-700', 'bg-amber-100 text-amber-700',
+        'bg-indigo-100 text-indigo-700', 'bg-teal-100 text-teal-700',
+    ];
+    $initials = collect(explode(' ', trim($supplier->name)))->map(fn ($w) => mb_substr($w, 0, 1))->take(2)->implode('');
+    $avatarClass = $avatarPalette[$supplier->id % count($avatarPalette)];
+    $ledgerEntries = $entries;
+    $purchaseEntries = $entries->where('type', 'billed')->values();
+    $paymentEntries = $entries->whereIn('type', ['paid', 'refund'])->values();
+@endphp
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $supplier->name }}</h2>
-            <p class="text-sm text-gray-500">{{ $supplier->phone }}</p>
+        <nav class="hidden lg:flex items-center gap-1.5 text-sm text-gray-400 mb-1">
+            <a href="{{ route('suppliers.index') }}" class="hover:text-gray-600">{{ __('Suppliers') }}</a>
+            <span>/</span>
+            <span class="text-gray-700 font-medium">{{ $supplier->name }}</span>
+        </nav>
+
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <a href="{{ route('suppliers.index') }}" class="lg:hidden shrink-0 text-gray-500 -ml-1 p-1">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                </a>
+                <p class="font-semibold text-base lg:hidden text-gray-800">{{ __('Supplier') }}</p>
+            </div>
+            <a href="{{ route('suppliers.edit', $supplier) }}" class="lg:hidden shrink-0 text-gray-500 p-1">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
+            </a>
+            <div class="hidden lg:flex items-center gap-2">
+                <a href="{{ route('suppliers.edit', $supplier) }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
+                    {{ __('Edit supplier') }}
+                </a>
+                <a href="{{ route('purchases.create', ['supplier_id' => $supplier->id]) }}" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-md hover:bg-brand-700">
+                    {{ __('+ New Purchase') }}
+                </a>
+            </div>
         </div>
     </x-slot>
 
-    <div class="py-12" x-data="{ deleteOpen: false, deleteForm: null, deleteLabel: '' }">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div class="py-6 sm:py-12 pb-28 lg:pb-12"
+        x-data="{
+            deleteOpen: false, deleteForm: null, deleteLabel: '',
+            activeTab: 'ledger',
+            payModalOpen: false,
+        }">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4 lg:space-y-6">
 
-            <div class="bg-white shadow-sm rounded-lg p-6 flex items-center justify-between flex-wrap gap-3">
-                <div>
-                    <div class="text-sm text-gray-500">{{ $due > 0 ? __('We Owe Them') : __('Settled / In Credit') }}</div>
-                    <div class="text-2xl font-bold {{ $due > 0 ? 'text-red-600' : 'text-green-600' }}">
-                        ₹{{ number_format(abs($due), 2) }}{{ $due < 0 ? ' CR' : '' }}
+            {{-- Desktop identity card --}}
+            <div class="hidden lg:flex bg-white shadow-sm rounded-lg p-6 items-center justify-between gap-4">
+                <div class="flex items-center gap-4 min-w-0">
+                    <span class="w-16 h-16 rounded-full flex items-center justify-center text-lg font-semibold shrink-0 {{ $avatarClass }}">{{ $initials }}</span>
+                    <div class="min-w-0">
+                        <h2 class="font-semibold text-xl text-gray-900 truncate">{{ $supplier->name }}</h2>
+                        <div class="flex items-center gap-4 text-sm text-gray-500 mt-1.5">
+                            @if ($supplier->phone)
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+                                    {{ $supplier->phone }}
+                                </span>
+                            @endif
+                            @if ($supplier->city)
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                                    {{ $supplier->city }}
+                                </span>
+                            @endif
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                {{ $supplier->gst_number ?: __('GST not added') }}
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <a href="{{ route('suppliers.edit', $supplier) }}" class="text-sm text-brand-600 hover:underline">{{ __('Edit Supplier') }}</a>
+                <div class="text-right shrink-0">
+                    <div class="text-sm text-gray-500">{{ __('We owe them') }}</div>
+                    <div class="text-2xl font-bold {{ $due > 0 ? 'text-red-600' : ($due < 0 ? 'text-green-600' : 'text-gray-900') }}">
+                        ₹{{ number_format(abs($due), 2) }}{{ $due < 0 ? ' CR' : '' }}
+                    </div>
+                    @if ($lastPaymentDate)
+                        <div class="text-xs text-gray-400 mt-0.5">{{ __('Last paid') }} ₹{{ number_format($lastPaymentAmount, 0) }} {{ __('on') }} {{ $lastPaymentDate->format('d M') }}</div>
+                    @endif
+                </div>
             </div>
 
-            <div class="bg-white shadow-sm rounded-lg p-6" x-data="{ type: '{{ old('type', 'paid') }}' }">
-                <h3 class="font-medium text-gray-700 mb-4">{{ __('Record a Payment') }}</h3>
+            {{-- Mobile identity card --}}
+            <div class="lg:hidden bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+                <span class="w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 {{ $avatarClass }}">{{ $initials }}</span>
+                <div class="min-w-0">
+                    <p class="font-semibold text-gray-900 truncate">{{ $supplier->name }}</p>
+                    <p class="text-sm text-gray-400">{{ $supplier->city ?: '—' }}{{ $supplier->phone ? ' · '.$supplier->phone : '' }}</p>
+                </div>
+            </div>
 
-                <form method="POST" action="{{ route('suppliers.payments.store', $supplier) }}" class="flex flex-wrap items-end gap-4">
-                    @csrf
-                    <div class="w-full flex gap-4">
-                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="radio" name="type" value="paid" x-model="type" class="text-brand-600 focus:ring-brand-500">
-                            {{ __('We Paid Them') }}
-                        </label>
-                        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                            <input type="radio" name="type" value="received" x-model="type" class="text-brand-600 focus:ring-brand-500">
-                            {{ __('Refund Received From Them') }}
-                        </label>
-                    </div>
-                    <div>
-                        <x-input-label for="amount" :value="old('type') === 'received' ? __('Refund Amount') : __('Amount Paid')" x-text="type === 'received' ? '{{ __('Refund Amount') }}' : '{{ __('Amount Paid') }}'" />
-                        <x-text-input id="amount" name="amount" type="number" step="0.01" min="0.01" class="mt-1 w-40" value="{{ old('amount') }}" required />
-                    </div>
-                    <div class="flex-1 min-w-[180px]">
-                        <x-input-label for="note" :value="__('Note (optional)')" />
-                        <x-text-input id="note" name="note" type="text" class="mt-1 w-full" value="{{ old('note') }}" placeholder="{{ __('e.g. Cash, UPI, part payment') }}" />
-                    </div>
-                    <x-primary-button>{{ __('Record Payment') }}</x-primary-button>
-                </form>
-                <p class="text-xs text-gray-400 mt-3">
-                    {{ __('"We Paid Them" is applied to their oldest outstanding purchases first, then their opening balance; paying more than we owe adds the extra as credit. "Refund Received" is for money they handed back to us (e.g. short delivery) — it reduces that credit instead.') }}
+            {{-- Mobile balance box --}}
+            <div class="lg:hidden bg-red-50 border border-red-100 rounded-2xl p-4">
+                <p class="text-sm text-gray-500">{{ $due > 0 ? __('We owe them') : __('Settled / In Credit') }}</p>
+                <p class="text-2xl font-bold {{ $due > 0 ? 'text-red-600' : 'text-green-600' }} mt-0.5">
+                    &#8377;{{ number_format(abs($due), 0) }}{{ $due < 0 ? ' CR' : '' }}
                 </p>
-                @if ($supplier->credit_balance > 0)
-                    <p class="text-xs text-green-600 mt-1">
-                        {{ __('Credit available for our next purchase:') }} ₹{{ number_format($supplier->credit_balance, 2) }}
-                    </p>
+                @if ($lastPaymentDate)
+                    <p class="text-xs text-gray-500 mt-1">{{ __('Last paid') }} ₹{{ number_format($lastPaymentAmount, 0) }} {{ __('on') }} {{ $lastPaymentDate->format('d M') }}</p>
                 @endif
             </div>
 
-            <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                <div class="px-4 sm:px-6 py-3 bg-gray-50 border-b border-gray-100">
-                    <h3 class="text-sm font-medium text-gray-600">{{ __('Statement') }}</h3>
+            <div class="lg:hidden flex gap-2">
+                <a href="{{ route('suppliers.statement-pdf', $supplier) }}" target="_blank"
+                    onclick="event.preventDefault(); window.downloadPdf(this.href, {{ \Illuminate\Support\Js::from($supplier->name.' - Statement.pdf') }})"
+                    class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    {{ __('Statement PDF') }}
+                </a>
+                <a href="{{ route('purchases.create', ['supplier_id' => $supplier->id]) }}" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-lg">
+                    {{ __('+ New Purchase') }}
+                </a>
+            </div>
+
+            <div class="hidden lg:block">
+                <a href="{{ route('suppliers.statement-pdf', $supplier) }}" target="_blank"
+                    onclick="event.preventDefault(); window.downloadPdf(this.href, {{ \Illuminate\Support\Js::from($supplier->name.' - Statement.pdf') }})"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-50">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    {{ __('Statement PDF') }}
+                </a>
+            </div>
+
+            <div class="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
+                <div class="lg:col-span-2 bg-white shadow-sm rounded-lg overflow-hidden">
+                    <div class="flex items-center gap-1 px-2 pt-2 border-b border-gray-100">
+                        @foreach (['ledger' => [__('Khata'), __('Khata (statement)')], 'purchases' => [__('Purchases'), __('Purchases')], 'payments' => [__('Payments'), __('Payments')]] as $tab => $labels)
+                            <button type="button" @click="activeTab = '{{ $tab }}'"
+                                class="px-3.5 py-2.5 text-sm font-medium border-b-2 -mb-px"
+                                :class="activeTab === '{{ $tab }}' ? 'border-brand-600 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                                <span class="lg:hidden">{{ $labels[0] }}</span>
+                                <span class="hidden lg:inline">{{ $labels[1] }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+
+                    <div x-show="activeTab === 'ledger'" class="divide-y divide-gray-100">
+                        @include('suppliers.partials.ledger-rows', ['entries' => $ledgerEntries, 'supplier' => $supplier])
+                    </div>
+                    <div x-show="activeTab === 'purchases'" style="display: none" class="divide-y divide-gray-100">
+                        @include('suppliers.partials.ledger-rows', ['entries' => $purchaseEntries, 'supplier' => $supplier])
+                    </div>
+                    <div x-show="activeTab === 'payments'" style="display: none" class="divide-y divide-gray-100">
+                        @include('suppliers.partials.ledger-rows', ['entries' => $paymentEntries, 'supplier' => $supplier])
+                    </div>
                 </div>
-                <div class="divide-y divide-gray-100">
-                    @forelse ($entries as $entry)
-                        <div class="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 hover:bg-gray-50">
-                            <a href="{{ $entry['url'] }}" class="flex-1 min-w-0 flex items-center justify-between gap-3">
-                                <div class="min-w-0">
-                                    <div class="text-sm text-gray-800">{{ $entry['date']->format('d M Y, h:i A') }}</div>
-                                    <div class="text-xs text-gray-400 truncate">{{ $entry['label'] }}</div>
-                                    <div class="text-xs text-gray-400 mt-0.5">
-                                        {{ __('Bal.') }} ₹{{ number_format(abs($entry['balance_after']), 2) }}{{ $entry['balance_after'] < 0 ? ' CR' : '' }}
-                                    </div>
-                                </div>
-                                <div class="text-right shrink-0">
-                                    <div class="text-xs text-gray-400 uppercase">{{ $entry['type'] === 'billed' ? __('Billed') : ($entry['type'] === 'refund' ? __('Refund') : __('Paid')) }}</div>
-                                    <div class="text-base font-semibold {{ in_array($entry['type'], ['billed', 'refund'], true) ? 'text-red-600' : 'text-green-600' }}">
-                                        ₹{{ number_format($entry['amount'], 2) }}
-                                    </div>
-                                </div>
-                            </a>
-                            @if ($entry['payment_key'])
-                                <form method="POST" action="{{ route('suppliers.payments.destroy', [$supplier, $entry['payment_key']]) }}" class="shrink-0">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button"
-                                        @click="deleteForm = $el.closest('form'); deleteLabel = {{ \Illuminate\Support\Js::from('This statement entry') }}; deleteOpen = true"
-                                        class="text-red-400 hover:text-red-600 p-1" title="{{ __('Delete') }}">
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                        </svg>
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    @empty
-                        <div class="px-6 py-10 text-sm text-gray-400 text-center">{{ __('No purchase history yet.') }}</div>
-                    @endforelse
+
+                <div class="hidden lg:block space-y-6 mt-0" id="record-payment">
+                    <div class="bg-white shadow-sm rounded-lg p-6">
+                        @include('suppliers.partials.payment-form', ['supplier' => $supplier])
+                    </div>
                 </div>
+            </div>
+        </div>
+
+        {{-- Mobile sticky action bar --}}
+        <div class="lg:hidden fixed inset-x-0 bottom-16 z-30 bg-white border-t border-gray-100 px-4 py-3 transform-gpu" style="padding-bottom: env(safe-area-inset-bottom);">
+            <button type="button" @click="payModalOpen = true" class="w-full px-4 py-2.5 bg-brand-700 text-white text-sm font-semibold rounded-lg text-center">
+                {{ __('Record payment to supplier') }}
+            </button>
+        </div>
+
+        {{-- Mobile payment modal --}}
+        <div x-show="payModalOpen" style="display: none" class="lg:hidden fixed inset-0 z-50 flex items-end">
+            <div x-show="payModalOpen" x-transition:enter="transition-opacity ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="transition-opacity ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                class="absolute inset-0 bg-gray-900/50" @click="payModalOpen = false"></div>
+            <div x-show="payModalOpen"
+                x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-6" x-transition:enter-end="opacity-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 translate-y-6"
+                class="relative bg-white rounded-t-2xl w-full p-6 max-h-[85vh] overflow-y-auto">
+                @include('suppliers.partials.payment-form', ['supplier' => $supplier])
             </div>
         </div>
 

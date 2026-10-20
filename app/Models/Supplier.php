@@ -15,6 +15,7 @@ class Supplier extends Model
         'company_id',
         'name',
         'phone',
+        'city',
         'address',
         'gst_number',
         'opening_balance',

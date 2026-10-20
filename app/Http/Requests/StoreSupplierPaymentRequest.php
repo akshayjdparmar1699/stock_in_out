@@ -19,6 +19,7 @@ class StoreSupplierPaymentRequest extends FormRequest
             // future purchase instead of being rejected.
             'amount' => ['required', 'numeric', 'min:0.01'],
             'type' => ['nullable', 'in:paid,received'],
+            'mode' => ['nullable', 'in:cash,upi,bank'],
             'note' => ['nullable', 'string', 'max:255'],
         ];
     }

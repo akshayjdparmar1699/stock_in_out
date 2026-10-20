@@ -16,6 +16,7 @@ class StoreSupplierRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
+            'city' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'gst_number' => ['nullable', 'string', 'max:30'],
             'opening_balance' => ['nullable', 'numeric', 'min:0'],

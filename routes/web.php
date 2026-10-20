@@ -157,6 +157,8 @@ Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
 
     Route::get('/suppliers/search', [SupplierController::class, 'search'])->name('suppliers.search');
+    Route::get('/suppliers/export', [SupplierController::class, 'export'])->name('suppliers.export');
+    Route::get('/suppliers/{supplier}/statement-pdf', [SupplierController::class, 'statementPdf'])->name('suppliers.statement-pdf');
     Route::post('/suppliers/{supplier}/payments', [SupplierController::class, 'storePayment'])->name('suppliers.payments.store');
     Route::delete('/suppliers/{supplier}/payments/{key}', [SupplierController::class, 'destroyPayment'])->name('suppliers.payments.destroy');
     Route::resource('suppliers', SupplierController::class)->except(['destroy']);

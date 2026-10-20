@@ -400,7 +400,7 @@
             return {
                 supplierQuery: '',
                 supplierResults: [],
-                selectedSupplier: null,
+                selectedSupplier: @json($preselectSupplier ?? null),
                 showSupplierForm: false,
                 supplierError: '',
                 newSupplier: { name: '', phone: '', address: '', opening_balance: 0 },

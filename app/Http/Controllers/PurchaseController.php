@@ -160,9 +160,27 @@ class PurchaseController extends Controller
         }, $filename, ['Content-Type' => 'text/csv']);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $branchId = BranchContext::id();
+
+        $preselectSupplier = null;
+
+        if ($request->filled('supplier_id')) {
+            $supplier = Supplier::query()
+                ->where('company_id', auth()->user()->company_id)
+                ->find($request->integer('supplier_id'));
+
+            if ($supplier) {
+                $preselectSupplier = [
+                    'id' => $supplier->id,
+                    'name' => $supplier->name,
+                    'phone' => $supplier->phone,
+                    'address' => $supplier->address,
+                    'due' => $supplier->dueAmount(),
+                ];
+            }
+        }
 
         $items = Item::query()
             ->where('company_id', auth()->user()->company_id)
@@ -184,6 +202,7 @@ class PurchaseController extends Controller
         return view('purchases.create', [
             'items' => $items,
             'nextPurchaseNumber' => $this->nextPurchaseNumber($branchId),
+            'preselectSupplier' => $preselectSupplier,
         ]);
     }
 

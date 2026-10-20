@@ -11,35 +11,170 @@ use App\Models\Purchase;
 use App\Models\PurchasePayment;
 use App\Models\Supplier;
 use App\Services\PerPagePreference;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SupplierController extends Controller
 {
     public function index(Request $request): View
     {
-        $suppliers = Supplier::query()
-            ->where('company_id', auth()->user()->company_id)
-            ->when($request->filled('q'), function ($query) use ($request) {
-                $term = '%'.$request->string('q').'%';
-                $query->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term));
-            })
-            ->orderBy('name')
-            ->paginate(PerPagePreference::get())
-            ->withQueryString();
+        ['all' => $all, 'due' => $dueBySupplierId, 'filter' => $filter] = $this->filteredSuppliers($request);
 
-        $dueBySupplierId = $this->dueAmountsFor($suppliers->getCollection());
+        $stats = $this->statsFor($all, $dueBySupplierId);
+
+        $filtered = $all->filter(fn (Supplier $supplier) => $this->matchesFilter($supplier, $filter, $dueBySupplierId))->values();
+
+        $sort = $request->string('sort', 'name_asc')->toString();
+        $filtered = $this->sortSuppliers($filtered, $sort, $dueBySupplierId);
+
+        $perPage = PerPagePreference::get();
+        $page = $request->integer('page', 1);
+
+        $suppliers = new LengthAwarePaginator(
+            $filtered->forPage($page, $perPage)->values(),
+            $filtered->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         if ($request->ajax()) {
             return view('suppliers.partials.table', ['suppliers' => $suppliers, 'dueBySupplierId' => $dueBySupplierId]);
         }
 
-        return view('suppliers.index', ['suppliers' => $suppliers, 'dueBySupplierId' => $dueBySupplierId]);
+        return view('suppliers.index', [
+            'suppliers' => $suppliers,
+            'filter' => $filter,
+            'sort' => $sort,
+            'dueBySupplierId' => $dueBySupplierId,
+            'stats' => $stats,
+            'totalCount' => $all->count(),
+        ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        ['all' => $all, 'due' => $dueBySupplierId, 'filter' => $filter] = $this->filteredSuppliers($request);
+
+        $filtered = $all->filter(fn (Supplier $supplier) => $this->matchesFilter($supplier, $filter, $dueBySupplierId))->values();
+
+        return response()->streamDownload(function () use ($filtered, $dueBySupplierId) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Name', 'Phone', 'City', 'GST Number', 'We Owe Them']);
+
+            foreach ($filtered as $supplier) {
+                fputcsv($out, [
+                    $supplier->name,
+                    $supplier->phone,
+                    $supplier->city,
+                    $supplier->gst_number,
+                    number_format($dueBySupplierId[$supplier->id] ?? 0, 2),
+                ]);
+            }
+
+            fclose($out);
+        }, 'suppliers.csv');
+    }
+
+    /**
+     * Shared company+search query behind index()/export() — loads every
+     * matching supplier unpaginated (a company's supplier list is small
+     * enough that this is cheap) so the filter-tab counts, CSV export, and
+     * the paginated list all derive from one consistent due-amount
+     * snapshot.
+     *
+     * @return array{all: Collection<int, Supplier>, due: array<int, float>, filter: string}
+     */
+    private function filteredSuppliers(Request $request): array
+    {
+        $search = $request->string('q')->toString();
+
+        $all = Supplier::query()
+            ->where('company_id', auth()->user()->company_id)
+            ->when($search !== '', function ($query) use ($search) {
+                $term = '%'.$search.'%';
+                $query->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)
+                    ->orWhere('phone', Sql::caseInsensitiveLike(), $term)
+                    ->orWhere('city', Sql::caseInsensitiveLike(), $term));
+            })
+            ->orderBy('name')
+            ->get();
+
+        return [
+            'all' => $all,
+            'due' => $this->dueAmountsFor($all),
+            'filter' => $request->string('filter', 'all')->toString(),
+        ];
+    }
+
+    private function matchesFilter(Supplier $supplier, string $filter, array $dueBySupplierId): bool
+    {
+        $due = $dueBySupplierId[$supplier->id] ?? 0.0;
+
+        return match ($filter) {
+            'we_owe' => $due > 0,
+            'settled' => $due <= 0,
+            default => true,
+        };
+    }
+
+    /**
+     * @param  Collection<int, Supplier>  $all
+     * @param  array<int, float>  $dueBySupplierId
+     */
+    private function statsFor(Collection $all, array $dueBySupplierId): array
+    {
+        $weOweTotal = 0.0;
+        $weOweCount = 0;
+        $settledCount = 0;
+        $biggestDueSupplier = null;
+        $biggestDue = 0.0;
+
+        foreach ($all as $supplier) {
+            $due = $dueBySupplierId[$supplier->id] ?? 0.0;
+
+            if ($due > 0) {
+                $weOweCount++;
+                $weOweTotal += $due;
+
+                if ($due > $biggestDue) {
+                    $biggestDue = $due;
+                    $biggestDueSupplier = $supplier;
+                }
+            } else {
+                $settledCount++;
+            }
+        }
+
+        return [
+            'we_owe_total' => $weOweTotal,
+            'we_owe_count' => $weOweCount,
+            'settled_count' => $settledCount,
+            'biggest_due_supplier' => $biggestDueSupplier,
+            'biggest_due' => $biggestDue,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, Supplier>  $suppliers
+     * @param  array<int, float>  $dueBySupplierId
+     */
+    private function sortSuppliers(Collection $suppliers, string $sort, array $dueBySupplierId): Collection
+    {
+        return match ($sort) {
+            'due_desc' => $suppliers->sortByDesc(fn (Supplier $s) => $dueBySupplierId[$s->id] ?? 0.0)->values(),
+            'name_desc' => $suppliers->sortByDesc(fn (Supplier $s) => mb_strtolower($s->name))->values(),
+            default => $suppliers->sortBy(fn (Supplier $s) => mb_strtolower($s->name))->values(),
+        };
     }
 
     /**
@@ -101,11 +236,36 @@ class SupplierController extends Controller
     {
         abort_unless($supplier->company_id === auth()->user()->company_id, 404);
 
+        $entries = $this->buildLedger($supplier)->reverse()->values();
+        $lastPayment = $entries->first(fn (array $entry) => $entry['type'] === 'paid');
+
         return view('suppliers.show', [
             'supplier' => $supplier,
-            'entries' => $this->buildLedger($supplier)->reverse()->values(),
+            'entries' => $entries,
             'due' => $supplier->dueAmount(),
+            'lastPaymentAmount' => $lastPayment['amount'] ?? null,
+            'lastPaymentDate' => $lastPayment['date'] ?? null,
         ]);
+    }
+
+    public function statementPdf(Supplier $supplier): Response
+    {
+        abort_unless($supplier->company_id === auth()->user()->company_id, 404);
+
+        $entries = $this->buildLedger($supplier);
+        $months = $entries->groupBy(fn (array $entry) => $entry['date']->format('F Y'));
+
+        return Pdf::loadView('suppliers.statement-pdf', [
+            'supplier' => $supplier,
+            'months' => $months,
+            'openingBalance' => (float) $supplier->opening_balance,
+            'totalDebit' => $entries->whereIn('type', ['billed', 'refund'])->sum('amount'),
+            'totalCredit' => $entries->where('type', 'paid')->sum('amount'),
+            'due' => $supplier->dueAmount(),
+            'entryCount' => $entries->count(),
+            'fromDate' => $entries->first()['date'] ?? now(),
+            'toDate' => $entries->last()['date'] ?? now(),
+        ])->setPaper('a4')->stream("{$supplier->name} - Statement.pdf");
     }
 
     /**
@@ -135,6 +295,7 @@ class SupplierController extends Controller
                     'user_id' => auth()->id(),
                     'amount' => $data['amount'],
                     'type' => 'received',
+                    'mode' => $data['mode'] ?? null,
                     'note' => $data['note'] ?? null,
                 ]);
 
@@ -167,6 +328,7 @@ class SupplierController extends Controller
                     'purchase_id' => $purchase->id,
                     'user_id' => auth()->id(),
                     'amount' => $apply,
+                    'mode' => $data['mode'] ?? null,
                     'note' => $data['note'] ?? null,
                     'batch_id' => $batchId,
                 ]);
@@ -189,6 +351,7 @@ class SupplierController extends Controller
                     'supplier_id' => $supplier->id,
                     'user_id' => auth()->id(),
                     'amount' => $remaining,
+                    'mode' => $data['mode'] ?? null,
                     'note' => $data['note'] ?? null,
                     'batch_id' => $batchId,
                 ]);

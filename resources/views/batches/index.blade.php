@@ -3,7 +3,10 @@
         <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5">
                 <x-application-logo class="lg:hidden w-9 h-9 shrink-0" />
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Stock Batches') }}</h2>
+                <div>
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Maal In Out') }}</h2>
+                    <p class="hidden lg:block text-sm text-gray-400 mt-0.5">{{ __('Every lot of stock that came in, and how much of it is sold') }}</p>
+                </div>
             </div>
             <div class="lg:hidden">
                 @include('layouts.partials.notification-bell')
@@ -11,17 +14,55 @@
         </div>
     </x-slot>
 
-    <div class="py-12" x-data="{ mobileView: 'cards' }">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+    <div class="py-6 sm:py-12" x-data="{ mobileView: 'cards' }">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
-            <p class="text-sm text-gray-500">
-                {{ __('Every time stock comes in (from a supplier purchase or a manual stock add), it is recorded here as its own batch/lot so you can trace exactly how much of it was sold and when.') }}
-            </p>
+            {{-- Stat cards (desktop only) --}}
+            <div class="hidden lg:grid lg:grid-cols-4 gap-4">
+                <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
+                    <span class="text-sm text-gray-500">{{ __('Lots with stock') }}</span>
+                    <div class="text-2xl font-bold text-gray-900 mt-3">{{ $stats['stale_count'] }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('still in godown') }}</div>
+                </div>
+                <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
+                    <span class="text-sm text-gray-500">{{ __('Partly sold') }}</span>
+                    <div class="text-2xl font-bold text-amber-600 mt-3">{{ $stats['selling'] }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('selling now') }}</div>
+                </div>
+                <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
+                    <span class="text-sm text-gray-500">{{ __('Sold out') }}</span>
+                    <div class="text-2xl font-bold text-gray-900 mt-3">{{ $stats['sold_out'] }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('fully finished') }}</div>
+                </div>
+                <div class="bg-white shadow-sm rounded-xl p-5 border {{ $stats['oldest_stale'] ? 'border-amber-200' : 'border-gray-100' }}">
+                    <span class="text-sm text-gray-500">{{ __('Oldest unsold lot') }}</span>
+                    <div class="text-2xl font-bold text-amber-600 mt-3">{{ $stats['oldest_stale']?->received_at->format('d M') ?? __('None') }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('sell this first') }}</div>
+                </div>
+            </div>
 
-            <form method="GET" class="flex gap-2">
-                <x-text-input name="q" type="text" class="w-full sm:w-80" placeholder="{{ __('Search by item name or SKU') }}" :value="request('q')" />
-                <x-secondary-button type="submit">{{ __('Search') }}</x-secondary-button>
-            </form>
+            {{-- Filter pills + search --}}
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 lg:mx-0 lg:px-0">
+                    @foreach ([
+                        'all' => __('All lots').' '.$stats['total'],
+                        'full' => __('Full (not sold yet)').' '.$stats['full'],
+                        'selling' => __('Selling').' '.$stats['selling'],
+                        'sold_out' => __('Sold out').' '.$stats['sold_out'],
+                    ] as $value => $label)
+                        <a href="{{ route('batches.index', array_filter(['filter' => $value, 'q' => request('q')])) }}"
+                            class="shrink-0 px-3.5 py-2 rounded-full text-sm font-medium whitespace-nowrap {{ $filter === $value ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50' }}">
+                            {{ $label }}
+                        </a>
+                    @endforeach
+                </div>
+
+                <form method="GET" class="flex gap-2 shrink-0">
+                    <input type="hidden" name="filter" value="{{ $filter }}">
+                    <x-text-input name="q" type="text" class="w-full lg:w-72" placeholder="{{ __('Search item or purchase number') }}" :value="request('q')" />
+                    <x-secondary-button type="submit" class="hidden lg:inline-flex shrink-0">{{ __('Search') }}</x-secondary-button>
+                </form>
+            </div>
 
             {{-- Mobile card/table view toggle --}}
             <div class="flex lg:hidden justify-end">

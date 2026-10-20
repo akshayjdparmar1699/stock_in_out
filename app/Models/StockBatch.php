@@ -60,4 +60,21 @@ class StockBatch extends Model
     {
         return (float) $this->quantity_remaining <= 0;
     }
+
+    /**
+     * 'full' (nothing sold yet), 'selling' (partly sold), or 'sold_out'
+     * (fully depleted) — the three states the UI shows as a badge.
+     */
+    public function statusKey(): string
+    {
+        if ($this->isDepleted()) {
+            return 'sold_out';
+        }
+
+        if ((float) $this->quantity_remaining >= (float) $this->quantity_in) {
+            return 'full';
+        }
+
+        return 'selling';
+    }
 }

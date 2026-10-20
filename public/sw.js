@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-in-out-shell-v2';
+const CACHE_NAME = 'stock-in-out-shell-v3';
 
 const SHELL_ASSETS = [
     '/icons/icon-192.png',

@@ -1,4 +1,4 @@
-<div class="bg-white shadow-sm rounded-lg overflow-hidden hidden lg:block">
+<div class="bg-white shadow-sm rounded-lg overflow-hidden" :class="mobileView === 'table' ? 'block' : 'hidden lg:block'">
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -80,7 +80,7 @@
 </div>
 
 {{-- Mobile cards --}}
-<div class="lg:hidden space-y-3">
+<div class="lg:hidden space-y-3" :class="mobileView === 'table' ? 'hidden' : 'block'">
     @forelse ($invoices as $invoice)
         @php
             $shareText = "Hello {$invoice->displayCustomerName()},\n\nYour bill from {$invoice->branch->name} is ready:\nInvoice: {$invoice->invoice_number}\nDate: {$invoice->invoice_date->format('d M Y')}\n\nTotal: ₹".number_format($invoice->total, 2)."\nPaid: ₹".number_format($invoice->paid_amount, 2)."\n\nThank you for your business!";

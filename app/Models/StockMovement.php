@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class StockMovement extends Model
 {
@@ -59,6 +60,17 @@ class StockMovement extends Model
     public function batchAllocations(): HasMany
     {
         return $this->hasMany(StockBatchAllocation::class);
+    }
+
+    /**
+     * The invoice/purchase that caused this movement, if any — eager-load
+     * this (not referenceUrl()/referenceLabel() alone) when the list needs
+     * the document's own number (e.g. "PUR-B01-00038"), so it doesn't
+     * N+1-query one row per movement.
+     */
+    public function reference(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     /**

@@ -135,6 +135,7 @@ Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::resource('items', ItemController::class);
 
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
+    Route::get('/stock/create', [StockController::class, 'create'])->name('stock.create');
     Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
     Route::get('/stock/{movement}/edit', [StockController::class, 'edit'])->name('stock.edit');
     Route::put('/stock/{movement}', [StockController::class, 'update'])->name('stock.update');

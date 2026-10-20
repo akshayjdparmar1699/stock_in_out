@@ -9,9 +9,11 @@ use App\Models\ItemStock;
 use App\Models\StockBatch;
 use App\Models\StockBatchAllocation;
 use App\Models\StockMovement;
+use App\Models\Purchase;
 use App\Services\BranchContext;
 use App\Services\NotificationService;
 use App\Services\PerPagePreference;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,11 +24,17 @@ class StockController extends Controller
     public function index(Request $request): View
     {
         $branchId = BranchContext::id();
+        $filter = $request->string('filter', 'all')->toString();
+        $filter = in_array($filter, ['in', 'out', 'manual'], true) ? $filter : 'all';
 
-        $movements = StockMovement::query()
-            ->where('branch_id', $branchId)
+        $base = StockMovement::query()->where('branch_id', $branchId);
+
+        $movements = (clone $base)
             ->when($request->filled('item_id'), fn ($q) => $q->where('item_id', $request->integer('item_id')))
-            ->with(['item', 'user'])
+            ->when($filter === 'in', fn ($q) => $q->where('type', 'in'))
+            ->when($filter === 'out', fn ($q) => $q->where('type', 'out'))
+            ->when($filter === 'manual', fn ($q) => $q->whereNull('reference_type'))
+            ->with(['item', 'user', 'reference'])
             ->latest()
             ->paginate(PerPagePreference::get())
             ->withQueryString();
@@ -44,11 +52,43 @@ class StockController extends Controller
             ->orderBy('name')
             ->get();
 
+        $stats = [
+            'total' => (clone $base)->count(),
+            'in' => (clone $base)->where('type', 'in')->count(),
+            'out' => (clone $base)->where('type', 'out')->count(),
+            'from_purchases' => (clone $base)->where('reference_type', Purchase::class)->count(),
+            'manual' => (clone $base)->whereNull('reference_type')->count(),
+        ];
+
         return view('stock.index', [
             'movements' => $movements,
             'items' => $items,
             'remainingByMovement' => $remainingByMovement,
             'filterItemId' => $request->integer('item_id') ?: null,
+            'filter' => $filter,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function create(): View
+    {
+        $branchId = BranchContext::id();
+
+        $items = Item::query()
+            ->where('company_id', auth()->user()->company_id)
+            ->where('is_active', true)
+            ->whereHas('stocks', fn ($q) => $q->where('branch_id', $branchId))
+            ->orderBy('name')
+            ->get();
+
+        $stockByItem = ItemStock::query()
+            ->where('branch_id', $branchId)
+            ->whereIn('item_id', $items->pluck('id'))
+            ->pluck('quantity', 'item_id');
+
+        return view('stock.create', [
+            'items' => $items,
+            'stockByItem' => $stockByItem,
         ]);
     }
 
@@ -105,7 +145,15 @@ class StockController extends Controller
         $data = $request->validated();
         $type = $data['type'] ?? 'in';
 
-        DB::transaction(function () use ($data, $branchId, $type) {
+        // Lets a correction be logged as of when it actually happened (e.g.
+        // an opening-stock count taken a few days ago) instead of always
+        // "now" — kept same-day by default so entries made today still sort
+        // after anything else from today regardless of exact second.
+        $occurredAt = ! empty($data['movement_date'])
+            ? Carbon::parse($data['movement_date'])->setTimeFrom(now())
+            : null;
+
+        DB::transaction(function () use ($data, $branchId, $type, $occurredAt) {
             $item = Item::whereKey($data['item_id'])->lockForUpdate()->first();
 
             if (array_key_exists('alt_unit', $data)) {
@@ -136,6 +184,10 @@ class StockController extends Controller
                     'reason' => $data['reason'] ?? 'Stock removed',
                 ]);
 
+                if ($occurredAt) {
+                    $movement->forceFill(['created_at' => $occurredAt, 'updated_at' => $occurredAt])->save();
+                }
+
                 $this->allocateFromBatches($branchId, (int) $data['item_id'], $quantity, $movement->id);
 
                 return;
@@ -156,6 +208,10 @@ class StockController extends Controller
                 'reason' => $data['reason'] ?? 'Stock added',
             ]);
 
+            if ($occurredAt) {
+                $movement->forceFill(['created_at' => $occurredAt, 'updated_at' => $occurredAt])->save();
+            }
+
             StockBatch::create([
                 'branch_id' => $branchId,
                 'item_id' => $data['item_id'],
@@ -169,7 +225,17 @@ class StockController extends Controller
 
         $this->notifyBranch();
 
-        return redirect()->back()->with('status', $type === 'out' ? 'Stock removed successfully.' : 'Stock added successfully.');
+        $status = $type === 'out' ? 'Stock removed successfully.' : 'Stock added successfully.';
+
+        // The embedded form on an item's own page wants "back()" (stay put,
+        // show the updated ledger right there); the standalone Adjust Stock
+        // page isn't somewhere to land back on, so it asks to go to the
+        // ledger instead via this hidden field.
+        if ($request->filled('redirect_to_index')) {
+            return redirect()->route('stock.index')->with('status', $status);
+        }
+
+        return redirect()->back()->with('status', $status);
     }
 
     /**

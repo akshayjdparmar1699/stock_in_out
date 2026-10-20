@@ -1,11 +1,23 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Edit Stock Entry') }}</h2>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('stock.index') }}" class="lg:hidden shrink-0 text-gray-500 -ml-1 p-1">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+            </a>
+            <div class="flex-1 min-w-0">
+                <nav class="hidden lg:flex items-center gap-1.5 text-sm text-gray-400">
+                    <a href="{{ route('stock.index') }}" class="hover:text-gray-600">{{ __('Stock') }}</a>
+                    <span>/</span>
+                    <span class="text-gray-700 font-medium">{{ __('Edit entry') }}</span>
+                </nav>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight lg:hidden">{{ __('Edit Stock Entry') }}</h2>
+            </div>
+        </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-6 sm:py-12">
         <div class="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white shadow-sm rounded-lg p-6"
+            <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6"
                 x-data="{
                     quantity: {{ (float) $movement->quantity }},
                     altUnit: '{{ old('alt_unit', $movement->item->alt_unit) }}',
@@ -69,6 +81,13 @@
                     </div>
                 </form>
             </div>
+
+            <form method="POST" action="{{ route('stock.destroy', $movement) }}" class="mt-4 text-center"
+                onsubmit="return confirm('{{ __('Delete this stock entry? This cannot be undone.') }}')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="text-sm text-red-600 hover:underline">{{ __('Delete this entry') }}</button>
+            </form>
         </div>
     </div>
 </x-app-layout>

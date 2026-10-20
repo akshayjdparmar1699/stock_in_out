@@ -29,6 +29,8 @@ class AddStockRequest extends FormRequest
             'quantity_unit' => ['nullable', 'in:base,alt'],
             'unit_cost' => ['required_if:type,in', 'nullable', 'numeric', 'min:0'],
             'reason' => ['nullable', 'string', 'max:255'],
+            'movement_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'redirect_to_index' => ['nullable', 'boolean'],
             'alt_unit' => ['nullable', 'string', 'max:20'],
             'alt_unit_ratio' => ['nullable', 'required_with:alt_unit', 'numeric', 'min:0.0001'],
         ];

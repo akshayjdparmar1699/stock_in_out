@@ -1,4 +1,4 @@
-<div class="bg-white shadow-sm rounded-lg overflow-hidden">
+<div class="bg-white shadow-sm rounded-lg overflow-hidden" :class="mobileView === 'table' ? 'block' : 'hidden lg:block'">
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -59,6 +59,54 @@
         </tbody>
     </table>
   </div>
+</div>
+
+{{-- Mobile cards --}}
+<div class="lg:hidden space-y-3" :class="mobileView === 'table' ? 'hidden' : 'block'">
+    @forelse ($users as $user)
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-sm font-semibold text-gray-900 truncate">
+                        {{ $user->name }}
+                        @if ($user->id === auth()->id())
+                            <span class="text-xs text-gray-400 font-normal">({{ __('you') }})</span>
+                        @endif
+                    </div>
+                    <div class="text-xs text-gray-400 mt-0.5 truncate">{{ $user->email }}</div>
+                </div>
+                @if ($user->id === auth()->id())
+                    <span class="text-xs text-gray-300 shrink-0" title="{{ __('You cannot deactivate your own account.') }}">—</span>
+                @else
+                    <form method="POST" action="{{ route('users.toggle-active', $user) }}">
+                        @csrf
+                        @method('PATCH')
+                        <button type="button"
+                            data-name="{{ $user->name }}"
+                            data-active="{{ $user->is_active ? '1' : '0' }}"
+                            @click="confirmForm = $el.closest('form'); confirmName = $el.dataset.name; confirmActive = $el.dataset.active === '1'; confirmOpen = true"
+                            title="{{ $user->is_active ? __('Click to mark inactive') : __('Click to mark active') }}"
+                            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 {{ $user->is_active ? 'bg-green-500' : 'bg-gray-300' }}">
+                            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {{ $user->is_active ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                        </button>
+                    </form>
+                @endif
+            </div>
+            <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                <div class="flex items-center gap-2 text-xs">
+                    <span @class([
+                        'px-2 py-0.5 rounded-full font-medium',
+                        'bg-brand-100 text-brand-700' => $user->isAdmin(),
+                        'bg-gray-100 text-gray-600' => ! $user->isAdmin(),
+                    ])>{{ ucfirst($user->role) }}</span>
+                    <span class="text-gray-400">{{ $user->branch->name ?? __('All branches') }}</span>
+                </div>
+                <a href="{{ route('users.edit', $user) }}" class="text-sm text-brand-600 hover:underline shrink-0">{{ __('Edit') }}</a>
+            </div>
+        </div>
+    @empty
+        <div class="bg-white rounded-xl border border-gray-100 py-10 text-sm text-gray-400 text-center">{{ __('No users found.') }}</div>
+    @endforelse
 </div>
 
 <div class="flex flex-wrap items-center justify-between gap-3 mt-4" @click="onClick($event)" @change="onChange($event)">

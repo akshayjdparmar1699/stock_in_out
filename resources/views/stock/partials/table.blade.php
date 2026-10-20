@@ -8,7 +8,7 @@
 @endphp
 
 {{-- Desktop table --}}
-<div class="bg-white shadow-sm rounded-lg overflow-hidden hidden lg:block">
+<div class="bg-white shadow-sm rounded-lg overflow-hidden" :class="mobileView === 'table' ? 'block' : 'hidden lg:block'">
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -107,7 +107,7 @@
 @php $lastDate = null; @endphp
 
 {{-- Mobile cards --}}
-<div class="lg:hidden space-y-3">
+<div class="lg:hidden space-y-3" :class="mobileView === 'table' ? 'hidden' : 'block'">
     @forelse ($movements as $movement)
         @php
             $date = $movement->created_at;

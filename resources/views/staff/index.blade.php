@@ -3,36 +3,81 @@
         <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5">
                 <x-application-logo class="lg:hidden w-9 h-9 shrink-0" />
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Staff & Partners') }}</h2>
+                <div>
+                    <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Staff & Partners') }}</h2>
+                    <p class="hidden lg:block text-sm text-gray-400 mt-0.5">{{ __('People who work in or own the business') }}</p>
+                </div>
             </div>
             <div class="flex items-center gap-2">
                 <div class="lg:hidden">
                     @include('layouts.partials.notification-bell')
                 </div>
                 <a href="{{ route('staff.create') }}" class="hidden lg:inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
-                    {{ __('+ Add Staff / Partner') }}
+                    {{ __('+ Add person') }}
                 </a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-12" x-data="{ confirmOpen: false, confirmForm: null, confirmName: '', confirmActive: false, mobileView: 'cards' }">
+    <div class="py-6 sm:py-12" x-data="{ confirmOpen: false, confirmForm: null, confirmName: '', confirmActive: false, mobileView: 'cards' }">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <form method="GET" class="flex gap-2">
-                    <input type="hidden" name="status" value="{{ $status }}">
-                    <x-text-input name="q" type="text" class="w-full sm:w-80" placeholder="{{ __('Search by name') }}" :value="request('q')" />
-                    <x-secondary-button type="submit">{{ __('Search') }}</x-secondary-button>
-                </form>
+            {{-- Stat cards (desktop) --}}
+            <div class="hidden lg:grid lg:grid-cols-4 gap-4">
+                <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
+                    <span class="text-sm text-gray-500">{{ __('Staff') }}</span>
+                    <div class="text-2xl font-bold text-gray-900 mt-3">{{ $stats['staff_count'] }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('employees') }}</div>
+                </div>
+                <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
+                    <span class="text-sm text-gray-500">{{ __('Partners') }}</span>
+                    <div class="text-2xl font-bold text-brand-700 mt-3">{{ $stats['partner_count'] }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('owners') }}</div>
+                </div>
+                <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
+                    <span class="text-sm text-gray-500">{{ __('Salary every month') }}</span>
+                    <div class="text-2xl font-bold text-gray-900 mt-3">₹{{ number_format($stats['monthly_salary_total'], 0) }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('all active staff') }}</div>
+                </div>
+                <div class="bg-white shadow-sm rounded-xl p-5 border {{ $stats['advance_total'] > 0 ? 'border-amber-200' : 'border-gray-100' }}">
+                    <span class="text-sm text-gray-500">{{ __('Advance given') }}</span>
+                    <div class="text-2xl font-bold text-amber-600 mt-3">₹{{ number_format($stats['advance_total'], 0) }}</div>
+                    <div class="text-xs text-gray-400 mt-1">{{ __('all time') }}</div>
+                </div>
+            </div>
 
-                <div class="inline-flex rounded-lg border border-gray-200 overflow-hidden text-sm">
-                    @foreach (['active' => __('Active'), 'inactive' => __('Inactive'), 'all' => __('All')] as $value => $label)
-                        <a href="{{ route('staff.index', array_filter(['status' => $value, 'q' => request('q')])) }}"
-                            class="px-3 py-1.5 {{ $status === $value ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50' }}">
+            {{-- Filter pills + search --}}
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="order-2 lg:order-1 flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 lg:mx-0 lg:px-0">
+                    @foreach ([
+                        'active' => __('All active').' '.$stats['active_count'],
+                        'staff' => __('Staff').' '.$stats['staff_count'],
+                        'partner' => __('Partners').' '.$stats['partner_count'],
+                        'inactive' => __('Inactive').' '.$stats['inactive_count'],
+                    ] as $value => $label)
+                        <a href="{{ route('staff.index', array_filter(['filter' => $value, 'q' => request('q')])) }}"
+                            class="shrink-0 px-3.5 py-2 rounded-full text-sm font-medium whitespace-nowrap {{ $filter === $value ? 'bg-brand-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50' }}">
                             {{ $label }}
                         </a>
                     @endforeach
+                </div>
+
+                <form method="GET" class="order-1 lg:order-2 flex gap-2 shrink-0">
+                    <input type="hidden" name="filter" value="{{ $filter }}">
+                    <x-text-input name="q" type="text" class="w-full lg:w-72" placeholder="{{ __('Search by name') }}" :value="request('q')" />
+                    <x-secondary-button type="submit" class="hidden lg:inline-flex shrink-0">{{ __('Search') }}</x-secondary-button>
+                </form>
+            </div>
+
+            {{-- Mobile stat cards --}}
+            <div class="lg:hidden grid grid-cols-2 gap-3">
+                <div class="bg-gradient-to-br from-brand-600 to-brand-700 text-white rounded-2xl p-4">
+                    <p class="text-xs text-white/70">{{ __('Salary every month') }}</p>
+                    <p class="text-xl font-bold mt-0.5">₹{{ number_format($stats['monthly_salary_total'], 0) }}</p>
+                </div>
+                <div class="bg-white border border-amber-200 rounded-2xl p-4">
+                    <p class="text-xs text-gray-500">{{ __('Advance given') }}</p>
+                    <p class="text-xl font-bold text-amber-600 mt-0.5">₹{{ number_format($stats['advance_total'], 0) }}</p>
                 </div>
             </div>
 
@@ -57,7 +102,7 @@
             </div>
         </div>
 
-        <a href="{{ route('staff.create') }}" aria-label="{{ __('Add Staff / Partner') }}"
+        <a href="{{ route('staff.create') }}" aria-label="{{ __('Add person') }}"
             class="lg:hidden fixed right-4 bottom-20 z-30 w-14 h-14 rounded-full bg-brand-600 text-white shadow-lg flex items-center justify-center hover:bg-brand-700 transform-gpu">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
         </a>

@@ -16,6 +16,8 @@ class Expense extends Model
         'user_id',
         'category',
         'amount',
+        'mode',
+        'for_month',
         'expense_date',
         'note',
     ];
@@ -25,6 +27,7 @@ class Expense extends Model
         return [
             'amount' => 'decimal:2',
             'expense_date' => 'date',
+            'for_month' => 'date',
         ];
     }
 

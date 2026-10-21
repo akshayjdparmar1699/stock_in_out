@@ -169,7 +169,8 @@ Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::get('/purchases/{purchase}/pdf', [PurchaseController::class, 'pdf'])->name('purchases.pdf');
 
     Route::patch('/staff/{staffMember}/toggle-active', [StaffMemberController::class, 'toggleActive'])->name('staff.toggle-active');
-    Route::resource('staff', StaffMemberController::class)->except(['show', 'destroy'])->parameters(['staff' => 'staffMember']);
+    Route::post('/staff/{staffMember}/payments', [StaffMemberController::class, 'storePayment'])->name('staff.payments.store');
+    Route::resource('staff', StaffMemberController::class)->except(['destroy'])->parameters(['staff' => 'staffMember']);
 
     Route::resource('expenses', ExpenseController::class)->except(['show']);
 });

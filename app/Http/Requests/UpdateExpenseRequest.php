@@ -19,6 +19,7 @@ class UpdateExpenseRequest extends FormRequest
             'staff_member_id' => ['nullable', 'integer', 'exists:staff_members,id'],
             'category' => ['required', Rule::in(array_keys(Expense::categories()))],
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'mode' => ['nullable', Rule::in(['cash', 'upi', 'bank'])],
             'expense_date' => ['required', 'date'],
             'note' => ['nullable', 'string', 'max:255'],
         ];

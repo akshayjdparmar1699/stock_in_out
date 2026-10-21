@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExpenseController extends Controller
 {
@@ -43,9 +44,26 @@ class ExpenseController extends Controller
             ->with(['staffMember', 'user'])
             ->when($request->filled('category'), fn ($q) => $q->where('category', $request->string('category')))
             ->when($request->filled('staff_member_id'), fn ($q) => $q->where('staff_member_id', $request->integer('staff_member_id')))
+            ->when($request->filled('q'), fn ($q) => $q->where('note', 'like', '%'.$request->string('q').'%'))
             ->when($from && $to, fn ($q) => $q->whereBetween('expense_date', [$from, $to]));
 
         $totalForFilter = (clone $query)->sum('amount');
+        $daysWithExpenses = (clone $query)->distinct('expense_date')->count('expense_date');
+        $averagePerDay = $daysWithExpenses > 0 ? $totalForFilter / $daysWithExpenses : 0;
+
+        $byCategory = (clone $query)
+            ->selectRaw('category, SUM(amount) as total')
+            ->groupBy('category')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row) => [
+                'category' => $row->category,
+                'label' => Expense::categories()[$row->category] ?? 'Other',
+                'total' => (float) $row->total,
+                'percent' => $totalForFilter > 0 ? round($row->total / $totalForFilter * 100) : 0,
+            ]);
+
+        $biggestCost = $byCategory->first();
 
         $expenses = $query->latest('expense_date')->latest('id')
             ->paginate(PerPagePreference::get())
@@ -64,9 +82,46 @@ class ExpenseController extends Controller
             'expenses' => $expenses,
             'activeQuickFilter' => $activeQuickFilter,
             'totalForFilter' => $totalForFilter,
+            'averagePerDay' => $averagePerDay,
+            'daysWithExpenses' => $daysWithExpenses,
+            'byCategory' => $byCategory,
+            'biggestCost' => $biggestCost,
             'staffOptions' => $staffOptions,
             'categories' => Expense::categories(),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $branchId = BranchContext::id();
+
+        $query = Expense::query()
+            ->where('branch_id', $branchId)
+            ->with(['staffMember', 'user'])
+            ->when($request->filled('category'), fn ($q) => $q->where('category', $request->string('category')))
+            ->when($request->filled('staff_member_id'), fn ($q) => $q->where('staff_member_id', $request->integer('staff_member_id')))
+            ->latest('expense_date')->latest('id');
+
+        return response()->streamDownload(function () use ($query) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Date', 'Category', 'Staff/Partner', 'Amount', 'Mode', 'Note', 'Recorded By']);
+
+            $query->chunk(200, function ($chunk) use ($out) {
+                foreach ($chunk as $expense) {
+                    fputcsv($out, [
+                        $expense->expense_date->format('Y-m-d'),
+                        $expense->categoryLabel(),
+                        $expense->staffMember->name ?? '',
+                        number_format($expense->amount, 2),
+                        $expense->mode ?? '',
+                        $expense->note,
+                        $expense->user->name ?? '',
+                    ]);
+                }
+            });
+
+            fclose($out);
+        }, 'expenses.csv');
     }
 
     public function create(): View
@@ -79,7 +134,29 @@ class ExpenseController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('expenses.create', ['staffOptions' => $staffOptions, 'categories' => Expense::categories()]);
+        $todaysExpenses = Expense::query()
+            ->where('branch_id', $branchId)
+            ->whereDate('expense_date', now()->toDateString())
+            ->latest('id')
+            ->get();
+
+        $recentNotes = Expense::query()
+            ->where('branch_id', $branchId)
+            ->whereNotNull('note')
+            ->where('note', '!=', '')
+            ->latest('id')
+            ->limit(30)
+            ->pluck('note')
+            ->unique()
+            ->take(5)
+            ->values();
+
+        return view('expenses.create', [
+            'staffOptions' => $staffOptions,
+            'categories' => Expense::primaryCategories(),
+            'todaysExpenses' => $todaysExpenses,
+            'recentNotes' => $recentNotes,
+        ]);
     }
 
     public function store(StoreExpenseRequest $request): RedirectResponse
@@ -89,6 +166,10 @@ class ExpenseController extends Controller
         $data['user_id'] = auth()->id();
 
         Expense::create($data);
+
+        if ($request->boolean('add_another')) {
+            return redirect()->route('expenses.create')->with('status', 'Expense recorded.');
+        }
 
         return redirect()->route('expenses.index')->with('status', 'Expense recorded.');
     }

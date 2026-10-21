@@ -32,7 +32,7 @@
             <div class="lg:pl-64 flex flex-col min-h-screen">
                 <!-- Top bar -->
                 <div class="sticky top-0 z-30 bg-white border-b border-gray-100">
-                    @unless (Auth::user()->isSuperAdmin() || request()->routeIs('dashboard', 'profile.edit', 'customers.index', 'customers.show', 'customers.create', 'customers.edit', 'items.index', 'items.show', 'items.create', 'items.edit', 'invoices.index', 'invoices.show', 'invoices.create', 'invoices.edit', 'stock.index', 'stock.create', 'stock.edit', 'batches.index', 'batches.show', 'purchases.index', 'purchases.show', 'purchases.create', 'purchases.edit', 'suppliers.index', 'suppliers.show', 'suppliers.create', 'suppliers.edit', 'staff.index', 'staff.show', 'staff.create', 'staff.edit', 'expenses.index', 'branches.index', 'users.index'))
+                    @unless (Auth::user()->isSuperAdmin() || request()->routeIs('dashboard', 'profile.edit', 'customers.index', 'customers.show', 'customers.create', 'customers.edit', 'items.index', 'items.show', 'items.create', 'items.edit', 'invoices.index', 'invoices.show', 'invoices.create', 'invoices.edit', 'stock.index', 'stock.create', 'stock.edit', 'batches.index', 'batches.show', 'purchases.index', 'purchases.show', 'purchases.create', 'purchases.edit', 'suppliers.index', 'suppliers.show', 'suppliers.create', 'suppliers.edit', 'staff.index', 'staff.show', 'staff.create', 'staff.edit', 'expenses.index', 'expenses.create', 'expenses.edit', 'branches.index', 'users.index'))
                         <!-- Mobile top strip: branch switcher, notifications, profile -->
                         @include('layouts.partials.mobile-top-strip')
                     @endunless

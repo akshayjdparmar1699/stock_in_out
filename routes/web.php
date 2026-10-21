@@ -172,6 +172,7 @@ Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::post('/staff/{staffMember}/payments', [StaffMemberController::class, 'storePayment'])->name('staff.payments.store');
     Route::resource('staff', StaffMemberController::class)->except(['destroy'])->parameters(['staff' => 'staffMember']);
 
+    Route::get('/expenses/export', [ExpenseController::class, 'export'])->name('expenses.export');
     Route::resource('expenses', ExpenseController::class)->except(['show']);
 });
 

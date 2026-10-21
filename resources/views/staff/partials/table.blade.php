@@ -16,9 +16,6 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Role') }}</th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ __('Monthly Salary') }}</th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ __('Advance Taken') }}</th>
-                @if (Auth::user()->isAdmin())
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Branch') }}</th>
-                @endif
                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">{{ __('Active') }}</th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{{ __('Actions') }}</th>
             </tr>
@@ -51,15 +48,6 @@
                     <td class="px-6 py-4 text-sm text-right font-medium {{ $member->totalUpad() > 0 ? 'text-red-600' : 'text-gray-400' }}">
                         ₹{{ number_format($member->totalUpad(), 0) }}
                     </td>
-                    @if (Auth::user()->isAdmin())
-                        <td class="px-6 py-4 text-sm">
-                            <div class="flex flex-wrap gap-1">
-                                @foreach ($member->branches as $branch)
-                                    <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">{{ $branch->name }}</span>
-                                @endforeach
-                            </div>
-                        </td>
-                    @endif
                     <td class="px-6 py-4 text-center">
                         <form method="POST" action="{{ route('staff.toggle-active', $member) }}">
                             @csrf
@@ -87,7 +75,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No staff or partners found.') }}</td>
+                    <td colspan="6" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No staff or partners found.') }}</td>
                 </tr>
             @endforelse
         </tbody>
@@ -106,9 +94,8 @@
                 </span>
                 <div class="min-w-0 flex-1">
                     <div class="text-sm font-semibold text-gray-900 truncate">{{ $member->name }}</div>
-                    <div class="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
+                    <div class="text-xs text-gray-400 mt-0.5">
                         <span class="px-1.5 py-0.5 rounded-full {{ $member->isPartner() ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-600' }}">{{ $member->isPartner() ? __('Partner') : __('Staff') }}</span>
-                        <span class="truncate">{{ $member->branches->pluck('name')->join(', ') }}</span>
                     </div>
                 </div>
                 <div class="text-right shrink-0">

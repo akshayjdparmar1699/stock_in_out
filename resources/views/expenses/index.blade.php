@@ -22,10 +22,13 @@
     </x-slot>
 
     <div class="py-6 sm:py-12" x-data="{ deleteOpen: false, deleteForm: null, deleteLabel: '', mobileView: 'cards', customOpen: false }">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4">
+            @php
+                $barPalette = ['bg-amber-400', 'bg-blue-400', 'bg-teal-400', 'bg-pink-400', 'bg-purple-400', 'bg-green-400', 'bg-red-400', 'bg-indigo-400', 'bg-gray-400'];
+            @endphp
 
             {{-- Date tabs --}}
-            <div class="flex items-center justify-between gap-3">
+            <div class="order-1 flex items-center justify-between gap-3">
                 <div class="inline-flex rounded-lg border border-gray-200 overflow-x-auto scrollbar-hide text-sm bg-white max-w-full">
                     @foreach (['all' => __('All'), 'today' => __('Today'), 'week' => __('This week'), 'month' => __('This month')] as $value => $label)
                         <a href="{{ route('expenses.index', array_filter(['period' => $value, 'category' => request('category'), 'staff_member_id' => request('staff_member_id'), 'q' => request('q')])) }}"
@@ -63,8 +66,8 @@
                 </div>
             </div>
 
-            {{-- Stat cards --}}
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
+            {{-- Stat cards (desktop only) --}}
+            <div class="hidden lg:grid lg:order-2 lg:grid-cols-3 gap-4">
                 <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
                     <span class="text-sm text-gray-500">{{ __('Total spent') }}</span>
                     <div class="text-2xl font-bold text-red-600 mt-3">&#8377;{{ number_format($totalForFilter, 0) }}</div>
@@ -88,12 +91,30 @@
                 </div>
             </div>
 
-            {{-- By category --}}
+            {{-- Mobile combined stat card --}}
+            <div class="lg:hidden order-3 bg-white rounded-2xl border border-red-200 p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs text-gray-500">{{ __('Total spent') }} &middot; {{ $activeQuickFilter === 'today' ? __('today') : __('all time') }}</p>
+                        <p class="text-2xl font-bold text-red-600 mt-1">&#8377;{{ number_format($totalForFilter, 0) }}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="text-xs text-gray-500">{{ __('Per day') }}</p>
+                        <p class="text-lg font-bold text-gray-900 mt-1">&#8377;{{ number_format($averagePerDay, 0) }}</p>
+                    </div>
+                </div>
+                @if ($byCategory->isNotEmpty())
+                    <div class="h-2 rounded-full bg-gray-100 overflow-hidden flex mt-3">
+                        @foreach ($byCategory as $i => $row)
+                            <div class="{{ $barPalette[$i % count($barPalette)] }} h-full" style="width: {{ $row['percent'] }}%"></div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
+            {{-- By category (desktop only) --}}
             @if ($byCategory->isNotEmpty())
-                @php
-                    $barPalette = ['bg-amber-400', 'bg-blue-400', 'bg-teal-400', 'bg-pink-400', 'bg-purple-400', 'bg-green-400', 'bg-red-400', 'bg-indigo-400', 'bg-gray-400'];
-                @endphp
-                <div class="bg-white shadow-sm rounded-xl p-4 lg:p-5 border border-gray-100">
+                <div class="hidden lg:block lg:order-3 bg-white shadow-sm rounded-xl p-4 lg:p-5 border border-gray-100">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="font-semibold text-gray-900">{{ __('By category') }}</h3>
                         <span class="hidden sm:inline text-xs text-gray-400">{{ __('Tap a category to see only those') }}</span>
@@ -121,7 +142,7 @@
             @endif
 
             {{-- Filters + search --}}
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="order-2 lg:order-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <form method="GET" class="flex flex-wrap gap-2 w-full lg:w-auto">
                     <input type="hidden" name="period" value="{{ request('period') }}">
                     <input type="hidden" name="category" value="{{ request('category') }}">
@@ -140,7 +161,7 @@
             </div>
 
             {{-- Mobile card/table view toggle --}}
-            <div class="flex lg:hidden justify-end">
+            <div class="order-4 flex lg:hidden justify-end">
                 <div class="inline-flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
                     <button type="button" @click="mobileView = 'cards'" :class="mobileView === 'cards' ? 'bg-brand-600 text-white' : 'bg-white text-gray-500'" class="flex items-center gap-1.5 px-3 h-9 text-xs font-medium" aria-label="{{ __('Card view') }}">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
@@ -153,7 +174,7 @@
                 </div>
             </div>
 
-            <div x-data="listTable()">
+            <div class="order-5" x-data="listTable()">
                 <div x-ref="content" :class="loading && 'opacity-50'">
                     @include('expenses.partials.table')
                 </div>

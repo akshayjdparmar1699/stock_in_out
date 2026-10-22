@@ -65,6 +65,9 @@
                 <form method="GET" class="order-1 lg:order-2 flex gap-2 shrink-0">
                     <input type="hidden" name="filter" value="{{ $filter }}">
                     <x-text-input name="q" type="text" class="w-full lg:w-72" placeholder="{{ __('Search by name') }}" :value="request('q')" />
+                    <button type="submit" aria-label="{{ __('Search') }}" class="lg:hidden shrink-0 w-11 h-11 flex items-center justify-center rounded-lg bg-brand-600 text-white">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                    </button>
                     <x-secondary-button type="submit" class="hidden lg:inline-flex shrink-0">{{ __('Search') }}</x-secondary-button>
                 </form>
             </div>

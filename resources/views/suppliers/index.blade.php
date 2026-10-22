@@ -13,10 +13,6 @@
                     @include('layouts.partials.notification-bell')
                 </div>
                 <div class="hidden lg:flex items-center gap-2">
-                    <a href="{{ route('suppliers.export', request()->query()) }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                        {{ __('Export') }}
-                    </a>
                     <a href="{{ route('suppliers.create') }}" class="inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
                         {{ __('+ Add Supplier') }}
                     </a>
@@ -72,6 +68,9 @@
                         <input type="hidden" name="filter" value="{{ $filter }}">
                         <input type="hidden" name="sort" value="{{ $sort }}">
                         <x-text-input name="q" type="text" class="w-full lg:w-64" placeholder="{{ __('Search name, phone or city') }}" :value="request('q')" />
+                        <button type="submit" aria-label="{{ __('Search') }}" class="lg:hidden shrink-0 w-11 h-11 flex items-center justify-center rounded-lg bg-brand-600 text-white">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                        </button>
                         <x-secondary-button type="submit" class="hidden lg:inline-flex shrink-0">{{ __('Search') }}</x-secondary-button>
                     </form>
                     <form method="GET" class="hidden lg:block shrink-0">

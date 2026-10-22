@@ -16,7 +16,7 @@
         @endif
     </a>
 
-    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
         @include('layouts.partials.sidebar-links')
     </nav>
 

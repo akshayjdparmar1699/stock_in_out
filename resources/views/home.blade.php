@@ -38,10 +38,13 @@
                     <a href="#contact" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg">{{ __('Book free demo') }}</a>
                 </div>
 
-                <button type="button" @click="mobileNav = !mobileNav" class="lg:hidden w-9 h-9 flex items-center justify-center text-gray-600">
-                    <svg x-show="!mobileNav" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
-                    <svg x-show="mobileNav" style="display:none" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+                <div class="flex lg:hidden items-center gap-2">
+                    <a href="{{ route('login') }}" class="inline-flex items-center px-3.5 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700">{{ __('Login') }}</a>
+                    <button type="button" @click="mobileNav = !mobileNav" class="w-9 h-9 rounded-lg bg-brand-600 flex items-center justify-center text-white shrink-0">
+                        <svg x-show="!mobileNav" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+                        <svg x-show="mobileNav" style="display:none" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
             </div>
 
             <div x-show="mobileNav" style="display:none" @click="mobileNav = false" class="lg:hidden border-t border-gray-100 px-4 py-4 space-y-3 bg-white">
@@ -94,35 +97,43 @@
                 </div>
 
                 <!-- Device mockup -->
-                <div class="relative hidden sm:block">
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-2xl p-4">
-                        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                            <div class="flex items-center gap-2">
-                                <x-application-logo class="w-6 h-6" />
-                                <span class="text-sm font-semibold text-gray-800">{{ __('Good morning, Jaydip') }}</span>
+                <div class="relative mt-4 lg:mt-0 pb-12 lg:pb-16">
+                    <!-- Laptop -->
+                    <div class="relative">
+                        <div class="bg-gray-900 rounded-t-xl p-2.5 shadow-2xl">
+                            <div class="bg-white rounded-lg overflow-hidden p-4">
+                                <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                                    <div class="flex items-center gap-2">
+                                        <x-application-logo class="w-6 h-6" />
+                                        <span class="text-sm font-semibold text-gray-800">{{ __('Good morning, Jaydip') }}</span>
+                                    </div>
+                                    <span class="px-3 py-1 bg-brand-600 text-white text-xs font-semibold rounded-md whitespace-nowrap">+ {{ __('New Bill') }}</span>
+                                </div>
+                                <div class="grid grid-cols-4 gap-2 mt-3 text-xs">
+                                    <div><p class="text-gray-400">{{ __('Sales') }}</p><p class="font-bold text-gray-900">&#8377;19.5L</p></div>
+                                    <div><p class="text-gray-400">{{ __('Profit') }}</p><p class="font-bold text-green-600">&#8377;1.35L</p></div>
+                                    <div><p class="text-gray-400">{{ __('Purchases') }}</p><p class="font-bold text-gray-900">&#8377;18L</p></div>
+                                    <div><p class="text-gray-400">{{ __('Stock value') }}</p><p class="font-bold text-gray-900">&#8377;4.6L</p></div>
+                                </div>
+                                <div class="mt-3 bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-400 mb-1">{{ __('Sales and profit') }}</p>
+                                    <svg viewBox="0 0 240 60" class="w-full h-14" preserveAspectRatio="none">
+                                        <rect x="4" y="22" width="22" height="34" rx="3" fill="#DDBDFF" />
+                                        <rect x="34" y="14" width="22" height="42" rx="3" fill="#DDBDFF" />
+                                        <rect x="64" y="28" width="22" height="28" rx="3" fill="#DDBDFF" />
+                                        <rect x="94" y="5" width="22" height="51" rx="3" fill="#6A00D9" />
+                                        <rect x="124" y="20" width="22" height="36" rx="3" fill="#DDBDFF" />
+                                        <rect x="154" y="34" width="22" height="22" rx="3" fill="#DDBDFF" />
+                                    </svg>
+                                </div>
                             </div>
-                            <span class="px-3 py-1 bg-brand-600 text-white text-xs font-semibold rounded-md">+ {{ __('New Bill') }}</span>
                         </div>
-                        <div class="grid grid-cols-4 gap-2 mt-3 text-xs">
-                            <div><p class="text-gray-400">{{ __('Sales') }}</p><p class="font-bold text-gray-900">&#8377;19.5L</p></div>
-                            <div><p class="text-gray-400">{{ __('Profit') }}</p><p class="font-bold text-green-600">&#8377;1.35L</p></div>
-                            <div><p class="text-gray-400">{{ __('Purchases') }}</p><p class="font-bold text-gray-900">&#8377;18L</p></div>
-                            <div><p class="text-gray-400">{{ __('Stock value') }}</p><p class="font-bold text-gray-900">&#8377;4.6L</p></div>
-                        </div>
-                        <div class="mt-3 bg-gray-50 rounded-lg p-3">
-                            <p class="text-xs text-gray-400 mb-1">{{ __('Sales and profit') }}</p>
-                            <svg viewBox="0 0 240 60" class="w-full h-14" preserveAspectRatio="none">
-                                <rect x="4" y="22" width="22" height="34" rx="3" fill="#DDBDFF" />
-                                <rect x="34" y="14" width="22" height="42" rx="3" fill="#DDBDFF" />
-                                <rect x="64" y="28" width="22" height="28" rx="3" fill="#DDBDFF" />
-                                <rect x="94" y="5" width="22" height="51" rx="3" fill="#6A00D9" />
-                                <rect x="124" y="20" width="22" height="36" rx="3" fill="#DDBDFF" />
-                                <rect x="154" y="34" width="22" height="22" rx="3" fill="#DDBDFF" />
-                            </svg>
-                        </div>
+                        <!-- Laptop base -->
+                        <div class="h-3 bg-gray-300 rounded-b-md"></div>
+                        <div class="h-2 mx-8 bg-gray-200 rounded-b-xl"></div>
                     </div>
 
-                    <div class="absolute -top-5 -left-10 bg-white rounded-xl shadow-xl border border-gray-100 p-3 w-60 hidden lg:block">
+                    <div class="absolute -top-8 -left-4 sm:-left-14 bg-white rounded-xl shadow-xl border border-gray-100 p-3 w-52 sm:w-60 hidden sm:block">
                         <div class="flex items-center gap-2">
                             <span class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
@@ -134,7 +145,7 @@
                         </div>
                     </div>
 
-                    <div class="absolute -bottom-10 -right-6 w-40 bg-white rounded-[1.5rem] border-[6px] border-gray-900 shadow-2xl p-2.5 hidden sm:block">
+                    <div class="absolute bottom-0 right-0 sm:-right-6 w-36 sm:w-40 bg-white rounded-[1.5rem] border-[6px] border-gray-900 shadow-2xl p-2.5">
                         <div class="w-10 h-1 rounded-full bg-gray-900 mx-auto mb-2"></div>
                         <p class="text-[10px] font-semibold text-gray-800">INV-B01-00706</p>
                         <span class="inline-block mt-1 text-[9px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">{{ __('PAID') }} &middot; &#8377;3,200</span>

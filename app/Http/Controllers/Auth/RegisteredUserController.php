@@ -22,7 +22,7 @@ class RegisteredUserController extends Controller
     {
         $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
 
-        return view('auth.register', ['branches' => $branches]);
+        return view('users.create', ['branches' => $branches]);
     }
 
     /**

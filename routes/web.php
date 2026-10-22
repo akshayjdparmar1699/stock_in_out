@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CompanyController;
@@ -126,6 +127,8 @@ Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
     Route::resource('branches', BranchController::class)->except(['show'])->middleware('admin');
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index')->middleware('admin');
+    Route::get('/users/create', [RegisteredUserController::class, 'create'])->name('users.create')->middleware('admin');
+    Route::post('/users', [RegisteredUserController::class, 'store'])->name('users.store')->middleware('admin');
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('admin');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('admin');
     Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active')->middleware('admin');

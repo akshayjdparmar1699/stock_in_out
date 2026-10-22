@@ -21,6 +21,7 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\StaffMemberController;
 use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\SubscriptionRenewalController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -113,6 +114,11 @@ Route::post('/get-started/billing/verify', [GetStartedController::class, 'verify
 Route::post('/razorpay/webhook', [RazorpayWebhookController::class, 'handle'])->name('razorpay.webhook');
 
 Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
+    Route::get('/subscription/renew', [SubscriptionRenewalController::class, 'show'])->name('subscription.renew');
+    Route::post('/subscription/renew/verify', [SubscriptionRenewalController::class, 'verify'])->name('subscription.renew.verify');
+});
+
+Route::middleware(['auth', 'verified', 'not_super_admin', 'subscription.check'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::post('/preferences/per-page', [PreferenceController::class, 'setPerPage'])->name('preferences.per-page');

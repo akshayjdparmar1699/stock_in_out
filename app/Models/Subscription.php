@@ -87,7 +87,29 @@ class Subscription extends Model
             return $this->trial_ends_at !== null && $this->trial_ends_at->isPast();
         }
 
+        // There is no scheduled job that flips an ACTIVE subscription to
+        // PAST_DUE once its paid period lapses, so this date check is the
+        // only thing that actually catches "paid plan ran out and nobody
+        // renewed" — without it, isActive() would stay true forever.
+        if ($this->status === self::STATUS_ACTIVE) {
+            return $this->current_period_end !== null && $this->current_period_end->isPast();
+        }
+
         return in_array($this->status, [self::STATUS_PAST_DUE, self::STATUS_CANCELED], true);
+    }
+
+    /**
+     * The date this subscription stopped being valid, for display — null
+     * when there's nothing meaningful to show (e.g. never activated).
+     */
+    public function expiredAt(): ?\Illuminate\Support\Carbon
+    {
+        return match ($this->status) {
+            self::STATUS_TRIALING => $this->trial_ends_at,
+            self::STATUS_ACTIVE => $this->current_period_end,
+            self::STATUS_CANCELED => $this->cancelled_at,
+            default => null,
+        };
     }
 
     public function daysLeftInTrial(): int

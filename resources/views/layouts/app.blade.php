@@ -18,7 +18,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div x-data="{ moreOpen: false }" class="min-h-screen bg-gray-100">
+        <div x-data="{ moreOpen: false }" class="min-h-screen bg-gray-100 {{ isset($subscriptionBlocked) ? 'blur-sm pointer-events-none select-none' : '' }}">
 
             <!-- Desktop sidebar -->
             @include('layouts.navigation')
@@ -93,6 +93,10 @@
                 </main>
             </div>
         </div>
+
+        @isset($subscriptionBlocked)
+            @include('layouts.partials.subscription-blocked-modal', $subscriptionBlocked)
+        @endisset
 
         @include('layouts.partials.pwa-install-banner')
 

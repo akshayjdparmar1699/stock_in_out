@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'super_admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
             'not_super_admin' => \App\Http\Middleware\RedirectSuperAdminToCompanies::class,
+            'subscription.check' => \App\Http\Middleware\CheckSubscriptionActive::class,
         ]);
 
         // Razorpay posts this server-to-server with no session/CSRF token of

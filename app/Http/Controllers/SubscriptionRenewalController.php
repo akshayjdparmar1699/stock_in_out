@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Plan;
+use App\Models\Subscription;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -29,11 +30,17 @@ class SubscriptionRenewalController extends Controller
 
         $currentPlan = $subscription->plan;
 
-        // The free-trial plan's price is a one-time anti-abuse charge, not
-        // a recurring price — once the trial lapses there is nothing
-        // sensible to "renew" at that price, so the company must choose a
-        // real plan first.
-        if ($currentPlan->isFreeTrial() && ! $request->filled('plan')) {
+        // An INCOMPLETE subscription never got past checkout at all — the
+        // company/user exist, but no payment (not even the trial's ₹2) ever
+        // went through, for whatever plan they originally picked. There is
+        // nothing to "choose" here: resume checkout for that exact plan,
+        // even if it's the free-trial one. The picker below is only for a
+        // trial that was actually used and has since lapsed (the free-trial
+        // plan's price is a one-time anti-abuse charge, not a recurring
+        // price, so it can't sensibly be "renewed" once genuinely spent).
+        $isAbandonedCheckout = $subscription->status === Subscription::STATUS_INCOMPLETE;
+
+        if ($currentPlan->isFreeTrial() && ! $isAbandonedCheckout && ! $request->filled('plan')) {
             return view('subscription.renew-plan', [
                 'company' => $company,
                 'plans' => Plan::where('is_active', true)
@@ -43,7 +50,7 @@ class SubscriptionRenewalController extends Controller
             ]);
         }
 
-        $plan = $currentPlan->isFreeTrial()
+        $plan = ($currentPlan->isFreeTrial() && $request->filled('plan'))
             ? Plan::where('is_active', true)
                 ->where('key', '!=', Plan::KEY_FREE_TRIAL)
                 ->findOrFail($request->integer('plan'))

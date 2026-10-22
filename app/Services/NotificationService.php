@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\AppNotification;
 use App\Models\Branch;
+use App\Models\Company;
 use App\Models\Customer;
 use App\Models\ItemStock;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -184,5 +186,104 @@ class NotificationService
                 'url' => route('customers.show', $row['customer']),
             ])
             ->values();
+    }
+
+    /**
+     * Warns a company whose trial or paid period is about to lapse, a few
+     * days ahead of the hard paywall (CheckSubscriptionActive) kicking in.
+     * Called from that same middleware on every request while the
+     * subscription is still active — there's no cron running in production
+     * (see this class's own docblock), so this rides on real request
+     * traffic exactly like every other notification here, instead of
+     * depending on a scheduled job that may never actually fire.
+     *
+     * AppNotification rows are branch_id-scoped (NotificationController's
+     * bell always reads the currently-selected branch), so a company-wide
+     * event like this is written once per branch rather than needing a
+     * schema change — the existing (branch_id, type, dedupe_key) unique
+     * constraint already makes that safe to call repeatedly.
+     */
+    public static function syncSubscriptionExpiry(Company $company): void
+    {
+        $subscription = $company->subscription;
+
+        if (! $subscription || ! $subscription->isActive() || $subscription->is_lifetime) {
+            return;
+        }
+
+        $targetDate = $subscription->status === Subscription::STATUS_TRIALING
+            ? $subscription->trial_ends_at
+            : $subscription->current_period_end;
+
+        if ($targetDate === null || $targetDate->isPast()) {
+            return;
+        }
+
+        $daysLeft = (int) now()->startOfDay()->diffInDays($targetDate->copy()->startOfDay());
+
+        if ($daysLeft > 4) {
+            return;
+        }
+
+        $dedupeKey = (string) $subscription->id.'_'.$targetDate->format('Y-m-d');
+        $type = 'subscription_expiring';
+
+        $branchIds = $company->branches()->pluck('id');
+
+        if ($branchIds->isEmpty()) {
+            return;
+        }
+
+        // Checked per-branch, not globally — a global exists() check would
+        // wrongly skip a branch that doesn't have its row yet just because
+        // some other branch of the same company already does (the unique
+        // constraint is per-branch, so "already handled" has to be too).
+        $alreadyHave = AppNotification::query()
+            ->where('type', $type)
+            ->where('dedupe_key', $dedupeKey)
+            ->whereIn('branch_id', $branchIds)
+            ->pluck('branch_id');
+
+        $missingBranchIds = $branchIds->diff($alreadyHave);
+
+        if ($missingBranchIds->isEmpty()) {
+            return;
+        }
+
+        $isTrial = $subscription->status === Subscription::STATUS_TRIALING;
+        $planName = $subscription->plan->name ?? 'your plan';
+        $whenText = $daysLeft <= 0 ? 'today' : ($daysLeft === 1 ? 'in 1 day' : "in {$daysLeft} days");
+
+        $title = $isTrial
+            ? "Your free trial ends {$whenText}"
+            : "Your {$planName} plan ends {$whenText}";
+
+        $body = $isTrial
+            ? 'Subscribe within 2 days to keep billing, managing stock and seeing reports without interruption.'
+            : "Renew your {$planName} plan to avoid losing access to billing and reports.";
+
+        $url = route('subscription.renew');
+
+        $rows = $missingBranchIds->map(fn (int $branchId) => [
+            'branch_id' => $branchId,
+            'type' => $type,
+            'dedupe_key' => $dedupeKey,
+            'title' => $title,
+            'body' => $body,
+            'url' => $url,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])->values()->all();
+
+        AppNotification::insertOrIgnore($rows);
+
+        // Reaching here means at least one branch just got its row for the
+        // first time, so a push is warranted — it won't fire again for this
+        // dedupe key once every branch already has one.
+        $admins = $company->users()->where('role', User::ROLE_ADMIN)->get();
+
+        if ($admins->isNotEmpty()) {
+            PushNotificationService::sendToUsers($admins, $title, $body, $url);
+        }
     }
 }

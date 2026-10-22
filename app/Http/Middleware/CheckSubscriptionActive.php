@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\NotificationService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -32,6 +33,10 @@ class CheckSubscriptionActive
         $subscription = $user->company?->subscription;
 
         if (! $subscription || $subscription->isActive()) {
+            if ($subscription && $request->isMethod('get')) {
+                NotificationService::syncSubscriptionExpiry($user->company);
+            }
+
             return $next($request);
         }
 

@@ -114,6 +114,83 @@ window.lineChart = function ({ labels, sales, profit }) {
 };
 
 /**
+ * A mixed bar (sales) + line (profit) chart that reports which day the
+ * viewer tapped via a plain DOM CustomEvent ("chart-bar-click", detail:
+ * {index}), so the host page binds it with a plain `@chart-bar-click`
+ * listener instead of a JS callback.
+ *
+ * The chart instance itself is kept in a closure variable, NOT an x-data
+ * property (`this.chart = ...`) — Alpine's reactivity proxies an x-data
+ * object's properties lazily, deep-converting a nested value to reactive
+ * the first time something reads through it. Chart.js's internal data
+ * structures are circular (dataset <-> controller <-> chart back-refs),
+ * so the moment `highlight()` below both reads and writes through
+ * `this.chart.data...`, Alpine's lazy conversion walks that circular
+ * graph and recurses forever. A plain closure variable is never wrapped,
+ * so reading/writing it is just normal Chart.js API use.
+ */
+window.barLineClickChart = function ({ labels, sales, profit }) {
+    let chart = null;
+
+    return {
+        render(canvas) {
+            const barColor = (i) => (i === sales.length - 1 ? '#6a00d9' : '#c38aff');
+
+            chart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            type: 'bar',
+                            label: 'Sales',
+                            data: sales,
+                            backgroundColor: sales.map((_, i) => barColor(i)),
+                            borderRadius: 4,
+                            maxBarThickness: 48,
+                            order: 2,
+                        },
+                        {
+                            type: 'line',
+                            label: 'Profit',
+                            data: profit,
+                            borderColor: '#16a34a',
+                            backgroundColor: 'transparent',
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#16a34a',
+                            yAxisID: 'y1',
+                            order: 1,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    onClick: (event, elements) => {
+                        if (!elements.length) return;
+                        const index = elements[0].index;
+                        this.highlight(index);
+                        canvas.dispatchEvent(new CustomEvent('chart-bar-click', { detail: { index }, bubbles: true }));
+                    },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { ticks: { callback: (v) => '₹' + (Number(v) / 1000).toLocaleString('en-IN') + 'k' } },
+                        y1: { display: false, position: 'right' },
+                    },
+                },
+            });
+
+            canvas.style.cursor = 'pointer';
+        },
+        highlight(index) {
+            if (!chart) return;
+            chart.data.datasets[0].backgroundColor = chart.data.labels.map((_, i) => (i === index ? '#6a00d9' : '#c38aff'));
+            chart.update();
+        },
+    };
+};
+
+/**
  * Capture the browser's install prompt so we can trigger it from our own
  * "Install App" button instead of relying on the user finding the
  * browser's menu option themselves.

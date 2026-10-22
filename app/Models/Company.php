@@ -14,12 +14,14 @@ class Company extends Model
     protected $fillable = [
         'name',
         'is_active',
+        'daily_whatsapp_reports_enabled',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'daily_whatsapp_reports_enabled' => 'boolean',
         ];
     }
 

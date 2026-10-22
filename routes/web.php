@@ -19,6 +19,7 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\StaffMemberController;
+use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
@@ -177,6 +178,17 @@ Route::middleware(['auth', 'verified', 'not_super_admin'])->group(function () {
 
     Route::get('/expenses/export', [ExpenseController::class, 'export'])->name('expenses.export');
     Route::resource('expenses', ExpenseController::class)->except(['show']);
+
+    Route::prefix('sales-reports')->name('sales-reports.')->middleware('admin')->group(function () {
+        Route::get('/', [SalesReportController::class, 'index'])->name('index');
+        Route::get('/sales', [SalesReportController::class, 'sales'])->name('sales');
+        Route::get('/sales/pdf', [SalesReportController::class, 'salesPdf'])->name('sales.pdf');
+        Route::get('/sales/excel', [SalesReportController::class, 'salesExcel'])->name('sales.excel');
+        Route::get('/profit-loss', [SalesReportController::class, 'profitLoss'])->name('profit-loss');
+        Route::get('/profit-loss/pdf', [SalesReportController::class, 'profitLossPdf'])->name('profit-loss.pdf');
+        Route::get('/item-wise-profit', [SalesReportController::class, 'itemWiseProfit'])->name('item-wise-profit');
+        Route::post('/whatsapp-toggle', [SalesReportController::class, 'toggleWhatsapp'])->name('whatsapp-toggle');
+    });
 });
 
 Route::middleware(['auth', 'verified', 'super_admin'])->group(function () {

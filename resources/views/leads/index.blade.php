@@ -18,6 +18,7 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Name') }}</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Shop') }}</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Business') }}</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Phone') }}</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Message') }}</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ __('Received') }}</th>
@@ -29,6 +30,7 @@
                                 <tr>
                                     <td class="px-6 py-4 text-sm text-gray-800">{{ $lead->name }}</td>
                                     <td class="px-6 py-4 text-sm text-gray-500">{{ $lead->shop_name ?? '—' }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">{{ $lead->business_type ?? '—' }}</td>
                                     <td class="px-6 py-4 text-sm text-gray-500">
                                         <a href="https://wa.me/91{{ preg_replace('/\D/', '', $lead->phone) }}" target="_blank" class="text-brand-600 hover:underline">{{ $lead->phone }}</a>
                                     </td>
@@ -48,7 +50,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No inquiries yet.') }}</td>
+                                    <td colspan="7" class="px-6 py-6 text-sm text-gray-400 text-center">{{ __('No inquiries yet.') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>

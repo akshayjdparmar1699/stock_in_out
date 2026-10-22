@@ -17,6 +17,7 @@ class LeadController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'shop_name' => ['nullable', 'string', 'max:255'],
+            'business_type' => ['nullable', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
             'message' => ['nullable', 'string', 'max:2000'],
         ]);

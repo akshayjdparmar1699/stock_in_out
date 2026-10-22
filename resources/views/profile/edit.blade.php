@@ -29,13 +29,16 @@
             @include('profile.partials.avatar', ['size' => 'w-20 h-20', 'textSize' => 'text-2xl'])
             <p class="font-semibold text-lg mt-4">{{ $user->name }}</p>
             <p class="text-sm text-white/70">{{ $user->email }}</p>
-            <div class="flex items-center gap-2 mt-3">
+            <div class="flex items-center gap-2 mt-3 flex-wrap justify-center">
                 @if ($user->isAdmin())
                     <span class="px-2.5 py-1 rounded-full bg-[#FFB020] text-white text-xs font-semibold">{{ __('Admin') }}</span>
                 @elseif ($user->isSuperAdmin())
                     <span class="px-2.5 py-1 rounded-full bg-[#FFB020] text-white text-xs font-semibold">{{ __('Super Admin') }}</span>
                 @else
                     <span class="px-2.5 py-1 rounded-full bg-white/15 text-white text-xs font-semibold">{{ __('Staff') }}</span>
+                @endif
+                @if ($subscription?->plan)
+                    <span class="px-2.5 py-1 rounded-full bg-white/15 text-white text-xs font-medium">{{ $subscription->plan->name }} {{ __('plan') }}</span>
                 @endif
             </div>
         </div>
@@ -64,6 +67,9 @@
                             @endif
                             @unless ($user->isSuperAdmin())
                                 <span class="px-2.5 py-1 rounded-full bg-white/15 text-white text-xs font-medium">{{ \App\Services\BranchContext::current()?->name }}</span>
+                                @if ($subscription?->plan)
+                                    <span class="px-2.5 py-1 rounded-full bg-white/15 text-white text-xs font-medium">{{ $subscription->plan->name }} {{ __('plan') }}</span>
+                                @endif
                             @endunless
                         </div>
                     </div>
@@ -102,6 +108,7 @@
                     <a href="#profile-information" @click="active = 'profile-information'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('profile-information')">{{ __('Profile information') }}</a>
                     @unless ($user->isSuperAdmin())
                         <a href="#branch" @click="active = 'branch'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('branch')">{{ __('Branch') }}</a>
+                        <a href="#plan" @click="active = 'plan'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('plan')">{{ __('Plan & billing') }}</a>
                     @endunless
                     <a href="#notifications" @click="active = 'notifications'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('notifications')">{{ __('Notifications') }}</a>
                     <a href="#password" @click="active = 'password'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('password')">{{ __('Password & security') }}</a>
@@ -116,6 +123,10 @@
                     @unless ($user->isSuperAdmin())
                         <div id="branch" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('branch')">
                             @include('profile.partials.branch-settings-form')
+                        </div>
+
+                        <div id="plan" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('plan')">
+                            @include('profile.partials.plan-info')
                         </div>
                     @endunless
 

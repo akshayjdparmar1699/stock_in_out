@@ -1,7 +1,19 @@
+@php
+    $sidebarSubscription = Auth::user()->isSuperAdmin() ? null : Auth::user()->company?->subscription?->load('plan');
+@endphp
 <aside class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200">
-    <a href="{{ Auth::user()->isSuperAdmin() ? route('companies.index') : route('dashboard') }}" class="h-16 shrink-0 flex items-center gap-3 px-6 border-b border-gray-100">
-        <x-application-logo class="w-8 h-8 text-brand-600" />
-        <span class="font-semibold text-gray-800">{{ config('app.name') }}</span>
+    <a href="{{ Auth::user()->isSuperAdmin() ? route('companies.index') : route('dashboard') }}" class="h-16 shrink-0 flex items-center justify-between gap-3 px-6 border-b border-gray-100">
+        <span class="flex items-center gap-3 min-w-0">
+            <x-application-logo class="w-8 h-8 text-brand-600 shrink-0" />
+            <span class="font-semibold text-gray-800 truncate">{{ config('app.name') }}</span>
+        </span>
+        @if ($sidebarSubscription?->plan)
+            <span @class([
+                'shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold',
+                'bg-red-50 text-red-600' => ! $sidebarSubscription->isActive(),
+                'bg-brand-50 text-brand-700' => $sidebarSubscription->isActive(),
+            ])>{{ $sidebarSubscription->plan->name }}</span>
+        @endif
     </a>
 
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

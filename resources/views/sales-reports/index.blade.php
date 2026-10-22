@@ -31,18 +31,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
             {{-- Branch + period filters --}}
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
-                <form method="GET" class="flex gap-2">
-                    <input type="hidden" name="period" value="{{ $period }}">
-                    <select name="branch_id" onchange="this.form.submit()" class="border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
-                        <option value="all" @selected($selectedBranchId === 'all')>{{ __('All branches') }}</option>
-                        @foreach ($branches as $branch)
-                            <option value="{{ $branch->id }}" @selected((string) $selectedBranchId === (string) $branch->id)>{{ $branch->name }}</option>
-                        @endforeach
-                    </select>
-                </form>
-
-                <div class="inline-flex rounded-lg border border-gray-200 overflow-x-auto scrollbar-hide text-sm bg-white max-w-full">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="inline-flex self-start rounded-lg border border-gray-200 overflow-x-auto scrollbar-hide text-sm bg-white max-w-full order-2 lg:order-1">
                     @foreach (['today' => __('Today'), '7days' => __('7 days'), 'month' => __('This month'), 'all' => __('All time')] as $value => $label)
                         <a href="{{ route('sales-reports.index', ['branch_id' => $selectedBranchId, 'period' => $value]) }}"
                             class="shrink-0 px-3.5 py-2 {{ $period === $value ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50' }}">
@@ -50,6 +40,21 @@
                         </a>
                     @endforeach
                 </div>
+
+                <form method="GET" class="order-1 lg:order-2 shrink-0">
+                    <input type="hidden" name="period" value="{{ $period }}">
+                    <div class="relative">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg>
+                        <select name="branch_id" onchange="this.form.submit()"
+                            class="w-full lg:w-56 appearance-none border-gray-200 bg-gray-50 rounded-lg pl-9 pr-8 py-2.5 text-sm font-medium text-gray-700 focus:border-brand-500 focus:ring-brand-500">
+                            <option value="all" @selected($selectedBranchId === 'all')>{{ __('All branches') }}</option>
+                            @foreach ($branches as $branch)
+                                <option value="{{ $branch->id }}" @selected((string) $selectedBranchId === (string) $branch->id)>{{ $branch->name }}</option>
+                            @endforeach
+                        </select>
+                        <svg class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                    </div>
+                </form>
             </div>
 
             {{-- Stat cards --}}

@@ -97,43 +97,54 @@
                 </div>
 
                 <!-- Device mockup -->
-                <div class="relative mt-4 lg:mt-0 pb-12 lg:pb-16">
+                <div class="relative mt-4 lg:mt-6 pb-16 lg:pb-20 lg:ml-6">
                     <!-- Laptop -->
                     <div class="relative">
-                        <div class="bg-gray-900 rounded-t-xl p-2.5 shadow-2xl">
-                            <div class="bg-white rounded-lg overflow-hidden p-4">
-                                <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                                    <div class="flex items-center gap-2">
-                                        <x-application-logo class="w-6 h-6" />
-                                        <span class="text-sm font-semibold text-gray-800">{{ __('Good morning, Jaydip') }}</span>
+                        <div class="bg-gray-900 rounded-t-2xl p-3 shadow-2xl">
+                            <div class="bg-white rounded-lg overflow-hidden flex text-left" style="aspect-ratio: 16/10.5;">
+                                <!-- Sidebar -->
+                                <div class="hidden sm:flex w-12 shrink-0 bg-gray-50 border-r border-gray-100 flex-col items-center gap-3 py-3">
+                                    <span class="w-6 h-6 rounded-md bg-brand-600"></span>
+                                    <span class="w-5 h-5 rounded bg-gray-300"></span>
+                                    <span class="w-5 h-5 rounded bg-gray-300"></span>
+                                    <span class="w-5 h-5 rounded bg-brand-200"></span>
+                                    <span class="w-5 h-5 rounded bg-gray-300"></span>
+                                </div>
+                                <!-- Content -->
+                                <div class="flex-1 min-w-0 p-3 sm:p-4">
+                                    <div class="flex items-center justify-between pb-2.5 border-b border-gray-100">
+                                        <span class="text-xs sm:text-sm font-semibold text-gray-800">{{ __('Sales & Reports') }}</span>
+                                        <span class="px-2.5 py-1 bg-brand-600 text-white text-[10px] sm:text-xs font-semibold rounded-md whitespace-nowrap">+ {{ __('New Bill') }}</span>
                                     </div>
-                                    <span class="px-3 py-1 bg-brand-600 text-white text-xs font-semibold rounded-md whitespace-nowrap">+ {{ __('New Bill') }}</span>
-                                </div>
-                                <div class="grid grid-cols-4 gap-2 mt-3 text-xs">
-                                    <div><p class="text-gray-400">{{ __('Sales') }}</p><p class="font-bold text-gray-900">&#8377;19.5L</p></div>
-                                    <div><p class="text-gray-400">{{ __('Profit') }}</p><p class="font-bold text-green-600">&#8377;1.35L</p></div>
-                                    <div><p class="text-gray-400">{{ __('Purchases') }}</p><p class="font-bold text-gray-900">&#8377;18L</p></div>
-                                    <div><p class="text-gray-400">{{ __('Stock value') }}</p><p class="font-bold text-gray-900">&#8377;4.6L</p></div>
-                                </div>
-                                <div class="mt-3 bg-gray-50 rounded-lg p-3">
-                                    <p class="text-xs text-gray-400 mb-1">{{ __('Sales and profit') }}</p>
-                                    <svg viewBox="0 0 240 60" class="w-full h-14" preserveAspectRatio="none">
-                                        <rect x="4" y="22" width="22" height="34" rx="3" fill="#DDBDFF" />
-                                        <rect x="34" y="14" width="22" height="42" rx="3" fill="#DDBDFF" />
-                                        <rect x="64" y="28" width="22" height="28" rx="3" fill="#DDBDFF" />
-                                        <rect x="94" y="5" width="22" height="51" rx="3" fill="#6A00D9" />
-                                        <rect x="124" y="20" width="22" height="36" rx="3" fill="#DDBDFF" />
-                                        <rect x="154" y="34" width="22" height="22" rx="3" fill="#DDBDFF" />
-                                    </svg>
+                                    <div class="grid grid-cols-4 gap-1.5 sm:gap-2 mt-2.5 text-[9px] sm:text-xs">
+                                        <div><p class="text-gray-400">{{ __('Sales') }}</p><p class="font-bold text-gray-900">&#8377;19.5L</p></div>
+                                        <div><p class="text-gray-400">{{ __('Profit') }}</p><p class="font-bold text-green-600">&#8377;1.35L</p></div>
+                                        <div><p class="text-gray-400">{{ __('Purchases') }}</p><p class="font-bold text-gray-900">&#8377;18L</p></div>
+                                        <div><p class="text-gray-400">{{ __('Stock value') }}</p><p class="font-bold text-gray-900">&#8377;4.6L</p></div>
+                                    </div>
+                                    <div class="mt-2.5 bg-gray-50 rounded-lg p-2 sm:p-3">
+                                        <p class="text-[9px] sm:text-xs text-gray-400 mb-1">{{ __('Sales and profit') }}</p>
+                                        <svg viewBox="0 0 320 90" class="w-full h-16 sm:h-20" preserveAspectRatio="none">
+                                            <rect x="4" y="34" width="26" height="56" rx="3" fill="#DDBDFF" />
+                                            <rect x="40" y="18" width="26" height="72" rx="3" fill="#DDBDFF" />
+                                            <rect x="76" y="44" width="26" height="46" rx="3" fill="#DDBDFF" />
+                                            <rect x="112" y="6" width="26" height="84" rx="3" fill="#6A00D9" />
+                                            <rect x="148" y="30" width="26" height="60" rx="3" fill="#DDBDFF" />
+                                            <rect x="184" y="52" width="26" height="38" rx="3" fill="#DDBDFF" />
+                                            <rect x="220" y="24" width="26" height="66" rx="3" fill="#DDBDFF" />
+                                            <rect x="256" y="40" width="26" height="50" rx="3" fill="#DDBDFF" />
+                                            <polyline points="17,60 53,48 89,66 125,20 161,52 197,72 233,42 269,58" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <!-- Laptop base -->
-                        <div class="h-3 bg-gray-300 rounded-b-md"></div>
-                        <div class="h-2 mx-8 bg-gray-200 rounded-b-xl"></div>
+                        <div class="h-3.5 bg-gradient-to-b from-gray-300 to-gray-400 rounded-b-md"></div>
+                        <div class="h-2.5 mx-10 bg-gray-200 rounded-b-2xl"></div>
                     </div>
 
-                    <div class="absolute -top-8 -left-4 sm:-left-14 bg-white rounded-xl shadow-xl border border-gray-100 p-3 w-52 sm:w-60 hidden sm:block">
+                    <div class="absolute -top-7 -left-4 sm:-left-12 bg-white rounded-xl shadow-xl border border-gray-100 p-3 w-52 sm:w-60 hidden sm:block">
                         <div class="flex items-center gap-2">
                             <span class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0">
                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
@@ -145,17 +156,17 @@
                         </div>
                     </div>
 
-                    <div class="absolute bottom-0 right-0 sm:-right-6 w-36 sm:w-40 bg-white rounded-[1.5rem] border-[6px] border-gray-900 shadow-2xl p-2.5">
-                        <div class="w-10 h-1 rounded-full bg-gray-900 mx-auto mb-2"></div>
-                        <p class="text-[10px] font-semibold text-gray-800">INV-B01-00706</p>
-                        <span class="inline-block mt-1 text-[9px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">{{ __('PAID') }} &middot; &#8377;3,200</span>
-                        <p class="text-[9px] text-gray-400 mt-1">{{ __('Patel Kirana Store') }}</p>
-                        <div class="mt-2 space-y-1 text-[9px] text-gray-500">
+                    <div class="absolute bottom-0 right-2 sm:-right-10 w-44 sm:w-52 bg-white rounded-[2rem] border-[8px] border-gray-900 shadow-2xl p-3">
+                        <div class="w-12 h-1.5 rounded-full bg-gray-900 mx-auto mb-2.5"></div>
+                        <p class="text-xs font-semibold text-gray-800">INV-B01-00706</p>
+                        <span class="inline-block mt-1.5 text-[10px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">{{ __('PAID') }} &middot; &#8377;3,200</span>
+                        <p class="text-[10px] text-gray-400 mt-1.5">{{ __('Patel Kirana Store') }}</p>
+                        <div class="mt-2.5 space-y-1.5 text-[10px] text-gray-500">
                             <div class="flex justify-between"><span>Bateta 2 BAG</span><span>&#8377;1,300</span></div>
                             <div class="flex justify-between"><span>Dungali 1 BAG</span><span>&#8377;1,800</span></div>
                             <div class="flex justify-between"><span>{{ __('Transport') }}</span><span>&#8377;100</span></div>
                         </div>
-                        <span class="block mt-2 text-center bg-green-600 text-white text-[9px] font-semibold rounded-md py-1.5">{{ __('Share on WhatsApp') }}</span>
+                        <span class="block mt-2.5 text-center bg-green-600 text-white text-[10px] font-semibold rounded-md py-2">{{ __('Share on WhatsApp') }}</span>
                     </div>
                 </div>
             </div>

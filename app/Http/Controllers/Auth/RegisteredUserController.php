@@ -33,7 +33,17 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $companyId = $request->user()->company_id;
+        $company = $request->user()->company;
+        $companyId = $company->id;
+
+        if (! $company->canAddUser()) {
+            $plan = $company->subscription?->plan;
+
+            return back()
+                ->withInput()
+                ->with('status', "Your {$plan?->name} plan allows up to {$plan?->user_limit} logins. Upgrade your plan to add more.")
+                ->with('status_type', 'danger');
+        }
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],

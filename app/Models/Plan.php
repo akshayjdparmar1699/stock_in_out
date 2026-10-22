@@ -16,6 +16,8 @@ class Plan extends Model
 
     public const KEY_GOLD = 'gold';
 
+    public const KEY_PLATINUM = 'platinum';
+
     protected $fillable = [
         'key',
         'name',
@@ -24,6 +26,8 @@ class Plan extends Model
         'billing_period',
         'trial_days',
         'branch_limit',
+        'staff_limit',
+        'user_limit',
         'features',
         'is_popular',
         'sort_order',
@@ -53,5 +57,15 @@ class Plan extends Model
     public function hasUnlimitedBranches(): bool
     {
         return $this->branch_limit === null;
+    }
+
+    public function hasUnlimitedStaff(): bool
+    {
+        return $this->staff_limit === null;
+    }
+
+    public function hasUnlimitedUsers(): bool
+    {
+        return $this->user_limit === null;
     }
 }

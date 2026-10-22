@@ -23,7 +23,7 @@
                 'name' => $p->name,
                 'price' => $p->price,
                 'period' => $p->billing_period === 'trial' ? ('for ' . $p->trial_days . ' days') : ($p->billing_period === 'yearly' ? '/ year' : '/ month'),
-                'branchText' => $p->hasUnlimitedBranches() ? 'unlimited branches' : '1 branch',
+                'branchText' => $p->hasUnlimitedBranches() ? 'unlimited branches' : ($p->branch_limit == 1 ? '1 branch' : $p->branch_limit . ' branches'),
                 'cta' => $p->isFreeTrial() ? 'Start trial' : ('Continue with ' . $p->name),
             ])) }},
             get plan() { return this.plans.find((p) => p.id === this.selectedPlan); },
@@ -92,14 +92,14 @@
 
                 <p class="mt-4 text-white/80 text-sm lg:text-base max-w-xl mx-auto">
                     <span class="lg:hidden">{{ __('Try everything for :days days for just :price.', ['days' => $trialPlan->trial_days, 'price' => '₹'.$trialPlan->price]) }}</span>
-                    <span class="hidden lg:inline">{{ __('Try everything for :days days for just :price. Choose Silver for one branch or Gold for all your branches.', ['days' => $trialPlan->trial_days, 'price' => '₹'.$trialPlan->price]) }}</span>
+                    <span class="hidden lg:inline">{{ __('Try everything for :days days for just :price. Upgrade as your branches and team grow.', ['days' => $trialPlan->trial_days, 'price' => '₹'.$trialPlan->price]) }}</span>
                 </p>
             </div>
         </div>
 
         <!-- Plan cards -->
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 lg:-mt-24 relative">
-            <div class="flex flex-col-reverse gap-5 lg:grid lg:grid-cols-3 lg:gap-6 lg:items-stretch">
+            <div class="flex flex-col-reverse gap-5 lg:grid lg:grid-cols-4 lg:gap-5 lg:items-stretch">
                 @foreach ($plans as $plan)
                     @php $isGold = (bool) $plan->is_popular; @endphp
                     <div class="relative rounded-2xl p-6 flex flex-col {{ $isGold ? 'bg-gradient-to-br from-brand-600 to-brand-800 border-2 border-[#FFB020] shadow-xl lg:-mt-3' : 'bg-white border border-gray-200 shadow-sm' }}">
@@ -131,7 +131,12 @@
                         </div>
 
                         <span class="inline-block mt-3 self-start px-3 py-1 rounded-full text-xs font-medium {{ $plan->isFreeTrial() ? 'bg-green-50 text-green-700' : ($isGold ? 'bg-white/15 text-white' : 'bg-brand-50 text-brand-700') }}">
-                            {{ $plan->hasUnlimitedBranches() ? __('Unlimited branches') : __('1 branch') }}{{ $plan->isFreeTrial() ? __(' · :days days only', ['days' => $plan->trial_days]) : '' }}
+                            @if ($plan->hasUnlimitedBranches())
+                                {{ __('Unlimited branches') }}
+                            @else
+                                {{ trans_choice('{1} 1 branch|[2,*] :count branches', $plan->branch_limit, ['count' => $plan->branch_limit]) }}
+                            @endif
+                            {{ $plan->isFreeTrial() ? __(' · :days days only', ['days' => $plan->trial_days]) : '' }}
                         </span>
 
                         <div class="border-t mt-5 pt-4 space-y-2.5 flex-1 {{ $isGold ? 'border-white/15' : 'border-gray-100' }}">
@@ -168,6 +173,8 @@
                 $trial = $plans->firstWhere('key', \App\Models\Plan::KEY_FREE_TRIAL);
                 $silver = $plans->firstWhere('key', \App\Models\Plan::KEY_SILVER);
                 $gold = $plans->firstWhere('key', \App\Models\Plan::KEY_GOLD);
+                $platinum = $plans->firstWhere('key', \App\Models\Plan::KEY_PLATINUM);
+                $compareCols = [$trial, $silver, $gold, $platinum];
                 $check = '<svg class="w-4 h-4 text-green-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';
                 $dash = '<span class="text-gray-300">&middot;</span>';
             @endphp
@@ -178,29 +185,51 @@
                     <thead>
                         <tr class="border-b border-gray-100 text-left text-xs text-gray-400 uppercase tracking-wide">
                             <th class="px-6 py-4 font-medium">{{ __('Feature') }}</th>
-                            <th class="px-6 py-4 font-medium">{{ __('Free trial') }}</th>
-                            <th class="px-6 py-4 font-medium">{{ __('Silver') }}</th>
-                            <th class="px-6 py-4 font-medium bg-brand-50/60 text-brand-700">{{ __('Gold') }}</th>
+                            @foreach ($compareCols as $col)
+                                <th class="px-6 py-4 font-medium {{ $col->is_popular ? 'bg-brand-50/60 text-brand-700' : '' }}">{{ $col->name }}</th>
+                            @endforeach
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
                         <tr>
                             <td class="px-6 py-3.5 text-gray-700">{{ __('Price') }}</td>
-                            <td class="px-6 py-3.5">&#8377;{{ $trial->price }}</td>
-                            <td class="px-6 py-3.5">&#8377;{{ number_format($silver->price) }} / {{ __('year') }}</td>
-                            <td class="px-6 py-3.5 bg-brand-50/60 font-semibold text-brand-700">&#8377;{{ number_format($gold->price) }} / {{ __('year') }}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-6 py-3.5 {{ $col->is_popular ? 'bg-brand-50/60 font-semibold text-brand-700' : '' }}">
+                                    &#8377;{{ number_format($col->price) }}{{ $col->isFreeTrial() ? '' : ' / '.__('year') }}
+                                </td>
+                            @endforeach
                         </tr>
                         <tr>
                             <td class="px-6 py-3.5 text-gray-700">{{ __('How long') }}</td>
-                            <td class="px-6 py-3.5">{{ __(':days days', ['days' => $trial->trial_days]) }}</td>
-                            <td class="px-6 py-3.5">{{ __('Yearly') }}</td>
-                            <td class="px-6 py-3.5 bg-brand-50/60 font-semibold text-brand-700">{{ __('Yearly') }}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-6 py-3.5 {{ $col->is_popular ? 'bg-brand-50/60 font-semibold text-brand-700' : '' }}">
+                                    {{ $col->isFreeTrial() ? __(':days days', ['days' => $col->trial_days]) : __('Yearly') }}
+                                </td>
+                            @endforeach
                         </tr>
                         <tr>
                             <td class="px-6 py-3.5 text-gray-700">{{ __('Branches') }}</td>
-                            <td class="px-6 py-3.5">{{ $trial->branch_limit }}</td>
-                            <td class="px-6 py-3.5">{{ $silver->branch_limit }}</td>
-                            <td class="px-6 py-3.5 bg-brand-50/60 font-semibold text-brand-700">{{ __('Unlimited') }}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-6 py-3.5 {{ $col->is_popular ? 'bg-brand-50/60 font-semibold text-brand-700' : '' }}">
+                                    {{ $col->hasUnlimitedBranches() ? __('Unlimited') : $col->branch_limit }}
+                                </td>
+                            @endforeach
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-3.5 text-gray-700">{{ __('Staff and partners') }}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-6 py-3.5 {{ $col->is_popular ? 'bg-brand-50/60 font-semibold text-brand-700' : '' }}">
+                                    {{ $col->hasUnlimitedStaff() ? __('Unlimited') : __('Up to :n', ['n' => $col->staff_limit]) }}
+                                </td>
+                            @endforeach
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-3.5 text-gray-700">{{ __('Logins (users)') }}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-6 py-3.5 {{ $col->is_popular ? 'bg-brand-50/60 font-semibold text-brand-700' : '' }}">
+                                    {{ $col->hasUnlimitedUsers() ? __('Unlimited') : __('Up to :n', ['n' => $col->user_limit]) }}
+                                </td>
+                            @endforeach
                         </tr>
                         @foreach ([
                             __('Billing and invoices'),
@@ -211,62 +240,68 @@
                         ] as $row)
                             <tr>
                                 <td class="px-6 py-3.5 text-gray-700">{{ $row }}</td>
-                                <td class="px-6 py-3.5">{!! $check !!}</td>
-                                <td class="px-6 py-3.5">{!! $check !!}</td>
-                                <td class="px-6 py-3.5 bg-brand-50/60">{!! $check !!}</td>
+                                @foreach ($compareCols as $col)
+                                    <td class="px-6 py-3.5 {{ $col->is_popular ? 'bg-brand-50/60' : '' }}">{!! $check !!}</td>
+                                @endforeach
                             </tr>
                         @endforeach
                         <tr>
                             <td class="px-6 py-3.5 text-gray-700">{{ __('Separate stock for each branch') }}</td>
-                            <td class="px-6 py-3.5">{!! $dash !!}</td>
-                            <td class="px-6 py-3.5">{!! $dash !!}</td>
-                            <td class="px-6 py-3.5 bg-brand-50/60">{!! $check !!}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-6 py-3.5 {{ $col->is_popular ? 'bg-brand-50/60' : '' }}">{!! $col->hasUnlimitedBranches() || $col->branch_limit > 1 ? $check : $dash !!}</td>
+                            @endforeach
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             <!-- Mobile table -->
-            <div class="lg:hidden mt-6 bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div class="lg:hidden mt-6 bg-white rounded-2xl border border-gray-100 overflow-hidden overflow-x-auto scrollbar-hide">
                 <table class="w-full text-xs">
                     <thead>
                         <tr class="border-b border-gray-100 text-left text-gray-400">
                             <th class="px-3 py-3 font-medium">{{ __('Feature') }}</th>
-                            <th class="px-3 py-3 font-medium">{{ __('Free') }}</th>
-                            <th class="px-3 py-3 font-medium">{{ __('Silver') }}</th>
-                            <th class="px-3 py-3 font-medium text-brand-700">{{ __('Gold') }}</th>
+                            @foreach ($compareCols as $col)
+                                <th class="px-3 py-3 font-medium whitespace-nowrap {{ $col->is_popular ? 'text-brand-700' : '' }}">{{ $col->name }}</th>
+                            @endforeach
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50">
                         <tr>
                             <td class="px-3 py-3 text-gray-700">{{ __('Branches') }}</td>
-                            <td class="px-3 py-3">{{ $trial->branch_limit }}</td>
-                            <td class="px-3 py-3">{{ $silver->branch_limit }}</td>
-                            <td class="px-3 py-3 font-semibold text-brand-700">&#8734;</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-3 py-3 {{ $col->is_popular ? 'font-semibold text-brand-700' : '' }}">{{ $col->hasUnlimitedBranches() ? __('Unlimited') : $col->branch_limit }}</td>
+                            @endforeach
+                        </tr>
+                        <tr>
+                            <td class="px-3 py-3 text-gray-700">{{ __('Staff') }}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-3 py-3 {{ $col->is_popular ? 'font-semibold text-brand-700' : '' }}">{{ $col->hasUnlimitedStaff() ? __('Unlimited') : $col->staff_limit }}</td>
+                            @endforeach
+                        </tr>
+                        <tr>
+                            <td class="px-3 py-3 text-gray-700">{{ __('Logins') }}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-3 py-3 {{ $col->is_popular ? 'font-semibold text-brand-700' : '' }}">{{ $col->hasUnlimitedUsers() ? __('Unlimited') : $col->user_limit }}</td>
+                            @endforeach
                         </tr>
                         <tr>
                             <td class="px-3 py-3 text-gray-700">{{ __('How long') }}</td>
-                            <td class="px-3 py-3">{{ __(':days days', ['days' => $trial->trial_days]) }}</td>
-                            <td class="px-3 py-3">{{ __('Yearly') }}</td>
-                            <td class="px-3 py-3 font-semibold text-brand-700">{{ __('Yearly') }}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-3 py-3 {{ $col->is_popular ? 'font-semibold text-brand-700' : '' }}">{{ $col->isFreeTrial() ? __(':days days', ['days' => $col->trial_days]) : __('Yearly') }}</td>
+                            @endforeach
                         </tr>
                         <tr>
                             <td class="px-3 py-3 text-gray-700">{{ __('Billing and stock') }}</td>
-                            <td class="px-3 py-3">{!! $check !!}</td>
-                            <td class="px-3 py-3">{!! $check !!}</td>
-                            <td class="px-3 py-3">{!! $check !!}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-3 py-3 text-gray-700">{{ __('Alerts and reminders') }}</td>
-                            <td class="px-3 py-3">{!! $check !!}</td>
-                            <td class="px-3 py-3">{!! $check !!}</td>
-                            <td class="px-3 py-3">{!! $check !!}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-3 py-3">{!! $check !!}</td>
+                            @endforeach
                         </tr>
                         <tr>
                             <td class="px-3 py-3 text-gray-700">{{ __('Stock per branch') }}</td>
-                            <td class="px-3 py-3">{!! $dash !!}</td>
-                            <td class="px-3 py-3">{!! $dash !!}</td>
-                            <td class="px-3 py-3">{!! $check !!}</td>
+                            @foreach ($compareCols as $col)
+                                <td class="px-3 py-3">{!! $col->hasUnlimitedBranches() || $col->branch_limit > 1 ? $check : $dash !!}</td>
+                            @endforeach
                         </tr>
                     </tbody>
                 </table>
@@ -279,9 +314,9 @@
 
             @php
                 $faqs = [
-                    ['q' => __('What happens after 14 days?'), 'a' => __('Your free trial ends and you choose Silver or Gold to keep working. All your bills, stock and customers stay exactly as they are.')],
-                    ['q' => __('Can I switch from Silver to Gold later?'), 'a' => __('Yes. Upgrade any time when you open a new branch. Your existing branch and data move over automatically.')],
-                    ['q' => __('What does "1 branch" mean in Silver?'), 'a' => __('You can run one shop or godown with full billing and stock. Gold lets you add as many branches as you need.')],
+                    ['q' => __('What happens after :days days?', ['days' => $trialPlan->trial_days]), 'a' => __('Your free trial ends and you choose a paid plan to keep working. All your bills, stock and customers stay exactly as they are.')],
+                    ['q' => __('Can I upgrade my plan later?'), 'a' => __('Yes. Upgrade any time you need more branches, staff or logins. Your existing data moves over automatically.')],
+                    ['q' => __('What does "1 branch" mean in Silver?'), 'a' => __('You can run one shop or godown with full billing and stock. Gold and Platinum let you add more branches as you grow.')],
                     ['q' => __('Why does the free trial cost :price?', ['price' => '₹'.$trialPlan->price]), 'a' => __('It is a small charge just to verify your payment method and keep the trial free of spam signups — not a subscription charge.')],
                 ];
             @endphp

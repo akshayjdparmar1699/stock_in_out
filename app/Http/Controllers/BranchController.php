@@ -38,6 +38,17 @@ class BranchController extends Controller
      */
     public function store(StoreBranchRequest $request): RedirectResponse
     {
+        $company = auth()->user()->company;
+
+        if (! $company->canAddBranch()) {
+            $plan = $company->subscription?->plan;
+
+            return back()
+                ->withInput()
+                ->with('status', "Your {$plan?->name} plan allows up to {$plan?->branch_limit} branch(es). Upgrade your plan to add more.")
+                ->with('status_type', 'danger');
+        }
+
         $data = $request->validated();
         $companyId = auth()->user()->company_id;
         $copyFromBranchId = $request->boolean('copy_items') ? $data['copy_from_branch_id'] : null;

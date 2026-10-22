@@ -69,6 +69,17 @@ class StaffMemberController extends Controller
 
     public function store(StoreStaffMemberRequest $request): RedirectResponse
     {
+        $company = auth()->user()->company;
+
+        if (! $company->canAddStaffMember()) {
+            $plan = $company->subscription?->plan;
+
+            return back()
+                ->withInput()
+                ->with('status', "Your {$plan?->name} plan allows up to {$plan?->staff_limit} staff and partners. Upgrade your plan to add more.")
+                ->with('status_type', 'danger');
+        }
+
         $data = $request->validated();
         $branchIds = $data['branch_ids'] ?? null;
         unset($data['branch_ids']);

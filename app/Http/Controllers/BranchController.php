@@ -41,7 +41,8 @@ class BranchController extends Controller
         $data = $request->validated();
         $companyId = auth()->user()->company_id;
         $copyFromBranchId = $request->boolean('copy_items') ? $data['copy_from_branch_id'] : null;
-        unset($data['copy_items'], $data['copy_from_branch_id'], $data['qr_code_photo'], $data['remove_qr_code']);
+        $data = $this->applyBankMode($data, $request);
+        unset($data['copy_items'], $data['copy_from_branch_id'], $data['qr_code_photo'], $data['remove_qr_code'], $data['bank_mode']);
 
         if ($request->hasFile('qr_code_photo')) {
             $data['qr_code_path'] = $request->file('qr_code_photo')->store('branch-qr-codes', 'public');
@@ -83,7 +84,8 @@ class BranchController extends Controller
         abort_unless($branch->company_id === auth()->user()->company_id, 404);
 
         $data = $request->validated();
-        unset($data['copy_items'], $data['copy_from_branch_id'], $data['qr_code_photo'], $data['remove_qr_code']);
+        $data = $this->applyBankMode($data, $request);
+        unset($data['copy_items'], $data['copy_from_branch_id'], $data['qr_code_photo'], $data['remove_qr_code'], $data['bank_mode']);
 
         if ($request->hasFile('qr_code_photo')) {
             if ($branch->qr_code_path) {
@@ -144,6 +146,25 @@ class BranchController extends Controller
         $branch->delete();
 
         return redirect()->route('branches.index')->with('status', "Branch \"{$branch->name}\" deleted.");
+    }
+
+    /**
+     * "Same as main bank" must actually clear any previously-saved bank
+     * fields, not just leave them untouched — $branch->update() only ever
+     * touches keys present in the array, so a disabled (unsent) field would
+     * otherwise silently leave the old value in place after switching back
+     * to the default.
+     */
+    private function applyBankMode(array $data, Request $request): array
+    {
+        if ($request->input('bank_mode') !== 'own') {
+            $data['bank_name'] = null;
+            $data['account_number'] = null;
+            $data['account_holder_name'] = null;
+            $data['ifsc_code'] = null;
+        }
+
+        return $data;
     }
 
     public function switch(Request $request): RedirectResponse

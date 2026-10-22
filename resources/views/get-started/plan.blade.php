@@ -101,36 +101,46 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 lg:-mt-24 relative">
             <div class="flex flex-col-reverse gap-5 lg:grid lg:grid-cols-4 lg:gap-5 lg:items-stretch">
                 @foreach ($plans as $plan)
-                    @php $isGold = (bool) $plan->is_popular; @endphp
-                    <div class="relative rounded-2xl p-6 flex flex-col {{ $isGold ? 'bg-gradient-to-br from-brand-600 to-brand-800 border-2 border-[#FFB020] shadow-xl lg:-mt-3' : 'bg-white border border-gray-200 shadow-sm' }}">
+                    @php
+                        $isGold = (bool) $plan->is_popular;
+                        $selectedCond = "selectedPlan === {$plan->id}";
+                        $fillClasses = $isGold
+                            ? 'bg-gradient-to-br from-brand-600 to-brand-800 border-[#FFB020] shadow-xl'
+                            : 'bg-gradient-to-br from-brand-600 to-brand-800 border-brand-800 shadow-xl';
+                        $accent = $isGold ? '#FFB020' : null;
+                    @endphp
+                    <div class="relative rounded-2xl p-6 flex flex-col border-2 transition-colors {{ $isGold ? 'lg:-mt-3' : '' }}"
+                        :class="{{ $selectedCond }} ? '{{ $fillClasses }}' : 'bg-white border-gray-200 shadow-sm'">
                         @if ($isGold)
                             <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FFB020] text-brand-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide whitespace-nowrap">{{ __('Most popular') }}</span>
                         @endif
 
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2.5 min-w-0">
-                                <span class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 {{ $plan->isFreeTrial() ? 'bg-green-50 text-green-700' : ($isGold ? 'bg-[#FFB020] text-white' : 'bg-gray-100 text-gray-600') }}">
+                                <span class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                                    :class="{{ $selectedCond }} ? '{{ $isGold ? 'bg-[#FFB020] text-white' : 'bg-white/15 text-white' }}' : '{{ $plan->isFreeTrial() ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600' }}'">
                                     {{ $plan->isFreeTrial() ? $plan->trial_days : strtoupper(substr($plan->name, 0, 1)) }}
                                 </span>
-                                <h3 class="font-bold text-lg truncate {{ $isGold ? 'text-white' : 'text-gray-900' }}">{{ $plan->name }}</h3>
+                                <h3 class="font-bold text-lg truncate" :class="{{ $selectedCond }} ? 'text-white' : 'text-gray-900'">{{ $plan->name }}</h3>
                             </div>
                             <button type="button" @click="selectedPlan = {{ $plan->id }}" aria-label="{{ __('Select') }} {{ $plan->name }}"
                                 class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
-                                :class="selectedPlan === {{ $plan->id }} ? '{{ $isGold ? 'border-[#FFB020]' : 'border-brand-600' }}' : '{{ $isGold ? 'border-white/30' : 'border-gray-300' }}'">
-                                <span x-show="selectedPlan === {{ $plan->id }}" style="display:none" class="w-2.5 h-2.5 rounded-full {{ $isGold ? 'bg-[#FFB020]' : 'bg-brand-600' }}"></span>
+                                :class="{{ $selectedCond }} ? '{{ $isGold ? 'border-[#FFB020]' : 'border-white' }}' : 'border-gray-300'">
+                                <span x-show="{{ $selectedCond }}" style="display:none" class="w-2.5 h-2.5 rounded-full {{ $isGold ? "bg-[#FFB020]" : 'bg-white' }}"></span>
                             </button>
                         </div>
 
-                        <p class="text-sm mt-3 {{ $isGold ? 'text-white/80' : 'text-gray-500' }}">{{ $plan->tagline }}</p>
+                        <p class="text-sm mt-3" :class="{{ $selectedCond }} ? 'text-white/80' : 'text-gray-500'">{{ $plan->tagline }}</p>
 
                         <div class="mt-5 flex items-end gap-1.5 flex-wrap">
-                            <span class="text-3xl font-extrabold {{ $isGold ? 'text-white' : 'text-gray-900' }}">&#8377;{{ number_format($plan->price) }}</span>
-                            <span class="text-sm mb-1 {{ $isGold ? 'text-white/70' : 'text-gray-400' }}">
+                            <span class="text-3xl font-extrabold" :class="{{ $selectedCond }} ? 'text-white' : 'text-gray-900'">&#8377;{{ number_format($plan->price) }}</span>
+                            <span class="text-sm mb-1" :class="{{ $selectedCond }} ? 'text-white/70' : 'text-gray-400'">
                                 {{ $plan->isFreeTrial() ? __('for :days days', ['days' => $plan->trial_days]) : ($plan->billing_period === 'yearly' ? __('/ year') : __('/ month')) }}
                             </span>
                         </div>
 
-                        <span class="inline-block mt-3 self-start px-3 py-1 rounded-full text-xs font-medium {{ $plan->isFreeTrial() ? 'bg-green-50 text-green-700' : ($isGold ? 'bg-white/15 text-white' : 'bg-brand-50 text-brand-700') }}">
+                        <span class="inline-block mt-3 self-start px-3 py-1 rounded-full text-xs font-medium"
+                            :class="{{ $selectedCond }} ? 'bg-white/15 text-white' : '{{ $plan->isFreeTrial() ? 'bg-green-50 text-green-700' : 'bg-brand-50 text-brand-700' }}'">
                             @if ($plan->hasUnlimitedBranches())
                                 {{ __('Unlimited branches') }}
                             @else
@@ -139,17 +149,18 @@
                             {{ $plan->isFreeTrial() ? __(' · :days days only', ['days' => $plan->trial_days]) : '' }}
                         </span>
 
-                        <div class="border-t mt-5 pt-4 space-y-2.5 flex-1 {{ $isGold ? 'border-white/15' : 'border-gray-100' }}">
+                        <div class="border-t mt-5 pt-4 space-y-2.5 flex-1" :class="{{ $selectedCond }} ? 'border-white/15' : 'border-gray-100'">
                             @foreach ($plan->features as $feature)
-                                <div class="flex items-start gap-2 text-sm {{ $isGold ? 'text-white/90' : 'text-gray-700' }}">
-                                    <svg class="w-4 h-4 mt-0.5 shrink-0 {{ $isGold ? 'text-[#FFB020]' : 'text-green-600' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                                <div class="flex items-start gap-2 text-sm" :class="{{ $selectedCond }} ? 'text-white/90' : 'text-gray-700'">
+                                    <svg class="w-4 h-4 mt-0.5 shrink-0" :class="{{ $selectedCond }} ? '{{ $isGold ? 'text-[#FFB020]' : 'text-white' }}' : 'text-green-600'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                                     <span>{{ $feature }}</span>
                                 </div>
                             @endforeach
                         </div>
 
                         <button type="button" @click="selectedPlan = {{ $plan->id }}"
-                            class="mt-6 w-full py-2.5 rounded-lg font-semibold text-sm transition-colors {{ $isGold ? 'bg-[#FFB020] text-brand-900 hover:brightness-95' : 'bg-white border-2 border-brand-600 text-brand-700 hover:bg-brand-50' }}">
+                            class="mt-6 w-full py-2.5 rounded-lg font-semibold text-sm transition-colors"
+                            :class="{{ $selectedCond }} ? '{{ $isGold ? 'bg-[#FFB020] text-brand-900 hover:brightness-95' : 'bg-white text-brand-700 hover:bg-brand-50' }}' : 'bg-white border-2 border-brand-600 text-brand-700 hover:bg-brand-50'">
                             {{ $plan->isFreeTrial() ? __('Start trial for :price', ['price' => '₹'.$plan->price]) : __('Choose :name', ['name' => $plan->name]) }}
                         </button>
                     </div>

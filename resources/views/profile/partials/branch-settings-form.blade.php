@@ -25,7 +25,8 @@
                         <p class="text-sm font-semibold text-gray-800 truncate">{{ \App\Services\BranchContext::current()?->name }}</p>
                     </div>
                 </div>
-                <select name="branch_id" id="profile-branch-switcher" onchange="window.showCubeLoader(); this.form.submit()"
+                <select name="branch_id" id="profile-branch-switcher-desktop"
+                    onchange="document.getElementById('profile-branch-switcher-mobile').value = this.value; window.showCubeLoader(); this.form.submit()"
                     class="w-56 shrink-0 rounded-lg border-gray-300 text-sm focus:border-brand-500 focus:ring-brand-500">
                     @foreach (\App\Models\Branch::where('company_id', Auth::user()->company_id)->orderBy('name')->get() as $branch)
                         <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>
@@ -35,7 +36,19 @@
                 </select>
             </div>
 
-            <select name="branch_id" onchange="window.showCubeLoader(); this.form.submit()"
+            {{--
+                There are two <select name="branch_id"> here (this one and
+                the desktop one above) because the desktop and mobile
+                layouts look different enough that one shared element
+                doesn't fit both — CSS only hides one of them, it doesn't
+                remove it from the form. Without the sync in each onchange
+                below, changing the visible one still submits both selects
+                under the same name, and the untouched hidden one (still on
+                its old value) would silently win and the branch would
+                never actually switch.
+            --}}
+            <select name="branch_id" id="profile-branch-switcher-mobile"
+                onchange="document.getElementById('profile-branch-switcher-desktop').value = this.value; window.showCubeLoader(); this.form.submit()"
                 class="lg:hidden w-full rounded-lg border-gray-300 text-sm focus:border-brand-500 focus:ring-brand-500">
                 @foreach (\App\Models\Branch::where('company_id', Auth::user()->company_id)->orderBy('name')->get() as $branch)
                     <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>

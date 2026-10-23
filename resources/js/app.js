@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs';
+import jsQR from 'jsqr';
 import {
     Chart,
     BarController,
@@ -564,6 +565,86 @@ window.listTable = function () {
                 this.loading = false;
                 hideAjaxSpinner(this.$refs.content);
             }
+        },
+    };
+};
+
+/**
+ * The branch "Payment QR code" upload — shows an instant preview of the
+ * picked image, and decodes it client-side with jsQR so whoever's
+ * uploading can see the UPI ID/name the QR actually points to before
+ * saving, instead of trusting the picture alone (a wrong or stale QR
+ * photo here would mean every customer scanning it pays the wrong
+ * account).
+ */
+window.qrCodeUpload = function () {
+    return {
+        previewUrl: null,
+        upiId: null,
+        upiName: null,
+        decodeError: null,
+        decoding: false,
+
+        onFileChange(event) {
+            const file = event.target.files[0];
+            this.previewUrl = null;
+            this.upiId = null;
+            this.upiName = null;
+            this.decodeError = null;
+            if (!file) return;
+
+            this.decoding = true;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.previewUrl = e.target.result;
+                const img = new Image();
+                img.onload = () => {
+                    this.decodeQr(img);
+                    this.decoding = false;
+                };
+                img.onerror = () => { this.decoding = false; };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        },
+
+        decodeQr(img) {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            let imageData;
+            try {
+                imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            } catch (e) {
+                this.decodeError = 'Could not read this image.';
+                return;
+            }
+
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (!code || !code.data) {
+                this.decodeError = 'Could not find a QR code in this image.';
+                return;
+            }
+
+            const data = code.data;
+            const queryIndex = data.indexOf('?');
+            if (!data.toLowerCase().startsWith('upi://') || queryIndex === -1) {
+                this.decodeError = "This doesn't look like a UPI payment QR code.";
+                return;
+            }
+
+            const params = new URLSearchParams(data.substring(queryIndex + 1));
+            const pa = params.get('pa');
+            if (!pa) {
+                this.decodeError = "This doesn't look like a UPI payment QR code.";
+                return;
+            }
+
+            this.upiId = pa;
+            this.upiName = params.get('pn');
         },
     };
 };

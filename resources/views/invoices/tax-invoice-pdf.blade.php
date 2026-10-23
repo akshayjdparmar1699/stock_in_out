@@ -68,7 +68,7 @@
         $roundOff = round($roundedTotal - $preRoundTotal, 2);
 
         $hsnSummary = $invoice->items
-            ->groupBy(fn ($line) => $line->hsn_code ?: '—')
+            ->groupBy(fn ($line) => $line->hsn_code ?: '')
             ->map(function ($lines, $hsn) {
                 return [
                     'hsn_code' => $hsn,
@@ -106,9 +106,11 @@
                 <td class="meta-box">
                     <div><span class="info-label">Invoice #</span><br><strong>{{ $invoice->invoice_number }}</strong></div>
                     <div style="margin-top: 6px;"><span class="info-label">Invoice Date</span><br>{{ $invoice->invoice_date->format('d M Y') }}</div>
-                    <div style="margin-top: 6px;"><span class="info-label">Place of Supply</span><br>
-                        {{ $customer?->state ?: ($branch->state ?: '—') }}@if ($customerStateCode ?? $branchStateCode) (Code {{ $customerStateCode ?? $branchStateCode }})@endif
-                    </div>
+                    @if ($customer?->state || $branch->state)
+                        <div style="margin-top: 6px;"><span class="info-label">Place of Supply</span><br>
+                            {{ $customer?->state ?: $branch->state }}@if ($customerStateCode ?? $branchStateCode) (Code {{ $customerStateCode ?? $branchStateCode }})@endif
+                        </div>
+                    @endif
                     <div style="margin-top: 6px;"><span class="info-label">Reverse Charge</span><br>No</div>
                 </td>
             </tr>
@@ -174,17 +176,17 @@
                     <tr>
                         <td>{{ $index + 1 }}</td>
                         <td class="item-name">{{ $line->item->name }}</td>
-                        <td>{{ $line->hsn_code ?: '—' }}</td>
+                        <td>{{ $line->hsn_code }}</td>
                         <td>{{ rtrim(rtrim((string) $line->quantity, '0'), '.') }} {{ $line->displayUnit() }}</td>
                         <td>₹{{ number_format($line->unit_price, 2) }}</td>
                         <td>₹{{ number_format($line->total, 2) }}</td>
                         @if ($isSameState)
-                            <td>{{ $line->gst_rate ? number_format($line->gst_rate / 2, 2).'%' : '—' }}</td>
+                            <td>{{ number_format(($line->gst_rate ?? 0) / 2, 2) }}%</td>
                             <td>₹{{ number_format($line->cgst_amount, 2) }}</td>
-                            <td>{{ $line->gst_rate ? number_format($line->gst_rate / 2, 2).'%' : '—' }}</td>
+                            <td>{{ number_format(($line->gst_rate ?? 0) / 2, 2) }}%</td>
                             <td>₹{{ number_format($line->sgst_amount, 2) }}</td>
                         @else
-                            <td>{{ $line->gst_rate ? number_format($line->gst_rate, 2).'%' : '—' }}</td>
+                            <td>{{ number_format($line->gst_rate ?? 0, 2) }}%</td>
                             <td>₹{{ number_format($line->igst_amount, 2) }}</td>
                         @endif
                         <td>₹{{ number_format($lineTotal, 2) }}</td>

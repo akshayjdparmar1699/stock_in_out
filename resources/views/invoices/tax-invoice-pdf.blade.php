@@ -6,28 +6,29 @@
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #1f2937; margin: 0; padding: 18px; }
         .invoice-box { border: 1.5px solid #1f2937; padding: 18px; }
-        .top-row { width: 100%; }
-        .top-row td { vertical-align: top; }
-        .tax-invoice-title { font-size: 18px; font-weight: bold; text-align: center; letter-spacing: .04em; margin: 0 0 4px 0; }
-        .original-tag { text-align: center; font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
-        .divider { border-top: 1.5px solid #1f2937; margin: 8px 0; }
         table { width: 100%; border-collapse: collapse; }
-        .info-table td { vertical-align: top; padding: 6px 0; }
-        .info-table .meta-box { text-align: right; white-space: nowrap; }
+        .title-row td { vertical-align: middle; }
+        .tax-invoice-title { font-size: 18px; font-weight: bold; letter-spacing: .04em; }
+        .original-box { display: inline-block; border: 1px solid #1f2937; padding: 4px 10px; font-size: 9px; font-weight: bold; letter-spacing: .03em; }
+        .divider { border-top: 1.5px solid #1f2937; margin: 10px 0; }
+        .info-table td { vertical-align: top; }
         .info-label { color: #6b7280; font-size: 9px; text-transform: uppercase; margin-bottom: 2px; }
+        .seller-logo { width: 38px; height: 38px; border-radius: 8px; }
         .seller-name { font-size: 15px; font-weight: bold; margin: 0 0 2px 0; }
-        .party-box { border: 1px solid #9ca3af; padding: 8px 10px; width: 48%; }
-        .party-row { width: 100%; }
+        .meta-grid { border: 1px solid #1f2937; width: 100%; margin-bottom: 6px; }
+        .meta-grid td { padding: 5px 8px; width: 50%; }
+        .meta-grid td + td { border-left: 1px solid #1f2937; }
+        .party-box { border: 1px solid #1f2937; padding: 8px 10px; width: 48%; }
         .party-row td { vertical-align: top; }
-        .items-table { border: 1px solid #9ca3af; margin-top: 12px; font-size: 10px; }
-        .items-table th { background: #f3f4f6; text-align: center; padding: 5px 4px; font-size: 9px; text-transform: uppercase; color: #6b7280; border: 1px solid #9ca3af; }
-        .items-table td { padding: 5px 4px; border: 1px solid #d1d5db; text-align: center; }
+        .items-table { border: 1px solid #1f2937; margin-top: 12px; font-size: 10px; }
+        .items-table th { background: #f3f4f6; text-align: center; padding: 5px 4px; font-size: 9px; text-transform: uppercase; color: #6b7280; border: 1px solid #1f2937; }
+        .items-table td { padding: 5px 4px; border: 1px solid #9ca3af; text-align: center; }
         .items-table td.item-name { text-align: left; }
-        .items-table tfoot td { font-weight: bold; background: #f9fafb; }
-        .hsn-table { border: 1px solid #9ca3af; margin-top: 14px; font-size: 10px; }
-        .hsn-table th { background: #f3f4f6; text-align: center; padding: 5px 4px; font-size: 9px; text-transform: uppercase; color: #6b7280; border: 1px solid #9ca3af; }
-        .hsn-table td { padding: 5px 4px; border: 1px solid #d1d5db; text-align: center; }
-        .hsn-table tfoot td { font-weight: bold; background: #f9fafb; }
+        .items-table tfoot td { font-weight: bold; background: #f9fafb; border: 1px solid #1f2937; }
+        .hsn-table { border: 1px solid #1f2937; margin-top: 14px; font-size: 10px; }
+        .hsn-table th { background: #f3f4f6; text-align: center; padding: 5px 4px; font-size: 9px; text-transform: uppercase; color: #6b7280; border: 1px solid #1f2937; }
+        .hsn-table td { padding: 5px 4px; border: 1px solid #9ca3af; text-align: center; }
+        .hsn-table tfoot td { font-weight: bold; background: #f9fafb; border: 1px solid #1f2937; }
         .words-box { margin-top: 10px; border: 1px solid #9ca3af; padding: 8px 10px; font-size: 10.5px; }
         .totals { width: 260px; float: right; margin-top: 12px; }
         .totals td { padding: 4px 8px; }
@@ -82,41 +83,67 @@
     @endphp
 
     <div class="invoice-box">
-        <div class="tax-invoice-title">TAX INVOICE</div>
-        <div class="original-tag">Original for Recipient</div>
+        <table class="title-row">
+            <tr>
+                <td style="text-align: left;"><span class="tax-invoice-title">TAX INVOICE</span></td>
+                <td style="text-align: right;"><span class="original-box">ORIGINAL FOR RECIPIENT</span></td>
+            </tr>
+        </table>
         <div class="divider"></div>
 
         <table class="info-table">
             <tr>
-                <td style="width: 55%;">
-                    <div class="seller-name">{{ $branch->name }}</div>
-                    @if ($branch->address)
-                        <div>{{ $branch->address }}</div>
-                    @endif
-                    @if ($branch->phone)
-                        <div>{{ $branch->phone }}</div>
-                    @endif
-                    @if ($branch->gstin)
-                        <div style="margin-top: 4px;"><strong>GSTIN:</strong> {{ $branch->gstin }}</div>
-                    @endif
-                    @if ($branch->state)
-                        <div><strong>State:</strong> {{ $branch->state }}@if ($branchStateCode) (Code {{ $branchStateCode }})@endif</div>
-                    @endif
+                <td style="width: 58%;">
+                    <table>
+                        <tr>
+                            <td style="width: 46px; vertical-align: top;">
+                                <img class="seller-logo" src="{{ public_path('icons/icon-192.png') }}" alt="">
+                            </td>
+                            <td style="vertical-align: top;">
+                                <div class="seller-name">{{ $branch->name }}</div>
+                                @if ($branch->address || $branch->state)
+                                    <div>{{ trim(($branch->address ?: '').($branch->address && $branch->state ? ', ' : '').($branch->state ?: ''), ', ') }}</div>
+                                @endif
+                                @if ($branch->phone)
+                                    <div>{{ $branch->phone }}</div>
+                                @endif
+                                @if ($branch->gstin || $branch->state)
+                                    <div style="margin-top: 4px;">
+                                        @if ($branch->gstin)
+                                            <strong>GSTIN:</strong> {{ $branch->gstin }}
+                                        @endif
+                                        @if ($branch->gstin && $branch->state) &middot; @endif
+                                        @if ($branch->state)
+                                            <strong>State:</strong> {{ $branch->state }}@if ($branchStateCode) ({{ $branchStateCode }})@endif
+                                        @endif
+                                    </div>
+                                @endif
+                            </td>
+                        </tr>
+                    </table>
                 </td>
-                <td class="meta-box">
-                    <div><span class="info-label">Invoice #</span><br><strong>{{ $invoice->invoice_number }}</strong></div>
-                    <div style="margin-top: 6px;"><span class="info-label">Invoice Date</span><br>{{ $invoice->invoice_date->format('d M Y') }}</div>
-                    @if ($customer?->state || $branch->state)
-                        <div style="margin-top: 6px;"><span class="info-label">Place of Supply</span><br>
-                            {{ $customer?->state ?: $branch->state }}@if ($customerStateCode ?? $branchStateCode) (Code {{ $customerStateCode ?? $branchStateCode }})@endif
-                        </div>
-                    @endif
-                    <div style="margin-top: 6px;"><span class="info-label">Reverse Charge</span><br>No</div>
+                <td style="width: 42%; vertical-align: top;">
+                    <table class="meta-grid">
+                        <tr>
+                            <td><span class="info-label">Invoice No.</span><br><strong>{{ $invoice->invoice_number }}</strong></td>
+                            <td><span class="info-label">Date</span><br>{{ $invoice->invoice_date->format('d M Y') }}</td>
+                        </tr>
+                    </table>
+                    <table class="meta-grid">
+                        <tr>
+                            <td><span class="info-label">Place of Supply</span><br>
+                                @if ($customer?->state || $branch->state)
+                                    {{ $customer?->state ?: $branch->state }}@if ($customerStateCode ?? $branchStateCode) ({{ $customerStateCode ?? $branchStateCode }})@endif
+                                @endif
+                            </td>
+                            <td><span class="info-label">Reverse Charge</span><br>No</td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
         </table>
 
-        <table class="party-row" style="margin-top: 4px;">
+        <table class="party-row" style="margin-top: 10px;">
             <tr>
                 <td style="width: 48%;">
                     <div class="party-box">

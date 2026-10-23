@@ -461,25 +461,24 @@
                 x-show="selectedCustomer && selectedCustomer.due > 0" style="display: none;"
                 x-data="{ dueType: 'paid', dueMode: 'cash' }">
                 <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 space-y-4">
-                    <h3 class="font-semibold text-gray-900">{{ __('Receive payment against previous due') }}</h3>
+                    <h3 class="font-semibold text-gray-900">{{ __('Record payment') }}</h3>
 
-                    <form method="POST" :action="'{{ url('/customers') }}/' + (selectedCustomer ? selectedCustomer.id : '') + '/payments'" class="space-y-3">
+                    <form method="POST" :action="'{{ url('/customers') }}/' + (selectedCustomer ? selectedCustomer.id : '') + '/payments'" class="space-y-4">
                         @csrf
+                        <input type="hidden" name="type" :value="dueType">
                         <input type="hidden" name="mode" :value="dueMode">
 
-                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-                            <label class="inline-flex items-center gap-2 text-gray-700">
-                                <input type="radio" name="type" value="paid" x-model="dueType" class="text-brand-600 focus:ring-brand-500">
-                                {{ __('We Received From Them') }}
-                            </label>
-                            <label class="inline-flex items-center gap-2 text-gray-700">
-                                <input type="radio" name="type" value="received" x-model="dueType" class="text-brand-600 focus:ring-brand-500">
-                                {{ __('Refund Given To Them') }}
-                            </label>
+                        <div class="inline-flex rounded-lg border border-gray-200 overflow-hidden text-sm w-full">
+                            <button type="button" @click="dueType = 'paid'" class="flex-1 px-3 py-1.5 font-medium" :class="dueType === 'paid' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600'">
+                                {{ __('We received from them') }}
+                            </button>
+                            <button type="button" @click="dueType = 'received'" class="flex-1 px-3 py-1.5 font-medium border-l border-gray-200" :class="dueType === 'received' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600'">
+                                {{ __('Refund given to them') }}
+                            </button>
                         </div>
 
                         <div>
-                            <x-input-label :value="__('Amount')" />
+                            <x-input-label x-text="dueType === 'received' ? '{{ __('Refund amount') }}' : '{{ __('Amount received') }}'" />
                             <div class="relative mt-1">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
                                 <input type="number" step="0.01" min="0.01" name="amount"
@@ -487,23 +486,26 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-3 gap-2" x-show="dueType === 'paid'">
                             @foreach (['cash' => __('Cash'), 'upi' => __('UPI'), 'bank' => __('Bank')] as $value => $label)
                                 <button type="button" @click="dueMode = '{{ $value }}'"
-                                    class="px-2 py-1.5 text-sm font-medium rounded-md border-2"
-                                    :class="dueMode === '{{ $value }}' ? 'border-brand-600 text-brand-700 bg-brand-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
+                                    class="px-3 py-2 text-sm font-medium rounded-md border"
+                                    :class="dueMode === '{{ $value }}' ? 'bg-brand-50 border-brand-500 text-brand-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'">
                                     {{ $label }}
                                 </button>
                             @endforeach
                         </div>
 
-                        <x-text-input name="note" type="text" class="w-full" placeholder="{{ __('Note (optional)') }}" />
+                        <div>
+                            <x-input-label :value="__('Note (optional)')" />
+                            <x-text-input name="note" type="text" class="mt-1 w-full" placeholder="{{ __('e.g. Paid by Rameshbhai') }}" />
+                        </div>
 
                         <button type="submit" class="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold text-sm rounded-lg py-2.5">
-                            {{ __('Save payment') }}
+                            {{ __('Save') }}
                         </button>
 
-                        <p class="text-xs text-gray-400 text-center">{{ __('Settles their older due — separate from this new bill.') }}</p>
+                        <p class="text-xs text-gray-400 text-center">{{ __('Payment is adjusted against their oldest unpaid bill first.') }}</p>
                     </form>
                 </div>
             </div>

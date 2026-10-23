@@ -121,8 +121,15 @@ class InvoiceController extends Controller
             ->paginate(PerPagePreference::get())
             ->withQueryString();
 
+        // Batched once for the whole page, not per row — the share text
+        // needs each customer's running due amount, and calling
+        // Customer::dueAmount() per invoice would add two SUM queries for
+        // every row just to build a WhatsApp message nobody may even tap
+        // "Share" for.
+        $customerDues = Customer::dueAmountsFor($invoices->pluck('customer_id'));
+
         if ($request->ajax()) {
-            return view('invoices.partials.table', ['invoices' => $invoices]);
+            return view('invoices.partials.table', ['invoices' => $invoices, 'customerDues' => $customerDues]);
         }
 
         return view('invoices.index', [
@@ -130,6 +137,7 @@ class InvoiceController extends Controller
             'activeQuickFilter' => $activeQuickFilter,
             'status' => $status ?: 'all',
             'stats' => $stats,
+            'customerDues' => $customerDues,
         ]);
     }
 

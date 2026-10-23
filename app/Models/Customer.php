@@ -66,6 +66,41 @@ class Customer extends Model
     }
 
     /**
+     * Batched dueAmount() for a list of customers at once — two aggregate
+     * queries total instead of two queries per customer, for a screen
+     * (like the invoices list) that needs many customers' running balance
+     * without an N+1 for every row shown.
+     */
+    public static function dueAmountsFor(iterable $customerIds): \Illuminate\Support\Collection
+    {
+        $ids = collect($customerIds)->filter()->unique()->values();
+
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        $invoiceSums = Invoice::whereIn('customer_id', $ids)
+            ->selectRaw('customer_id, SUM(total) as total, SUM(paid_amount) as paid')
+            ->groupBy('customer_id')
+            ->get()
+            ->keyBy('customer_id');
+
+        return static::query()->whereIn('id', $ids)->get(['id', 'opening_balance', 'credit_balance'])
+            ->mapWithKeys(function (self $customer) use ($invoiceSums) {
+                $sums = $invoiceSums->get($customer->id);
+                $due = round(
+                    (float) $customer->opening_balance
+                    + (float) ($sums->total ?? 0)
+                    - (float) ($sums->paid ?? 0)
+                    - (float) $customer->credit_balance,
+                    2
+                );
+
+                return [$customer->id => $due];
+            });
+    }
+
+    /**
      * True when a credit limit is set for this customer and their current
      * due has crossed it — a nudge to collect payment before extending
      * them any more credit.

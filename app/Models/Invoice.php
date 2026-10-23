@@ -90,7 +90,14 @@ class Invoice extends Model
         return $this->customer?->name ?? $this->guest_customer_name ?? 'Walk-in Customer';
     }
 
-    public function whatsappMessage(): string
+    /**
+     * $customerDue lets a caller listing many invoices at once (the
+     * invoices index page) pass in an already-batched due amount instead
+     * of this hitting Customer::dueAmount()'s two SUM queries again for
+     * every single row — pass null (the default) to have it computed
+     * live, which is fine for a one-off call like the invoice show page.
+     */
+    public function whatsappMessage(?float $customerDue = null): string
     {
         if ($this->isGuestCustomer()) {
             return <<<TEXT
@@ -107,7 +114,7 @@ class Invoice extends Model
             TEXT;
         }
 
-        $customerDue = $this->customer->dueAmount();
+        $customerDue ??= $this->customer->dueAmount();
         $totalDueLine = $customerDue < 0
             ? 'Total Balance Due: ₹'.number_format(abs($customerDue), 2).' (in credit)'
             : 'Total Balance Due: ₹'.number_format($customerDue, 2);

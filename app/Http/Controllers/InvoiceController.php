@@ -353,7 +353,7 @@ class InvoiceController extends Controller
     {
         abort_unless($this->belongsToCurrentCompany($invoice), 404);
 
-        $invoice->load('items.item', 'customer');
+        $invoice->load('items.item', 'customer', 'payments.user');
 
         $alreadyOnInvoice = $invoice->items->groupBy('item_id')
             ->map(fn ($lines) => $lines->sum('base_quantity'));

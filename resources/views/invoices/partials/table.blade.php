@@ -39,8 +39,8 @@
                     </td>
                     <td class="px-6 py-4" @click.stop>
                         <div class="flex items-center justify-end gap-1.5" x-data="{ menuOpen: false }">
-                            <button type="button" title="{{ __('Share on WhatsApp') }}"
-                                onclick="window.open('https://wa.me/?text=' + encodeURIComponent({{ \Illuminate\Support\Js::from($shareText) }}), '_blank')"
+                            <button type="button" title="{{ __('Share') }}"
+                                onclick="window.sharePdf({ url: {{ \Illuminate\Support\Js::from(route('invoices.pdf', $invoice)) }}, filename: {{ \Illuminate\Support\Js::from($invoice->invoice_number.'.pdf') }}, title: {{ \Illuminate\Support\Js::from(__('Invoice').' '.$invoice->invoice_number) }}, text: {{ \Illuminate\Support\Js::from($shareText) }} })"
                                 class="w-8 h-8 rounded-lg border border-green-200 text-green-600 flex items-center justify-center hover:bg-green-50">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.933 2.185 2.25 2.25 0 00-3.933-2.185zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>
                             </button>
@@ -105,7 +105,7 @@
                         'bg-red-50 text-red-600' => $invoice->status === 'unpaid',
                     ])>{{ ucfirst($invoice->status) }}</span>
                 </div>
-                <button type="button" title="{{ __('Share on WhatsApp') }}" @click.prevent.stop="window.open('https://wa.me/?text=' + encodeURIComponent({{ \Illuminate\Support\Js::from($shareText) }}), '_blank')"
+                <button type="button" title="{{ __('Share') }}" @click.prevent.stop="window.sharePdf({ url: {{ \Illuminate\Support\Js::from(route('invoices.pdf', $invoice)) }}, filename: {{ \Illuminate\Support\Js::from($invoice->invoice_number.'.pdf') }}, title: {{ \Illuminate\Support\Js::from(__('Invoice').' '.$invoice->invoice_number) }}, text: {{ \Illuminate\Support\Js::from($shareText) }} })"
                     class="w-9 h-9 rounded-full border border-green-200 text-green-600 flex items-center justify-center shrink-0">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.933 2.185 2.25 2.25 0 00-3.933-2.185zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>
                 </button>

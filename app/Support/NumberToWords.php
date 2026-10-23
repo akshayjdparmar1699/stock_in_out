@@ -4,9 +4,9 @@ namespace App\Support;
 
 /**
  * Spells out a whole-rupee amount for a tax invoice's "Amount in words"
- * line (e.g. 9700 -> "Nine Thousand Seven Hundred"), using the plain
- * English thousand/hundred grouping a GST tax invoice conventionally uses
- * — not the Indian lakh/crore grouping used elsewhere in this app's UI.
+ * line (e.g. 123456 -> "One Lakh Twenty-Three Thousand Four Hundred
+ * Fifty-Six"), using the Indian lakh/crore numbering an Indian invoice
+ * conventionally uses — not the Western thousand/million grouping.
  */
 class NumberToWords
 {
@@ -32,13 +32,13 @@ class NumberToWords
 
         $parts = [];
 
-        if ($number >= 1_000_000_000) {
-            $parts[] = self::convertBelowThousand(intdiv($number, 1_000_000_000)).' Billion';
-            $number %= 1_000_000_000;
+        if ($number >= 10_000_000) {
+            $parts[] = self::convert(intdiv($number, 10_000_000)).' Crore';
+            $number %= 10_000_000;
         }
-        if ($number >= 1_000_000) {
-            $parts[] = self::convertBelowThousand(intdiv($number, 1_000_000)).' Million';
-            $number %= 1_000_000;
+        if ($number >= 100_000) {
+            $parts[] = self::convertBelowThousand(intdiv($number, 100_000)).' Lakh';
+            $number %= 100_000;
         }
         if ($number >= 1_000) {
             $parts[] = self::convertBelowThousand(intdiv($number, 1_000)).' Thousand';
@@ -48,7 +48,7 @@ class NumberToWords
             $parts[] = self::convertBelowThousand($number);
         }
 
-        return implode(' ', $parts);
+        return trim(implode(' ', $parts));
     }
 
     private static function convertBelowThousand(int $number): string

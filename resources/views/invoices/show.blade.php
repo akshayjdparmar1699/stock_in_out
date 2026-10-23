@@ -297,11 +297,13 @@
                     @endif
 
                     <div class="mt-4 pt-4 border-t border-gray-100">
-                        @if ($invoice->balanceDue() > 0)
+                        @if ($invoice->balanceDue() > 0 || ($invoice->customer && $customerDue > 0))
                             <button type="button" @click="payOpen = !payOpen" class="w-full text-center px-4 py-2.5 border border-brand-600 text-brand-700 text-sm font-semibold rounded-lg">
                                 {{ __('Record payment') }}
                             </button>
-                            <form method="POST" action="{{ route('invoices.payments.store', $invoice) }}" class="space-y-3 mt-3" x-show="payOpen" style="display: none" x-cloak>
+                            <form method="POST"
+                                action="{{ $invoice->balanceDue() > 0 ? route('invoices.payments.store', $invoice) : route('customers.payments.store', $invoice->customer) }}"
+                                class="space-y-3 mt-3" x-show="payOpen" style="display: none" x-cloak>
                                 @csrf
                                 <input type="hidden" name="mode" :value="mode">
                                 <div>
@@ -319,6 +321,9 @@
                                 </div>
                                 <x-text-input name="note" type="text" class="w-full" placeholder="{{ __('Note (optional)') }}" />
                                 <x-primary-button class="w-full justify-center">{{ __('Record payment') }}</x-primary-button>
+                                @if ($invoice->balanceDue() <= 0)
+                                    <p class="text-xs text-gray-400 text-center">{{ __('This bill is already fully paid — this settles their other outstanding due instead.') }}</p>
+                                @endif
                             </form>
                         @else
                             <div class="text-center text-sm text-green-600 font-medium">{{ __('Nothing due — fully paid.') }}</div>
@@ -404,11 +409,13 @@
                         @endif
 
                         <div class="mt-4 pt-4 border-t border-gray-100">
-                            @if ($invoice->balanceDue() > 0)
+                            @if ($invoice->balanceDue() > 0 || ($invoice->customer && $customerDue > 0))
                                 <button type="button" @click="payOpen = !payOpen" class="w-full text-center px-4 py-2.5 border border-brand-600 text-brand-700 text-sm font-semibold rounded-lg">
                                     {{ __('Record payment') }}
                                 </button>
-                                <form method="POST" action="{{ route('invoices.payments.store', $invoice) }}" class="space-y-3 mt-3" x-show="payOpen" style="display: none" x-cloak>
+                                <form method="POST"
+                                    action="{{ $invoice->balanceDue() > 0 ? route('invoices.payments.store', $invoice) : route('customers.payments.store', $invoice->customer) }}"
+                                    class="space-y-3 mt-3" x-show="payOpen" style="display: none" x-cloak>
                                     @csrf
                                     <input type="hidden" name="mode" :value="mode">
                                     <div>
@@ -426,6 +433,9 @@
                                     </div>
                                     <x-text-input name="note" type="text" class="w-full" value="{{ old('note') }}" placeholder="{{ __('Note (optional)') }}" />
                                     <x-primary-button class="w-full justify-center">{{ __('Record payment') }}</x-primary-button>
+                                    @if ($invoice->balanceDue() <= 0)
+                                        <p class="text-xs text-gray-400 text-center">{{ __('This bill is already fully paid — this settles their other outstanding due instead.') }}</p>
+                                    @endif
                                 </form>
                             @else
                                 <button type="button" disabled class="w-full text-center px-4 py-2.5 bg-gray-50 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed">

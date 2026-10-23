@@ -383,6 +383,22 @@
                                 : '₹' + (total - paidAmount).toFixed(0)"></span>
                         </div>
 
+                        @if ($invoice->customer)
+                            <div class="pt-2 border-t border-gray-100 space-y-1.5">
+                                <div class="flex justify-between items-center text-sm text-gray-500">
+                                    <span>{{ __('Previous due') }}</span>
+                                    <span x-text="previousDue < 0 ? '₹' + Math.abs(previousDue).toFixed(0) + ' CR' : '₹' + previousDue.toFixed(0)"></span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm font-bold pt-1.5 border-t border-gray-100"
+                                    :class="dueAfterBill > 0.004 ? 'text-red-600' : 'text-green-600'">
+                                    <span x-text="dueAfterBill > 0.004 ? '{{ __('Customer balance') }}' : '{{ __('Settled / In credit') }}'"></span>
+                                    <span x-text="dueAfterBill < -0.004
+                                        ? '₹' + Math.abs(dueAfterBill).toFixed(0) + ' CR'
+                                        : '₹' + Math.max(0, dueAfterBill).toFixed(0)"></span>
+                                </div>
+                            </div>
+                        @endif
+
                         <button type="submit" form="invoice-form" class="hidden lg:block w-full px-4 py-3 bg-brand-700 text-white text-sm font-semibold rounded-lg hover:bg-brand-800">
                             {{ __('Update bill') }}
                         </button>
@@ -437,17 +453,20 @@
                         </div>
                     @endif
 
+                    @php $editCustomerDue = $invoice->customer?->dueAmount() ?? 0.0; @endphp
                     <div class="pt-3 border-t border-gray-100">
-                        @if ($invoice->balanceDue() > 0)
+                        @if ($invoice->balanceDue() > 0 || ($invoice->customer && $editCustomerDue > 0))
                             <button type="button" @click="payOpen = !payOpen" class="w-full text-center px-4 py-2.5 border border-brand-600 text-brand-700 text-sm font-semibold rounded-lg">
                                 {{ __('Record payment') }}
                             </button>
-                            <form method="POST" action="{{ route('invoices.payments.store', $invoice) }}" class="space-y-3 mt-3" x-show="payOpen" style="display: none" x-cloak>
+                            <form method="POST"
+                                action="{{ $invoice->balanceDue() > 0 ? route('invoices.payments.store', $invoice) : route('customers.payments.store', $invoice->customer) }}"
+                                class="space-y-3 mt-3" x-show="payOpen" style="display: none" x-cloak>
                                 @csrf
                                 <input type="hidden" name="mode" :value="payMode">
                                 <div>
                                     <x-input-label for="edit_payment_amount" :value="__('Amount received')" />
-                                    <x-text-input id="edit_payment_amount" name="amount" type="number" step="0.01" min="0.01" :max="$invoice->balanceDue()" class="mt-1 w-full" value="{{ old('amount') }}" required />
+                                    <x-text-input id="edit_payment_amount" name="amount" type="number" step="0.01" min="0.01" @if ($invoice->balanceDue() > 0) :max="$invoice->balanceDue()" @endif class="mt-1 w-full" value="{{ old('amount') }}" required />
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     @foreach (['cash' => __('Cash'), 'upi' => __('UPI'), 'bank' => __('Bank')] as $value => $label)
@@ -460,6 +479,9 @@
                                 </div>
                                 <x-text-input name="note" type="text" class="w-full" value="{{ old('note') }}" placeholder="{{ __('Note (optional)') }}" />
                                 <x-primary-button class="w-full justify-center">{{ __('Record payment') }}</x-primary-button>
+                                @if ($invoice->balanceDue() <= 0)
+                                    <p class="text-xs text-gray-400 text-center">{{ __('This bill is already fully paid — this settles their other outstanding due instead.') }}</p>
+                                @endif
                             </form>
                         @else
                             <button type="button" disabled class="w-full text-center px-4 py-2.5 bg-gray-50 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed">
@@ -528,6 +550,12 @@
                 editedPaidAmount: {{ (float) $invoice->paid_amount }},
                 payOpen: false,
                 payMode: 'cash',
+                // The customer's due from every OTHER invoice, excluding
+                // this one's own current (pre-edit) contribution — same
+                // formula the invoice PDF and show page use for "Previous
+                // due". Fixed at page load like selectedCustomer.due is;
+                // dueAfterBill below reacts to live edits on top of it.
+                previousDue: {{ $invoice->customer ? ((float) $invoice->customer->dueAmount() - ((float) $invoice->total - (float) $invoice->paid_amount)) : 0 }},
 
                 get subtotal() {
                     return this.lines.reduce((sum, line) => sum + (line.quantity * (line.unit_price || 0)), 0);
@@ -539,6 +567,9 @@
                     if (this.paymentStatus === 'paid') return this.total;
                     if (this.paymentStatus === 'partial') return Math.min(this.editedPaidAmount || 0, this.total);
                     return 0;
+                },
+                get dueAfterBill() {
+                    return this.previousDue + (this.total - this.paidAmount);
                 },
                 get exactNameMatch() {
                     const q = this.customerQuery.trim().toLowerCase();

@@ -20,11 +20,10 @@
 
     <div class="py-6 sm:py-12 pb-28 lg:pb-12" x-data="invoiceForm()">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <form method="POST" action="{{ route('invoices.update', $invoice) }}" id="invoice-form"
-                @submit="if (lines.length === 0) { alert('{{ __('Add at least one item.') }}'); $event.preventDefault(); return; } if (!selectedCustomer && !(guestMode && guestCustomerName.trim())) { alert('{{ __('Pick a customer, or bill by name.') }}'); $event.preventDefault(); }"
-                class="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
-
-                <div class="lg:col-span-2 space-y-4">
+            <div class="lg:grid lg:grid-cols-3 lg:gap-6 lg:items-start">
+                <form method="POST" action="{{ route('invoices.update', $invoice) }}" id="invoice-form"
+                    @submit="if (lines.length === 0) { alert('{{ __('Add at least one item.') }}'); $event.preventDefault(); return; } if (!selectedCustomer && !(guestMode && guestCustomerName.trim())) { alert('{{ __('Pick a customer, or bill by name.') }}'); $event.preventDefault(); }"
+                    class="lg:col-span-2 space-y-4">
                     @csrf
                     @method('PUT')
 
@@ -291,10 +290,15 @@
                         </div>
                         <p class="text-xs text-gray-400 sm:col-span-2">{{ __('Payments already recorded on this invoice are not changed here — use "Record a payment" on the invoice page for that.') }}</p>
                     </div>
-                </div>
+                </form>
 
-                {{-- Totals sidebar --}}
-                <div class="mt-4 lg:mt-0 lg:sticky lg:top-20">
+                {{-- Totals + Payment sidebar — both cards live in one sticky
+                     wrapper so they scroll and stick together as a unit.
+                     The Totals card's own fields live physically outside
+                     #invoice-form (its sibling <form> for Record Payment
+                     below can't nest inside another form), so they're
+                     wired back to it via form="invoice-form" instead. --}}
+                <div class="mt-4 lg:mt-0 lg:sticky lg:top-20 space-y-4">
                     <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 space-y-4">
                         <div class="flex items-center gap-2.5">
                             <span class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold flex items-center justify-center shrink-0">3</span>
@@ -320,7 +324,7 @@
                                     <input type="number" step="0.01" min="0" max="100" x-model.number="discountPercent" placeholder="0"
                                         class="no-spinner w-14 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
                                 </template>
-                                <input id="discount" name="discount" type="number" step="0.01" min="0" x-model.number="discount"
+                                <input id="discount" name="discount" form="invoice-form" type="number" step="0.01" min="0" x-model.number="discount"
                                     :readonly="discountType === 'percentage'"
                                     :class="discountType === 'percentage' ? 'bg-gray-100 text-gray-500' : ''"
                                     class="no-spinner w-20 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
@@ -329,11 +333,11 @@
 
                         <div class="flex justify-between items-center text-sm">
                             <label for="tax" class="text-gray-500">{{ __('Tax') }}</label>
-                            <input id="tax" name="tax" type="number" step="0.01" min="0" x-model.number="tax" class="no-spinner w-24 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
+                            <input id="tax" name="tax" form="invoice-form" type="number" step="0.01" min="0" x-model.number="tax" class="no-spinner w-24 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
                         </div>
                         <div class="flex justify-between items-center text-sm">
                             <label for="transportation" class="text-gray-500">{{ __('Transport') }}</label>
-                            <input id="transportation" name="transportation" type="number" step="0.01" min="0" x-model.number="transportation" class="no-spinner w-24 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
+                            <input id="transportation" name="transportation" form="invoice-form" type="number" step="0.01" min="0" x-model.number="transportation" class="no-spinner w-24 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
                         </div>
 
                         <div class="flex justify-between items-center text-base font-bold text-gray-900 border-t border-gray-100 pt-3">
@@ -364,8 +368,8 @@
                             <p class="text-xs text-gray-400 mt-2">{{ __('Corrects the bill\'s own recorded status — it does not add a new entry to the payment history below.') }}</p>
                         </div>
 
-                        <input type="hidden" name="payment_status" :value="paymentStatus">
-                        <input type="hidden" name="paid_amount" :value="paidAmount">
+                        <input type="hidden" name="payment_status" form="invoice-form" :value="paymentStatus">
+                        <input type="hidden" name="paid_amount" form="invoice-form" :value="paidAmount">
 
                         <div class="flex justify-between items-center text-sm text-gray-500">
                             <span>{{ __('Paid so far') }}</span>
@@ -379,26 +383,26 @@
                                 : '₹' + (total - paidAmount).toFixed(0)"></span>
                         </div>
 
-                        <button type="submit" class="hidden lg:block w-full px-4 py-3 bg-brand-700 text-white text-sm font-semibold rounded-lg hover:bg-brand-800">
+                        <button type="submit" form="invoice-form" class="hidden lg:block w-full px-4 py-3 bg-brand-700 text-white text-sm font-semibold rounded-lg hover:bg-brand-800">
                             {{ __('Update bill') }}
                         </button>
                     </div>
-                </div>
-            </form>
 
-            {{--
-                A separate form (not nested inside #invoice-form — HTML
-                doesn't allow nested forms) that records a real new payment
-                against this bill, exactly like the "Record payment" card
-                on the invoice's own view page. Unlike the Payment status
-                buttons above (which only correct this bill's own recorded
-                state), submitting this creates a real InvoicePayment row,
-                so it shows up in the history below and reduces the
-                customer's running due the same way a payment recorded from
-                Create or View does.
-            --}}
-            <div class="mt-4 lg:w-[calc((100%-1.5rem)/3)] lg:ml-auto">
-                <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 space-y-4">
+                    {{--
+                        A separate <form> (can't nest inside #invoice-form)
+                        that records a real new payment against this bill,
+                        exactly like the "Record payment" card on the
+                        invoice's own view page. Unlike the Payment status
+                        buttons above (which only correct this bill's own
+                        recorded state), submitting this creates a real
+                        InvoicePayment row, so it shows up in the history
+                        below and reduces the customer's running due the
+                        same way a payment recorded from Create or View
+                        does. It's a sibling card in this same sticky
+                        wrapper, not a separate block below it, so the two
+                        scroll and stick together as one unit.
+                    --}}
+                    <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 space-y-4">
                     <div class="flex items-center justify-between">
                         <h3 class="font-semibold text-gray-900">{{ __('Payment') }}</h3>
                         <span @class([
@@ -464,6 +468,7 @@
                         @endif
                     </div>
                 </div>
+            </div>
             </div>
         </div>
 

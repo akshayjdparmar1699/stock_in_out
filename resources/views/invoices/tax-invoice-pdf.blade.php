@@ -85,7 +85,7 @@
     <div class="invoice-box">
         <table class="title-row">
             <tr>
-                <td style="text-align: left;"><span class="tax-invoice-title">TAX INVOICE</span></td>
+                <td style="text-align: left;"><span class="tax-invoice-title">{{ $invoice->is_gst_invoice ? 'TAX INVOICE' : 'INVOICE' }}</span></td>
                 <td style="text-align: right;"><span class="original-box">ORIGINAL FOR RECIPIENT</span></td>
             </tr>
         </table>
@@ -107,7 +107,7 @@
                                 @if ($branch->phone)
                                     <div>{{ $branch->phone }}</div>
                                 @endif
-                                @if ($branch->gstin || $branch->state)
+                                @if ($invoice->is_gst_invoice && ($branch->gstin || $branch->state))
                                     <div style="margin-top: 4px;">
                                         @if ($branch->gstin)
                                             <strong>GSTIN:</strong> {{ $branch->gstin }}
@@ -129,16 +129,18 @@
                             <td><span class="info-label">Date</span><br>{{ $invoice->invoice_date->format('d M Y') }}</td>
                         </tr>
                     </table>
-                    <table class="meta-grid">
-                        <tr>
-                            <td><span class="info-label">Place of Supply</span><br>
-                                @if ($customer?->state || $branch->state)
-                                    {{ $customer?->state ?: $branch->state }}@if ($customerStateCode ?? $branchStateCode) ({{ $customerStateCode ?? $branchStateCode }})@endif
-                                @endif
-                            </td>
-                            <td><span class="info-label">Reverse Charge</span><br>No</td>
-                        </tr>
-                    </table>
+                    @if ($invoice->is_gst_invoice)
+                        <table class="meta-grid">
+                            <tr>
+                                <td><span class="info-label">Place of Supply</span><br>
+                                    @if ($customer?->state || $branch->state)
+                                        {{ $customer?->state ?: $branch->state }}@if ($customerStateCode ?? $branchStateCode) ({{ $customerStateCode ?? $branchStateCode }})@endif
+                                    @endif
+                                </td>
+                                <td><span class="info-label">Reverse Charge</span><br>No</td>
+                            </tr>
+                        </table>
+                    @endif
                 </td>
             </tr>
         </table>
@@ -155,10 +157,10 @@
                         @if ($customer?->address)
                             <div>{{ $customer->address }}</div>
                         @endif
-                        @if ($customer?->gst_number)
+                        @if ($invoice->is_gst_invoice && $customer?->gst_number)
                             <div style="margin-top: 4px;"><strong>GSTIN:</strong> {{ $customer->gst_number }}</div>
                         @endif
-                        @if ($customer?->state)
+                        @if ($invoice->is_gst_invoice && $customer?->state)
                             <div><strong>State:</strong> {{ $customer->state }}@if ($customerStateCode) (Code {{ $customerStateCode }})@endif</div>
                         @endif
                     </div>
@@ -181,17 +183,21 @@
                 <tr>
                     <th>Sr</th>
                     <th style="text-align:left;">Item</th>
-                    <th>HSN</th>
+                    @if ($invoice->is_gst_invoice)
+                        <th>HSN</th>
+                    @endif
                     <th>Qty</th>
                     <th>Rate</th>
-                    <th>Taxable Value</th>
-                    @if ($isSameState)
-                        <th colspan="2">CGST</th>
-                        <th colspan="2">SGST</th>
-                    @else
-                        <th colspan="2">IGST</th>
+                    <th>{{ $invoice->is_gst_invoice ? 'Taxable Value' : 'Amount' }}</th>
+                    @if ($invoice->is_gst_invoice)
+                        @if ($isSameState)
+                            <th colspan="2">CGST</th>
+                            <th colspan="2">SGST</th>
+                        @else
+                            <th colspan="2">IGST</th>
+                        @endif
+                        <th>Total</th>
                     @endif
-                    <th>Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -203,46 +209,52 @@
                     <tr>
                         <td>{{ $index + 1 }}</td>
                         <td class="item-name">{{ $line->item->name }}</td>
-                        <td>{{ $line->hsn_code }}</td>
+                        @if ($invoice->is_gst_invoice)
+                            <td>{{ $line->hsn_code }}</td>
+                        @endif
                         <td>{{ rtrim(rtrim((string) $line->quantity, '0'), '.') }} {{ $line->displayUnit() }}</td>
                         <td>₹{{ number_format($line->unit_price, 2) }}</td>
                         <td>₹{{ number_format($line->total, 2) }}</td>
-                        @if ($isSameState)
-                            <td>{{ number_format(($line->gst_rate ?? 0) / 2, 2) }}%</td>
-                            <td>₹{{ number_format($line->cgst_amount, 2) }}</td>
-                            <td>{{ number_format(($line->gst_rate ?? 0) / 2, 2) }}%</td>
-                            <td>₹{{ number_format($line->sgst_amount, 2) }}</td>
-                        @else
-                            <td>{{ number_format($line->gst_rate ?? 0, 2) }}%</td>
-                            <td>₹{{ number_format($line->igst_amount, 2) }}</td>
+                        @if ($invoice->is_gst_invoice)
+                            @if ($isSameState)
+                                <td>{{ number_format(($line->gst_rate ?? 0) / 2, 2) }}%</td>
+                                <td>₹{{ number_format($line->cgst_amount, 2) }}</td>
+                                <td>{{ number_format(($line->gst_rate ?? 0) / 2, 2) }}%</td>
+                                <td>₹{{ number_format($line->sgst_amount, 2) }}</td>
+                            @else
+                                <td>{{ number_format($line->gst_rate ?? 0, 2) }}%</td>
+                                <td>₹{{ number_format($line->igst_amount, 2) }}</td>
+                            @endif
+                            <td>₹{{ number_format($lineTotal, 2) }}</td>
                         @endif
-                        <td>₹{{ number_format($lineTotal, 2) }}</td>
                     </tr>
                 @endforeach
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="5">Total</td>
+                    <td colspan="{{ $invoice->is_gst_invoice ? 5 : 4 }}">Total</td>
                     <td>₹{{ number_format($subtotal, 2) }}</td>
-                    @if ($isSameState)
-                        <td></td>
-                        <td>₹{{ number_format($totalCgst, 2) }}</td>
-                        <td></td>
-                        <td>₹{{ number_format($totalSgst, 2) }}</td>
-                    @else
-                        <td></td>
-                        <td>₹{{ number_format($totalIgst, 2) }}</td>
+                    @if ($invoice->is_gst_invoice)
+                        @if ($isSameState)
+                            <td></td>
+                            <td>₹{{ number_format($totalCgst, 2) }}</td>
+                            <td></td>
+                            <td>₹{{ number_format($totalSgst, 2) }}</td>
+                        @else
+                            <td></td>
+                            <td>₹{{ number_format($totalIgst, 2) }}</td>
+                        @endif
+                        <td>₹{{ number_format($subtotal + $totalGst, 2) }}</td>
                     @endif
-                    <td>₹{{ number_format($subtotal + $totalGst, 2) }}</td>
                 </tr>
             </tfoot>
         </table>
 
         <div class="words-box">
-            <strong>Amount in Words:</strong> Rupees {{ \App\Support\NumberToWords::convert((int) round($roundedTotal)) }} Only
+            <strong>Amount in Words:</strong> Rupees {{ \App\Support\NumberToWords::convert((int) round($invoice->is_gst_invoice ? $roundedTotal : $invoice->total)) }} Only
         </div>
 
-        @if ($hsnSummary->count() > 0)
+        @if ($invoice->is_gst_invoice && $hsnSummary->count() > 0)
             <table class="hsn-table">
                 <thead>
                     <tr>
@@ -302,7 +314,7 @@
 
             <table class="totals">
                 <tr>
-                    <td class="label">Taxable Value</td>
+                    <td class="label">{{ $invoice->is_gst_invoice ? 'Taxable Value' : 'Subtotal' }}</td>
                     <td class="value">₹{{ number_format($subtotal, 2) }}</td>
                 </tr>
                 @if ($invoice->discount > 0)
@@ -311,19 +323,26 @@
                         <td class="value">-₹{{ number_format($invoice->discount, 2) }}</td>
                     </tr>
                 @endif
-                @if ($isSameState)
+                @if ($invoice->is_gst_invoice)
+                    @if ($isSameState)
+                        <tr>
+                            <td class="label">CGST</td>
+                            <td class="value">₹{{ number_format($totalCgst, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">SGST</td>
+                            <td class="value">₹{{ number_format($totalSgst, 2) }}</td>
+                        </tr>
+                    @else
+                        <tr>
+                            <td class="label">IGST</td>
+                            <td class="value">₹{{ number_format($totalIgst, 2) }}</td>
+                        </tr>
+                    @endif
+                @elseif ($invoice->tax > 0)
                     <tr>
-                        <td class="label">CGST</td>
-                        <td class="value">₹{{ number_format($totalCgst, 2) }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">SGST</td>
-                        <td class="value">₹{{ number_format($totalSgst, 2) }}</td>
-                    </tr>
-                @else
-                    <tr>
-                        <td class="label">IGST</td>
-                        <td class="value">₹{{ number_format($totalIgst, 2) }}</td>
+                        <td class="label">Tax</td>
+                        <td class="value">₹{{ number_format($invoice->tax, 2) }}</td>
                     </tr>
                 @endif
                 @if ($invoice->transportation > 0)
@@ -332,7 +351,7 @@
                         <td class="value">₹{{ number_format($invoice->transportation, 2) }}</td>
                     </tr>
                 @endif
-                @if ($roundOff != 0)
+                @if ($invoice->is_gst_invoice && $roundOff != 0)
                     <tr>
                         <td class="label">Round Off</td>
                         <td class="value">{{ $roundOff > 0 ? '+' : '' }}₹{{ number_format($roundOff, 2) }}</td>
@@ -340,7 +359,7 @@
                 @endif
                 <tr class="grand">
                     <td class="label">Total</td>
-                    <td class="value">₹{{ number_format($roundedTotal, 2) }}</td>
+                    <td class="value">₹{{ number_format($invoice->is_gst_invoice ? $roundedTotal : $invoice->total, 2) }}</td>
                 </tr>
                 <tr>
                     <td class="label">Paid</td>
@@ -382,7 +401,7 @@
         @endif
 
         <div class="terms">
-            Certified that the particulars given above are true and correct. This is a computer-generated tax invoice.
+            Certified that the particulars given above are true and correct. This is a computer-generated {{ $invoice->is_gst_invoice ? 'tax invoice' : 'invoice' }}.
         </div>
 
         <div class="signatory">

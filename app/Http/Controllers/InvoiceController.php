@@ -741,9 +741,7 @@ class InvoiceController extends Controller
 
     private function renderPdf(Invoice $invoice)
     {
-        $view = $invoice->is_gst_invoice ? 'invoices.tax-invoice-pdf' : 'invoices.pdf';
-
-        return Pdf::loadView($view, [
+        return Pdf::loadView('invoices.tax-invoice-pdf', [
             'invoice' => $invoice,
             'customerDue' => $invoice->customer?->dueAmount(),
         ])->setPaper('a4');

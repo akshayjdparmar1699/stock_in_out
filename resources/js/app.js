@@ -429,7 +429,15 @@ document.addEventListener('submit', (e) => {
     showPageProgress();
 
     const form = e.target;
-    const btn = form.querySelector('button[type="submit"]') || form.querySelector('button:not([type="button"])');
+    // e.submitter is the exact button that triggered this submission — a
+    // plain form.querySelector() instead would always grab the first
+    // submit button in DOM order, and disabling that one is harmless for
+    // most forms (they only ever have one submit button) but breaks any
+    // form with several real submit buttons sharing one name (e.g. three
+    // "pick one of these" buttons): disabling the wrong one does nothing,
+    // but if the first button is the one actually clicked, disabling it
+    // mid-submit drops its own name=value pair from what gets sent.
+    const btn = e.submitter || form.querySelector('button[type="submit"]') || form.querySelector('button:not([type="button"])');
     if (btn && !btn.disabled) {
         btn.disabled = true;
         btn.classList.add('opacity-75', 'cursor-wait');

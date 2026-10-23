@@ -15,6 +15,8 @@ class Item extends Model
         'company_id',
         'name',
         'sku',
+        'hsn_code',
+        'gst_rate',
         'unit',
         'alt_unit',
         'alt_unit_ratio',
@@ -31,6 +33,7 @@ class Item extends Model
             'alt_unit_ratio' => 'decimal:4',
             'purchase_price' => 'decimal:2',
             'selling_price' => 'decimal:2',
+            'gst_rate' => 'decimal:2',
             'is_active' => 'boolean',
         ];
     }

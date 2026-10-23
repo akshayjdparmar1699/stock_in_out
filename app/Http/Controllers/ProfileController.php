@@ -22,6 +22,7 @@ class ProfileController extends Controller
         return view('profile.edit', [
             'user' => $user,
             'subscription' => $user->isSuperAdmin() ? null : $user->company?->subscription?->load('plan'),
+            'gstEnabled' => ! $user->isSuperAdmin() && (bool) $user->company?->gst_enabled,
         ]);
     }
 
@@ -39,6 +40,20 @@ class ProfileController extends Controller
         $request->user()->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * The company-wide master switch for GST invoicing — mirrors
+     * SalesReportController::toggleWhatsapp()'s exact pattern. Only while
+     * this is on does the per-invoice "Make this a GST invoice" toggle
+     * appear anywhere.
+     */
+    public function toggleGst(Request $request): RedirectResponse
+    {
+        $company = $request->user()->company;
+        $company->update(['gst_enabled' => ! $company->gst_enabled]);
+
+        return back();
     }
 
     /**

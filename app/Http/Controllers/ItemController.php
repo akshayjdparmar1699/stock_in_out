@@ -157,7 +157,10 @@ class ItemController extends Controller
 
     public function create(): View
     {
-        return view('items.create', ['branch' => BranchContext::current()]);
+        return view('items.create', [
+            'branch' => BranchContext::current(),
+            'gstEnabled' => (bool) auth()->user()->company?->gst_enabled,
+        ]);
     }
 
     /**
@@ -284,7 +287,10 @@ class ItemController extends Controller
     {
         abort_unless($item->company_id === auth()->user()->company_id, 404);
 
-        return view('items.edit', ['item' => $item]);
+        return view('items.edit', [
+            'item' => $item,
+            'gstEnabled' => (bool) auth()->user()->company?->gst_enabled,
+        ]);
     }
 
     public function update(UpdateItemRequest $request, Item $item): RedirectResponse
@@ -354,6 +360,8 @@ class ItemController extends Controller
                 'selling_price' => (float) $item->selling_price,
                 'purchase_price' => (float) $item->purchase_price,
                 'stock' => (float) ($item->stocks->first()->quantity ?? 0),
+                'hsn_code' => $item->hsn_code,
+                'gst_rate' => $item->gst_rate !== null ? (float) $item->gst_rate : null,
             ]);
 
         return response()->json($items);

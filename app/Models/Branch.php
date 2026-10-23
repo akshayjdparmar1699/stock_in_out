@@ -33,6 +33,9 @@ class Branch extends Model
         'account_number',
         'account_holder_name',
         'ifsc_code',
+        'gstin',
+        'state',
+        'state_code',
     ];
 
     protected function casts(): array

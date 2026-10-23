@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\GstStateCodes;
 use App\Support\Sql;
 
 use App\Http\Requests\StoreCustomerPaymentRequest;
@@ -243,7 +244,10 @@ class CustomerController extends Controller
     {
         $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
 
-        return view('customers.create', ['branches' => $branches]);
+        return view('customers.create', [
+            'branches' => $branches,
+            'gstEnabled' => (bool) auth()->user()->company?->gst_enabled,
+        ]);
     }
 
     public function store(StoreCustomerRequest $request): RedirectResponse|JsonResponse
@@ -251,6 +255,7 @@ class CustomerController extends Controller
         $data = $request->validated();
         $data['opening_balance'] = $data['opening_balance'] ?? 0;
         $data['credit_limit'] = $data['credit_limit'] ?? 0;
+        $data['state_code'] = GstStateCodes::code($data['state'] ?? null);
         $branchIds = $data['branch_ids'] ?? null;
         unset($data['branch_ids']);
 
@@ -568,7 +573,11 @@ class CustomerController extends Controller
 
         $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
 
-        return view('customers.edit', ['customer' => $customer, 'branches' => $branches]);
+        return view('customers.edit', [
+            'customer' => $customer,
+            'branches' => $branches,
+            'gstEnabled' => (bool) auth()->user()->company?->gst_enabled,
+        ]);
     }
 
     public function update(UpdateCustomerRequest $request, Customer $customer): RedirectResponse
@@ -578,6 +587,7 @@ class CustomerController extends Controller
         $data = $request->validated();
         $data['opening_balance'] = $data['opening_balance'] ?? 0;
         $data['credit_limit'] = $data['credit_limit'] ?? 0;
+        $data['state_code'] = GstStateCodes::code($data['state'] ?? null);
         $branchIds = $data['branch_ids'] ?? null;
         unset($data['branch_ids']);
 

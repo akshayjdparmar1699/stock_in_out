@@ -26,6 +26,8 @@ class Invoice extends Model
         'paid_amount',
         'status',
         'notes',
+        'is_gst_invoice',
+        'transport_note',
     ];
 
     protected function casts(): array
@@ -38,6 +40,7 @@ class Invoice extends Model
             'transportation' => 'decimal:2',
             'total' => 'decimal:2',
             'paid_amount' => 'decimal:2',
+            'is_gst_invoice' => 'boolean',
         ];
     }
 

@@ -29,6 +29,8 @@ class StoreBranchRequest extends FormRequest
             'account_number' => ['nullable', 'string', 'max:50'],
             'account_holder_name' => ['nullable', 'string', 'max:255'],
             'ifsc_code' => ['nullable', 'string', 'max:20'],
+            'gstin' => ['nullable', 'string', 'max:20'],
+            'state' => ['nullable', 'string', 'max:255'],
             'qr_code_photo' => ['nullable', 'image', 'max:2048'],
             'remove_qr_code' => ['nullable', 'boolean'],
             'copy_items' => ['nullable', 'boolean'],

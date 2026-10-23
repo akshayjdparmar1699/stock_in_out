@@ -19,6 +19,11 @@ class InvoiceItem extends Model
         'stock_movement_id',
         'unit_price',
         'total',
+        'hsn_code',
+        'gst_rate',
+        'cgst_amount',
+        'sgst_amount',
+        'igst_amount',
     ];
 
     protected function casts(): array
@@ -28,6 +33,10 @@ class InvoiceItem extends Model
             'base_quantity' => 'decimal:4',
             'unit_price' => 'decimal:2',
             'total' => 'decimal:2',
+            'gst_rate' => 'decimal:2',
+            'cgst_amount' => 'decimal:2',
+            'sgst_amount' => 'decimal:2',
+            'igst_amount' => 'decimal:2',
         ];
     }
 

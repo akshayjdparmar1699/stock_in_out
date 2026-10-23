@@ -1,6 +1,7 @@
 @php
     $branch ??= null;
     $hasCustomBank = $branch && ($branch->bank_name || $branch->account_number || $branch->account_holder_name || $branch->ifsc_code || $branch->qr_code_path);
+    $gstEnabled = $gstEnabled ?? false;
 @endphp
 
 <input type="hidden" name="bank_mode" :value="bankMode">
@@ -137,3 +138,31 @@
         </div>
     </div>
 </div>
+
+@if ($gstEnabled)
+    {{-- Section 3: GST details --}}
+    <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 mt-4">
+        <div class="flex items-center gap-2.5 mb-4">
+            <span class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold flex items-center justify-center shrink-0">3</span>
+            <h3 class="font-semibold text-gray-900">{{ __('GST details') }}</h3>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <x-input-label for="gstin" :value="__('GSTIN')" />
+                <x-text-input id="gstin" name="gstin" type="text" class="mt-1 block w-full" placeholder="{{ __('e.g. 24ABCDE1234F1Z5') }}" :value="old('gstin', $branch?->gstin)" maxlength="20" />
+                <x-input-error :messages="$errors->get('gstin')" class="mt-2" />
+            </div>
+            <div>
+                <x-input-label for="state" :value="__('State')" />
+                <select id="state" name="state" class="mt-1 block w-full border-gray-300 focus:border-brand-500 focus:ring-brand-500 rounded-lg shadow-sm">
+                    <option value="">{{ __('Select state') }}</option>
+                    @foreach (\App\Support\GstStateCodes::all() as $name => $code)
+                        <option value="{{ $name }}" @selected(old('state', $branch?->state) === $name)>{{ $name }} ({{ $code }})</option>
+                    @endforeach
+                </select>
+                <x-input-error :messages="$errors->get('state')" class="mt-2" />
+            </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-3">{{ __('This GSTIN and state print on this branch\'s GST tax invoices, and decide CGST+SGST vs IGST based on the customer\'s state.') }}</p>
+    </div>
+@endif

@@ -47,6 +47,20 @@
                         <x-input-error :messages="$errors->get('gst_number')" class="mt-2" />
                     </div>
 
+                    @if ($gstEnabled ?? false)
+                        <div>
+                            <x-input-label for="state" :value="__('State')" />
+                            <select id="state" name="state" class="mt-1 block w-full border-gray-300 focus:border-brand-500 focus:ring-brand-500 rounded-lg shadow-sm">
+                                <option value="">{{ __('Select state') }}</option>
+                                @foreach (\App\Support\GstStateCodes::all() as $name => $code)
+                                    <option value="{{ $name }}" @selected(old('state', $customer->state) === $name)>{{ $name }} ({{ $code }})</option>
+                                @endforeach
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">{{ __('Needed to decide CGST+SGST vs IGST on GST invoices.') }}</p>
+                            <x-input-error :messages="$errors->get('state')" class="mt-2" />
+                        </div>
+                    @endif
+
                     <div>
                         <x-input-label for="opening_balance" :value="__('Opening Due (before any invoices)')" />
                         <x-text-input id="opening_balance" name="opening_balance" type="number" step="0.01" min="0" class="mt-1 block w-full" :value="old('opening_balance', $customer->opening_balance)" />
@@ -156,6 +170,25 @@
                         <x-text-input id="m_address" name="address" type="text" class="mt-1 block w-full" :value="old('address', $customer->address)" placeholder="{{ __('e.g. Kodinar') }}" />
                         <x-input-error :messages="$errors->get('address')" class="mt-2" />
                     </div>
+
+                    @if ($gstEnabled ?? false)
+                        <div>
+                            <x-input-label for="m_gst_number">{{ __('GST Number') }} <span class="text-gray-400 text-xs font-normal">({{ __('optional') }})</span></x-input-label>
+                            <x-text-input id="m_gst_number" name="gst_number" type="text" class="mt-1 block w-full" :value="old('gst_number', $customer->gst_number)" />
+                            <x-input-error :messages="$errors->get('gst_number')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="m_state">{{ __('State') }}</x-input-label>
+                            <select id="m_state" name="state" class="mt-1 block w-full border-gray-300 focus:border-brand-500 focus:ring-brand-500 rounded-lg shadow-sm">
+                                <option value="">{{ __('Select state') }}</option>
+                                @foreach (\App\Support\GstStateCodes::all() as $name => $code)
+                                    <option value="{{ $name }}" @selected(old('state', $customer->state) === $name)>{{ $name }} ({{ $code }})</option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('state')" class="mt-2" />
+                        </div>
+                    @endif
                 </div>
 
                 <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">

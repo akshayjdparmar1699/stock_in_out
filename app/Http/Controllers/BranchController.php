@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\ItemStock;
 use App\Models\User;
 use App\Services\BranchContext;
+use App\Support\GstStateCodes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -25,7 +26,10 @@ class BranchController extends Controller
     {
         $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
 
-        return view('branches.create', ['branches' => $branches]);
+        return view('branches.create', [
+            'branches' => $branches,
+            'gstEnabled' => (bool) auth()->user()->company?->gst_enabled,
+        ]);
     }
 
     /**
@@ -53,6 +57,7 @@ class BranchController extends Controller
         $companyId = auth()->user()->company_id;
         $copyFromBranchId = $request->boolean('copy_items') ? $data['copy_from_branch_id'] : null;
         $data = $this->applyBankMode($data, $request);
+        $data['state_code'] = GstStateCodes::code($data['state'] ?? null);
         unset($data['copy_items'], $data['copy_from_branch_id'], $data['qr_code_photo'], $data['remove_qr_code'], $data['bank_mode']);
 
         if ($request->hasFile('qr_code_photo')) {
@@ -87,7 +92,10 @@ class BranchController extends Controller
     {
         abort_unless($branch->company_id === auth()->user()->company_id, 404);
 
-        return view('branches.edit', ['branch' => $branch]);
+        return view('branches.edit', [
+            'branch' => $branch,
+            'gstEnabled' => (bool) auth()->user()->company?->gst_enabled,
+        ]);
     }
 
     public function update(StoreBranchRequest $request, Branch $branch): RedirectResponse
@@ -96,6 +104,7 @@ class BranchController extends Controller
 
         $data = $request->validated();
         $data = $this->applyBankMode($data, $request);
+        $data['state_code'] = GstStateCodes::code($data['state'] ?? null);
         unset($data['copy_items'], $data['copy_from_branch_id'], $data['qr_code_photo'], $data['remove_qr_code'], $data['bank_mode']);
 
         if ($request->hasFile('qr_code_photo')) {

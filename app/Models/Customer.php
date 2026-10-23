@@ -17,6 +17,8 @@ class Customer extends Model
         'email',
         'address',
         'gst_number',
+        'state',
+        'state_code',
         'opening_balance',
         'credit_balance',
         'credit_limit',

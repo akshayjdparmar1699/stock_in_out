@@ -17,6 +17,8 @@ class StoreItemRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['nullable', 'string', 'max:50', Rule::unique('items', 'sku')->where('company_id', $this->user()?->company_id)],
+            'hsn_code' => ['nullable', 'string', 'max:20'],
+            'gst_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'unit' => ['required', 'string', 'max:20'],
             'alt_unit' => ['nullable', 'string', 'max:20'],
             'alt_unit_ratio' => ['nullable', 'required_with:alt_unit', 'numeric', 'min:0.0001'],

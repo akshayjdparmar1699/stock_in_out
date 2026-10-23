@@ -34,7 +34,7 @@
                 @if ($branches->isNotEmpty())
                     <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 mt-4">
                         <div class="flex items-center gap-2.5 mb-4">
-                            <span class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold flex items-center justify-center shrink-0">3</span>
+                            <span class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold flex items-center justify-center shrink-0">{{ $gstEnabled ? 4 : 3 }}</span>
                             <h3 class="font-semibold text-gray-900">{{ __('Items in this branch') }}</h3>
                         </div>
 

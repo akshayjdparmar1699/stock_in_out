@@ -15,6 +15,7 @@ class Company extends Model
         'name',
         'is_active',
         'daily_whatsapp_reports_enabled',
+        'gst_enabled',
     ];
 
     protected function casts(): array
@@ -22,6 +23,7 @@ class Company extends Model
         return [
             'is_active' => 'boolean',
             'daily_whatsapp_reports_enabled' => 'boolean',
+            'gst_enabled' => 'boolean',
         ];
     }
 

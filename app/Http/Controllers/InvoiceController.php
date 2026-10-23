@@ -7,6 +7,7 @@ use App\Support\Sql;
 use App\Http\Requests\StoreInvoicePaymentRequest;
 use App\Http\Requests\StoreInvoiceRequest;
 use App\Http\Requests\UpdateInvoiceRequest;
+use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
@@ -186,11 +187,14 @@ class InvoiceController extends Controller
                 'alt_unit_ratio' => $item->alt_unit_ratio !== null ? (float) $item->alt_unit_ratio : null,
                 'selling_price' => (float) $item->selling_price,
                 'stock' => (float) ($item->stocks->first()->quantity ?? 0),
+                'hsn_code' => $item->hsn_code,
+                'gst_rate' => $item->gst_rate !== null ? (float) $item->gst_rate : null,
             ]);
 
         return view('invoices.create', [
             'items' => $items,
             'nextInvoiceNumber' => $this->nextInvoiceNumber($branchId),
+            'gstEnabled' => (bool) auth()->user()->company?->gst_enabled,
         ]);
     }
 
@@ -210,6 +214,11 @@ class InvoiceController extends Controller
             $transportation = (float) ($data['transportation'] ?? 0);
             $paidAmount = (float) ($data['paid_amount'] ?? 0);
 
+            // Re-checked against the company's own setting (not just the
+            // submitted flag) so a request can't turn on GST invoicing for a
+            // company that never enabled it.
+            $isGstInvoice = (bool) ($data['is_gst_invoice'] ?? false) && (bool) auth()->user()->company?->gst_enabled;
+
             $invoice = Invoice::create([
                 'invoice_number' => $this->nextInvoiceNumber($branchId),
                 'branch_id' => $branchId,
@@ -225,9 +234,19 @@ class InvoiceController extends Controller
                 'paid_amount' => $paidAmount,
                 'status' => 'unpaid',
                 'notes' => $data['notes'] ?? null,
+                'is_gst_invoice' => $isGstInvoice,
+                'transport_note' => $data['transport_note'] ?? null,
             ]);
 
-            $subtotal = $this->applyLines($invoice, $branchId, $data['items']);
+            ['subtotal' => $subtotal, 'gst_tax' => $gstTax] = $this->applyLines($invoice, $branchId, $data['items'], $isGstInvoice, $customerId);
+
+            // GST tax is never trusted from the client on a compliance
+            // document — it's always the server-computed sum of each line's
+            // own HSN/rate, replacing whatever "tax" the form submitted.
+            if ($isGstInvoice) {
+                $tax = $gstTax;
+            }
+
             $total = round($subtotal - $discount + $tax + $transportation, 2);
 
             if ($paidAmount > 0) {
@@ -268,6 +287,7 @@ class InvoiceController extends Controller
 
             $invoice->update([
                 'subtotal' => $subtotal,
+                'tax' => $tax,
                 'total' => $total,
                 'paid_amount' => $paidAmount,
                 'status' => $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid'),
@@ -408,7 +428,17 @@ class InvoiceController extends Controller
             $tax = (float) ($data['tax'] ?? 0);
             $transportation = (float) ($data['transportation'] ?? 0);
 
-            $subtotal = $this->applyLines($invoice, $invoice->branch_id, $data['items']);
+            // Whether this invoice is a GST invoice is fixed at creation —
+            // editing only re-runs the same GST computation against the
+            // (possibly changed) line items and customer.
+            $isGstInvoice = (bool) $invoice->is_gst_invoice;
+
+            ['subtotal' => $subtotal, 'gst_tax' => $gstTax] = $this->applyLines($invoice, $invoice->branch_id, $data['items'], $isGstInvoice, $customerId);
+
+            if ($isGstInvoice) {
+                $tax = $gstTax;
+            }
+
             $total = round($subtotal - $discount + $tax + $transportation, 2);
 
             $invoice->update([
@@ -462,10 +492,11 @@ class InvoiceController extends Controller
      * lines for the same item are checked against their combined quantity),
      * then creates the invoice_items, decrements stock, and records the
      * stock-out movement + FIFO batch allocation for each. Returns the
-     * subtotal. Assumes $invoice already exists (has an id) and currently
-     * has no items — for an edit, call reverseStockEffects() first.
+     * subtotal and (for a GST invoice) the server-computed total GST.
+     * Assumes $invoice already exists (has an id) and currently has no
+     * items — for an edit, call reverseStockEffects() first.
      */
-    private function applyLines(Invoice $invoice, int $branchId, array $items): float
+    private function applyLines(Invoice $invoice, int $branchId, array $items, bool $isGstInvoice = false, ?int $customerId = null): array
     {
         $itemIds = collect($items)->pluck('item_id');
 
@@ -480,7 +511,22 @@ class InvoiceController extends Controller
 
         $remaining = $stocks->map(fn (ItemStock $stock) => (float) $stock->quantity);
 
+        // Same state (branch vs customer) means CGST+SGST; different states
+        // mean a single IGST line instead — the total tax amount is the
+        // same either way, only how it's split for filing differs. When
+        // either side's state isn't on file, intra-state is assumed, since
+        // most sales here are local.
+        $sameState = true;
+        if ($isGstInvoice) {
+            $branchStateCode = Branch::whereKey($branchId)->value('state_code');
+            $customerStateCode = $customerId ? Customer::whereKey($customerId)->value('state_code') : null;
+            if ($branchStateCode && $customerStateCode) {
+                $sameState = $branchStateCode === $customerStateCode;
+            }
+        }
+
         $subtotal = 0;
+        $gstTax = 0;
         $lines = [];
 
         foreach ($items as $line) {
@@ -507,6 +553,27 @@ class InvoiceController extends Controller
 
             $lineTotal = round($line['quantity'] * $line['unit_price'], 2);
             $subtotal += $lineTotal;
+
+            $hsnCode = null;
+            $gstRate = null;
+            $cgstAmount = null;
+            $sgstAmount = null;
+            $igstAmount = null;
+
+            if ($isGstInvoice) {
+                $hsnCode = $item->hsn_code;
+                $gstRate = $item->gst_rate !== null ? (float) $item->gst_rate : null;
+                $lineGst = round($lineTotal * ($gstRate ?? 0) / 100, 2);
+                $gstTax += $lineGst;
+
+                if ($sameState) {
+                    $cgstAmount = round($lineGst / 2, 2);
+                    $sgstAmount = round($lineGst - $cgstAmount, 2);
+                } else {
+                    $igstAmount = $lineGst;
+                }
+            }
+
             $lines[] = [
                 'item_id' => $line['item_id'],
                 'quantity' => $line['quantity'],
@@ -514,6 +581,11 @@ class InvoiceController extends Controller
                 'base_quantity' => $baseQuantity,
                 'unit_price' => $line['unit_price'],
                 'total' => $lineTotal,
+                'hsn_code' => $hsnCode,
+                'gst_rate' => $gstRate,
+                'cgst_amount' => $cgstAmount,
+                'sgst_amount' => $sgstAmount,
+                'igst_amount' => $igstAmount,
             ];
         }
 
@@ -542,7 +614,7 @@ class InvoiceController extends Controller
             $this->allocateFromBatches($branchId, $line['item_id'], (float) $line['base_quantity'], $movement->id);
         }
 
-        return $subtotal;
+        return ['subtotal' => $subtotal, 'gst_tax' => round($gstTax, 2)];
     }
 
     /**
@@ -669,7 +741,9 @@ class InvoiceController extends Controller
 
     private function renderPdf(Invoice $invoice)
     {
-        return Pdf::loadView('invoices.pdf', [
+        $view = $invoice->is_gst_invoice ? 'invoices.tax-invoice-pdf' : 'invoices.pdf';
+
+        return Pdf::loadView($view, [
             'invoice' => $invoice,
             'customerDue' => $invoice->customer?->dueAmount(),
         ])->setPaper('a4');

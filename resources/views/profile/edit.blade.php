@@ -110,6 +110,9 @@
                         <a href="#branch" @click="active = 'branch'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('branch')">{{ __('Branch') }}</a>
                         <a href="#plan" @click="active = 'plan'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('plan')">{{ __('Plan & billing') }}</a>
                     @endunless
+                    @if ($user->isAdmin())
+                        <a href="#gst" @click="active = 'gst'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('gst')">{{ __('GST invoicing') }}</a>
+                    @endif
                     <a href="#notifications" @click="active = 'notifications'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('notifications')">{{ __('Notifications') }}</a>
                     <a href="#password" @click="active = 'password'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('password')">{{ __('Password & security') }}</a>
                     <a href="#delete-account" @click="active = 'delete-account'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('delete-account', true)">{{ __('Delete account') }}</a>
@@ -129,6 +132,12 @@
                             @include('profile.partials.plan-info')
                         </div>
                     @endunless
+
+                    @if ($user->isAdmin())
+                        <div id="gst" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('gst')">
+                            @include('profile.partials.gst-settings-form')
+                        </div>
+                    @endif
 
                     <div id="notifications" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('notifications')">
                         @include('profile.partials.notification-settings-form')

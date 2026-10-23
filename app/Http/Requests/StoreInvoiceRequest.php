@@ -26,6 +26,8 @@ class StoreInvoiceRequest extends FormRequest
             'paid_amount' => ['nullable', 'numeric', 'min:0'],
             'mode' => ['nullable', 'in:cash,upi,bank'],
             'notes' => ['nullable', 'string'],
+            'is_gst_invoice' => ['nullable', 'boolean'],
+            'transport_note' => ['nullable', 'string', 'max:255'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.item_id' => ['required', Rule::exists('items', 'id')->where('company_id', $this->user()?->company_id)],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],

@@ -286,6 +286,29 @@
                         <p class="text-sm text-gray-400 text-center py-4" x-show="lines.length === 0">{{ __('No items added yet.') }}</p>
                     </div>
 
+                    @if ($gstEnabled ?? false)
+                        {{-- GST toggle --}}
+                        <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6">
+                            <div class="flex items-center justify-between gap-4">
+                                <div class="min-w-0">
+                                    <div class="font-semibold text-gray-900">{{ __('Make this a GST invoice') }}</div>
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ __('Prints HSN codes and CGST/SGST/IGST instead of the normal bill format.') }}</p>
+                                </div>
+                                <input type="hidden" name="is_gst_invoice" :value="isGstInvoice ? '1' : '0'">
+                                <button type="button" role="switch" :aria-checked="isGstInvoice.toString()" @click="isGstInvoice = !isGstInvoice"
+                                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0"
+                                    :class="isGstInvoice ? 'bg-brand-600' : 'bg-gray-300'">
+                                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform" :class="isGstInvoice ? 'translate-x-6' : 'translate-x-1'"></span>
+                                </button>
+                            </div>
+
+                            <div class="mt-4" x-show="isGstInvoice" style="display: none;">
+                                <x-input-label for="transport_note">{{ __('Transport') }} <span class="text-gray-400 text-xs font-normal">({{ __('optional') }})</span></x-input-label>
+                                <x-text-input id="transport_note" name="transport_note" type="text" class="mt-1 block w-full" placeholder="{{ __('e.g. By road, Tempo no. GJ-11-AB-1234') }}" />
+                            </div>
+                        </div>
+                    @endif
+
                     {{-- Bill date + note --}}
                     <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -334,8 +357,8 @@
                         </div>
 
                         <div class="flex justify-between items-center text-sm">
-                            <label for="tax" class="text-gray-500">{{ __('Tax') }}</label>
-                            <input id="tax" name="tax" type="number" step="0.01" min="0" x-model.number="tax" class="no-spinner w-24 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
+                            <label for="tax" class="text-gray-500" x-text="isGstInvoice ? '{{ __('GST') }}' : '{{ __('Tax') }}'"></label>
+                            <input id="tax" name="tax" type="number" step="0.01" min="0" x-model.number="tax" :readonly="isGstInvoice" :class="isGstInvoice ? 'bg-gray-100 text-gray-500' : ''" class="no-spinner w-24 text-right border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
                         </div>
                         <div class="flex justify-between items-center text-sm">
                             <label for="transportation" class="text-gray-500">{{ __('Transport') }}</label>
@@ -477,13 +500,25 @@
                 discountType: 'amount',
                 discountPercent: 0,
                 tax: 0,
+                isGstInvoice: false,
                 transportation: 0,
                 paymentType: 'full',
                 paymentMode: 'cash',
                 partAmount: 0,
 
+                init() {
+                    // Keeps the Tax field in sync with each line's own GST
+                    // rate while the toggle is on — only an estimate for the
+                    // UI, the real CGST/SGST/IGST split is computed server-side.
+                    this.$watch('isGstInvoice', () => { if (this.isGstInvoice) this.tax = this.estimatedGstTax; });
+                    this.$watch('lines', () => { if (this.isGstInvoice) this.tax = this.estimatedGstTax; }, { deep: true });
+                },
+
                 get subtotal() {
                     return this.lines.reduce((sum, line) => sum + (line.quantity * (line.unit_price || 0)), 0);
+                },
+                get estimatedGstTax() {
+                    return Math.round(this.lines.reduce((sum, line) => sum + (line.quantity * (line.unit_price || 0) * ((line.gstRate || 0) / 100)), 0) * 100) / 100;
                 },
                 get total() {
                     return Math.max(0, this.subtotal - (this.discount || 0) + (this.tax || 0) + (this.transportation || 0));
@@ -556,6 +591,7 @@
                         quantity: 1,
                         unit_price: item.selling_price,
                         baseSellingPrice: item.selling_price,
+                        gstRate: item.gst_rate || 0,
                     });
                     this.itemQuery = '';
                     this.itemResults = [];
@@ -573,6 +609,7 @@
                         quantity: 1,
                         unit_price: line.unit_price,
                         baseSellingPrice: line.baseSellingPrice,
+                        gstRate: line.gstRate || 0,
                     });
                 },
                 availableStock(line) {

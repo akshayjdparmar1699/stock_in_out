@@ -27,6 +27,8 @@ class UpdateItemRequest extends FormRequest
             'purchase_price' => ['required', 'numeric', 'min:0'],
             'selling_price' => ['required', 'numeric', 'min:0'],
             'low_stock_threshold' => ['required', 'integer', 'min:0'],
+            'hsn_code' => ['nullable', 'string', 'max:20'],
+            'gst_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
         ];
     }

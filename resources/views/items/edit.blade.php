@@ -65,6 +65,19 @@
                                 <p class="text-xs text-gray-400 mt-1">{{ __('Helps search fast while billing') }}</p>
                                 <x-input-error :messages="$errors->get('sku')" class="mt-2" />
                             </div>
+                            @if ($gstEnabled ?? false)
+                                <div>
+                                    <x-input-label for="hsn_code">{{ __('HSN code') }} <span class="text-gray-400 text-xs font-normal">({{ __('optional') }})</span></x-input-label>
+                                    <x-text-input id="hsn_code" name="hsn_code" type="text" class="mt-1 block w-full" :value="old('hsn_code', $item->hsn_code)" placeholder="{{ __('e.g. 0701') }}" />
+                                    <x-input-error :messages="$errors->get('hsn_code')" class="mt-2" />
+                                </div>
+                                <div>
+                                    <x-input-label for="gst_rate">{{ __('GST rate %') }} <span class="text-gray-400 text-xs font-normal">({{ __('optional') }})</span></x-input-label>
+                                    <x-text-input id="gst_rate" name="gst_rate" type="number" step="0.01" min="0" max="100" class="mt-1 block w-full" :value="old('gst_rate', $item->gst_rate)" placeholder="{{ __('e.g. 5') }}" />
+                                    <p class="text-xs text-gray-400 mt-1">{{ __('Used to calculate CGST+SGST or IGST on GST invoices.') }}</p>
+                                    <x-input-error :messages="$errors->get('gst_rate')" class="mt-2" />
+                                </div>
+                            @endif
                         </div>
                     </div>
 

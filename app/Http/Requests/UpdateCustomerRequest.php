@@ -20,6 +20,7 @@ class UpdateCustomerRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'gst_number' => ['nullable', 'string', 'max:30'],
+            'state' => ['nullable', 'string', 'max:255'],
             'opening_balance' => ['nullable', 'numeric', 'min:0'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'branch_ids' => ['nullable', 'array'],

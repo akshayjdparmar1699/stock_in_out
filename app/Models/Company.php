@@ -14,7 +14,6 @@ class Company extends Model
     protected $fillable = [
         'name',
         'is_active',
-        'daily_whatsapp_reports_enabled',
         'gst_enabled',
         'invoice_terms',
     ];
@@ -23,7 +22,6 @@ class Company extends Model
     {
         return [
             'is_active' => 'boolean',
-            'daily_whatsapp_reports_enabled' => 'boolean',
             'gst_enabled' => 'boolean',
         ];
     }

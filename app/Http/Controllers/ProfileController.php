@@ -44,10 +44,9 @@ class ProfileController extends Controller
     }
 
     /**
-     * The company-wide master switch for GST invoicing — mirrors
-     * SalesReportController::toggleWhatsapp()'s exact pattern. Only while
-     * this is on does the per-invoice "Make this a GST invoice" toggle
-     * appear anywhere.
+     * The company-wide master switch for GST invoicing. Only while this is
+     * on does the per-invoice "Make this a GST invoice" toggle appear
+     * anywhere.
      */
     public function toggleGst(Request $request): RedirectResponse
     {

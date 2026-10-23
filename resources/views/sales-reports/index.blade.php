@@ -102,20 +102,6 @@
                     </a>
                 @endforeach
             </div>
-
-            <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-5 flex items-center justify-between gap-4">
-                <div>
-                    <div class="font-semibold text-gray-900">{{ __('Send reports on WhatsApp every day') }}</div>
-                    <p class="text-xs text-gray-400 mt-0.5">{{ __("Owners get today's sales, profit and cash at 9 PM.") }}</p>
-                </div>
-                <form method="POST" action="{{ route('sales-reports.whatsapp-toggle') }}">
-                    @csrf
-                    <button type="submit"
-                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 {{ $whatsappEnabled ? 'bg-green-500' : 'bg-gray-300' }}">
-                        <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {{ $whatsappEnabled ? 'translate-x-6' : 'translate-x-1' }}"></span>
-                    </button>
-                </form>
-            </div>
         </div>
     </div>
 </x-app-layout>

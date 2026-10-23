@@ -11,7 +11,6 @@ use App\Models\ItemStock;
 use App\Models\Purchase;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -53,7 +52,6 @@ class SalesReportController extends Controller
             'purchasesTotal' => $this->purchasesTotal($branchIds, $from, $to),
             'expensesTotal' => $expensesTotal,
             'bestItem' => $this->bestItemName($branchIds, $from, $to),
-            'whatsappEnabled' => (bool) $user->company?->daily_whatsapp_reports_enabled,
         ]);
     }
 
@@ -171,14 +169,6 @@ class SalesReportController extends Controller
             'period' => $period,
             'sort' => $sortColumn,
         ]);
-    }
-
-    public function toggleWhatsapp(Request $request): RedirectResponse
-    {
-        $company = $request->user()->company;
-        $company->update(['daily_whatsapp_reports_enabled' => ! $company->daily_whatsapp_reports_enabled]);
-
-        return back();
     }
 
     // -----------------------------------------------------------------

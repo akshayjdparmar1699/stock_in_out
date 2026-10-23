@@ -193,7 +193,6 @@ Route::middleware(['auth', 'verified', 'not_super_admin', 'subscription.check'])
         Route::get('/profit-loss', [SalesReportController::class, 'profitLoss'])->name('profit-loss');
         Route::get('/profit-loss/pdf', [SalesReportController::class, 'profitLossPdf'])->name('profit-loss.pdf');
         Route::get('/item-wise-profit', [SalesReportController::class, 'itemWiseProfit'])->name('item-wise-profit');
-        Route::post('/whatsapp-toggle', [SalesReportController::class, 'toggleWhatsapp'])->name('whatsapp-toggle');
     });
 });
 

@@ -374,7 +374,7 @@ class CustomerController extends Controller
 
             $this->notifyBranch();
 
-            return redirect()->route('customers.show', $customer)
+            return redirect()->back()
                 ->with('status', "Refund of ₹".number_format($data['amount'], 2)." recorded for \"{$customer->name}\".");
         }
 
@@ -434,7 +434,11 @@ class CustomerController extends Controller
 
         $receiptUrl = AdminAlertService::paymentReceiptUrl($customer, (float) $data['amount'], $customer->refresh()->dueAmount());
 
-        return redirect()->route('customers.show', $customer)
+        // back() rather than always customers.show, so this same action
+        // works equally from the customer's own page and from the New Bill
+        // screen's "receive payment against previous due" section — each
+        // lands back where it was triggered from.
+        return redirect()->back()
             ->with('status', "Payment of ₹".number_format($data['amount'], 2)." recorded for \"{$customer->name}\".")
             ->with('open_whatsapp_url', $receiptUrl);
     }

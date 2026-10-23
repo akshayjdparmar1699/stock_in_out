@@ -445,6 +445,68 @@
                     </div>
                 </div>
             </form>
+
+            {{--
+                A separate form (HTML doesn't allow nesting forms inside
+                #invoice-form) for settling the customer's OLDER due — the
+                Partial amount above is capped to this new bill's own
+                total on purpose (it's "how much of THIS bill was paid"),
+                so a customer clearing a bigger chunk of what they already
+                owed needs this instead. Posts straight to the same
+                customers.payments.store endpoint and FIFO-allocation logic
+                the customer's own "Receive payment" page uses — nothing
+                new to maintain here, just another entry point to it.
+            --}}
+            <div class="mt-4 lg:w-[calc((100%-1.5rem)/3)] lg:ml-auto"
+                x-show="selectedCustomer && selectedCustomer.due > 0" style="display: none;"
+                x-data="{ dueType: 'paid', dueMode: 'cash' }">
+                <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 space-y-4">
+                    <h3 class="font-semibold text-gray-900">{{ __('Receive payment against previous due') }}</h3>
+
+                    <form method="POST" :action="'{{ url('/customers') }}/' + (selectedCustomer ? selectedCustomer.id : '') + '/payments'" class="space-y-3">
+                        @csrf
+                        <input type="hidden" name="mode" :value="dueMode">
+
+                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                            <label class="inline-flex items-center gap-2 text-gray-700">
+                                <input type="radio" name="type" value="paid" x-model="dueType" class="text-brand-600 focus:ring-brand-500">
+                                {{ __('We Received From Them') }}
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-gray-700">
+                                <input type="radio" name="type" value="received" x-model="dueType" class="text-brand-600 focus:ring-brand-500">
+                                {{ __('Refund Given To Them') }}
+                            </label>
+                        </div>
+
+                        <div>
+                            <x-input-label :value="__('Amount')" />
+                            <div class="relative mt-1">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                                <input type="number" step="0.01" min="0.01" name="amount"
+                                    class="no-spinner w-full pl-7 border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm" required>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            @foreach (['cash' => __('Cash'), 'upi' => __('UPI'), 'bank' => __('Bank')] as $value => $label)
+                                <button type="button" @click="dueMode = '{{ $value }}'"
+                                    class="px-2 py-1.5 text-sm font-medium rounded-md border-2"
+                                    :class="dueMode === '{{ $value }}' ? 'border-brand-600 text-brand-700 bg-brand-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
+                                    {{ $label }}
+                                </button>
+                            @endforeach
+                        </div>
+
+                        <x-text-input name="note" type="text" class="w-full" placeholder="{{ __('Note (optional)') }}" />
+
+                        <button type="submit" class="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold text-sm rounded-lg py-2.5">
+                            {{ __('Save payment') }}
+                        </button>
+
+                        <p class="text-xs text-gray-400 text-center">{{ __('Settles their older due — separate from this new bill.') }}</p>
+                    </form>
+                </div>
+            </div>
         </div>
 
         {{-- Mobile sticky action bar --}}

@@ -304,7 +304,7 @@
                         <div class="pt-1">
                             <p class="text-sm font-semibold text-gray-700 mb-2">{{ __('Paid to supplier now') }}</p>
                             <div class="grid grid-cols-3 gap-2">
-                                @foreach (['full' => __('Full'), 'part' => __('Part'), 'pay_later' => __('Pay later')] as $value => $label)
+                                @foreach (['unpaid' => __('Unpaid'), 'partial' => __('Partial'), 'paid' => __('Paid')] as $value => $label)
                                     <button type="button" @click="paymentType = '{{ $value }}'"
                                         class="px-2 py-2 text-sm font-medium rounded-lg border-2"
                                         :class="paymentType === '{{ $value }}' ? 'border-brand-600 text-brand-700 bg-brand-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
@@ -313,7 +313,7 @@
                                 @endforeach
                             </div>
 
-                            <div class="mt-2" x-show="paymentType === 'part'">
+                            <div class="mt-2" x-show="paymentType === 'partial'">
                                 <div class="relative">
                                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
                                     <input type="number" step="0.01" min="0" :max="total" x-model.number="partAmount"
@@ -321,7 +321,7 @@
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-3 gap-2 mt-3" x-show="paymentType !== 'pay_later'">
+                            <div class="grid grid-cols-3 gap-2 mt-3" x-show="paymentType !== 'unpaid'">
                                 @foreach (['cash' => __('Cash'), 'upi' => __('UPI'), 'bank' => __('Bank')] as $value => $label)
                                     <button type="button" @click="paymentMode = '{{ $value }}'"
                                         class="px-2 py-2 text-sm font-medium rounded-lg border-2"
@@ -333,7 +333,7 @@
                         </div>
 
                         <input type="hidden" name="paid_amount" :value="paidAmount">
-                        <input type="hidden" name="mode" :value="paymentType !== 'pay_later' ? paymentMode : ''">
+                        <input type="hidden" name="mode" :value="paymentType !== 'unpaid' ? paymentMode : ''">
 
                         <div class="pt-2 border-t border-gray-100 space-y-1.5" x-show="selectedSupplier">
                             <div class="flex justify-between items-center text-sm text-gray-500">
@@ -424,7 +424,7 @@
                 discountPercent: 0,
                 tax: 0,
                 transportation: 0,
-                paymentType: 'full',
+                paymentType: {{ \Illuminate\Support\Js::from($defaultPaymentStatus) }},
                 paymentMode: 'cash',
                 partAmount: 0,
 
@@ -435,8 +435,8 @@
                     return Math.max(0, this.subtotal - (this.discount || 0) + (this.tax || 0) + (this.transportation || 0));
                 },
                 get paidAmount() {
-                    if (this.paymentType === 'full') return this.total;
-                    if (this.paymentType === 'part') return Math.min(this.partAmount || 0, this.total);
+                    if (this.paymentType === 'paid') return this.total;
+                    if (this.paymentType === 'partial') return Math.min(this.partAmount || 0, this.total);
                     return 0;
                 },
                 get dueAfterPurchase() {

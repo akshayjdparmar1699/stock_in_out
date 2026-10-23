@@ -112,6 +112,7 @@
                         <a href="#gst" @click="active = 'gst'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('gst')">{{ __('GST invoicing') }}</a>
                         <a href="#invoice-terms" @click="active = 'invoice-terms'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('invoice-terms')">{{ __('Invoice terms') }}</a>
                         <a href="#default-payment-status" @click="active = 'default-payment-status'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('default-payment-status')">{{ __('Default bill status') }}</a>
+                        <a href="#default-purchase-payment-status" @click="active = 'default-purchase-payment-status'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('default-purchase-payment-status')">{{ __('Default purchase status') }}</a>
                     @endif
                     <a href="#notifications" @click="active = 'notifications'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('notifications')">{{ __('Notifications') }}</a>
                     <a href="#password" @click="active = 'password'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('password')">{{ __('Password & security') }}</a>
@@ -143,6 +144,10 @@
 
                         <div id="default-payment-status" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('default-payment-status')">
                             @include('profile.partials.default-payment-status-form')
+                        </div>
+
+                        <div id="default-purchase-payment-status" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('default-purchase-payment-status')">
+                            @include('profile.partials.default-purchase-payment-status-form')
                         </div>
                     @endif
 

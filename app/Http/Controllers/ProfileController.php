@@ -25,6 +25,7 @@ class ProfileController extends Controller
             'gstEnabled' => ! $user->isSuperAdmin() && (bool) $user->company?->gst_enabled,
             'invoiceTerms' => $user->isSuperAdmin() ? null : $user->company?->invoice_terms,
             'defaultPaymentStatus' => $user->isSuperAdmin() ? null : ($user->company?->default_invoice_payment_status ?? 'paid'),
+            'defaultPurchasePaymentStatus' => $user->isSuperAdmin() ? null : ($user->company?->default_purchase_payment_status ?? 'paid'),
         ]);
     }
 
@@ -93,6 +94,23 @@ class ProfileController extends Controller
         ]);
 
         return back()->with('status', 'default-payment-status-updated');
+    }
+
+    /**
+     * Same as updateDefaultPaymentStatus() above, for the New Purchase
+     * screen's starting payment status instead of New Bill's.
+     */
+    public function updateDefaultPurchasePaymentStatus(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'default_purchase_payment_status' => ['required', 'in:unpaid,partial,paid'],
+        ]);
+
+        $request->user()->company->update([
+            'default_purchase_payment_status' => $request->input('default_purchase_payment_status'),
+        ]);
+
+        return back()->with('status', 'default-purchase-payment-status-updated');
     }
 
     /**

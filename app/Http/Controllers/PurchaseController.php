@@ -203,6 +203,7 @@ class PurchaseController extends Controller
             'items' => $items,
             'nextPurchaseNumber' => $this->nextPurchaseNumber($branchId),
             'preselectSupplier' => $preselectSupplier,
+            'defaultPaymentStatus' => auth()->user()->company?->default_purchase_payment_status ?? 'paid',
         ]);
     }
 
@@ -377,6 +378,27 @@ class PurchaseController extends Controller
             $subtotal = $this->applyLines($purchase, $purchase->branch_id, $data['items']);
             $total = round($subtotal - $discount + $tax + $transportation, 2);
 
+            // The payment status buttons here correct the purchase's own
+            // recorded state — they don't create a new PurchasePayment row,
+            // since no real payment actually happened just now. A genuine
+            // new payment still goes through the payment form on the
+            // purchase page, which does create one. Falls back to the old
+            // derive-from-existing-paid_amount behaviour if payment_status
+            // isn't present, so this stays safe even if ever hit without it.
+            $paymentStatus = $data['payment_status']
+                ?? ($purchase->paid_amount >= $total ? 'paid' : ($purchase->paid_amount > 0 ? 'partial' : 'unpaid'));
+            $paidAmount = match ($paymentStatus) {
+                'paid' => $total,
+                'partial' => min((float) ($data['paid_amount'] ?? $purchase->paid_amount), $total),
+                default => 0.0,
+            };
+
+            // A "partial" amount clamped all the way up to the total is
+            // fully paid, not partial.
+            if ($paymentStatus === 'partial' && $total > 0 && $paidAmount >= $total) {
+                $paymentStatus = 'paid';
+            }
+
             $purchase->update([
                 'supplier_id' => $data['supplier_id'],
                 'purchase_date' => $data['purchase_date'],
@@ -385,7 +407,8 @@ class PurchaseController extends Controller
                 'tax' => $tax,
                 'transportation' => $transportation,
                 'total' => $total,
-                'status' => $purchase->paid_amount >= $total ? 'paid' : ($purchase->paid_amount > 0 ? 'partial' : 'unpaid'),
+                'paid_amount' => $paidAmount,
+                'status' => $paymentStatus,
                 'notes' => $data['notes'] ?? null,
             ]);
         });

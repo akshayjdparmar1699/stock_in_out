@@ -21,6 +21,10 @@ class StorePurchaseRequest extends FormRequest
             'tax' => ['nullable', 'numeric', 'min:0'],
             'transportation' => ['nullable', 'numeric', 'min:0'],
             'paid_amount' => ['nullable', 'numeric', 'min:0'],
+            // Only sent by the Edit screen's payment-status quick-correct
+            // buttons — Create derives status from paid_amount vs total
+            // instead, same as always, so this stays nullable here.
+            'payment_status' => ['nullable', 'in:unpaid,partial,paid'],
             'mode' => ['nullable', 'in:cash,upi,bank'],
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],

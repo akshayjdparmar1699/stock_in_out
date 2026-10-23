@@ -23,6 +23,7 @@ class ProfileController extends Controller
             'user' => $user,
             'subscription' => $user->isSuperAdmin() ? null : $user->company?->subscription?->load('plan'),
             'gstEnabled' => ! $user->isSuperAdmin() && (bool) $user->company?->gst_enabled,
+            'invoiceTerms' => $user->isSuperAdmin() ? null : $user->company?->invoice_terms,
         ]);
     }
 
@@ -54,6 +55,24 @@ class ProfileController extends Controller
         $company->update(['gst_enabled' => ! $company->gst_enabled]);
 
         return back();
+    }
+
+    /**
+     * Free-text terms & conditions shown at the bottom of every invoice
+     * PDF, GST or not. Left blank, the PDF falls back to a generic
+     * certification sentence instead of an empty "Terms" section.
+     */
+    public function updateInvoiceTerms(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'invoice_terms' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $request->user()->company->update([
+            'invoice_terms' => $request->input('invoice_terms') ?: null,
+        ]);
+
+        return back()->with('status', 'invoice-terms-updated');
     }
 
     /**

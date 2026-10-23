@@ -734,7 +734,7 @@ class InvoiceController extends Controller
     {
         abort_unless($this->belongsToCurrentCompany($invoice), 404);
 
-        $invoice->load(['customer', 'branch', 'items.item']);
+        $invoice->load(['customer', 'branch.company', 'items.item', 'payments']);
 
         return $this->renderPdf($invoice)->stream("{$invoice->invoice_number}.pdf");
     }

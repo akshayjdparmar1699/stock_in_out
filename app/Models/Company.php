@@ -16,6 +16,7 @@ class Company extends Model
         'is_active',
         'daily_whatsapp_reports_enabled',
         'gst_enabled',
+        'invoice_terms',
     ];
 
     protected function casts(): array

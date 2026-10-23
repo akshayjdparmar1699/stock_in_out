@@ -113,6 +113,7 @@
                     @if ($user->isAdmin())
                         <a href="#gst" @click="active = 'gst'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('gst')">{{ __('GST invoicing') }}</a>
                         <a href="#invoice-terms" @click="active = 'invoice-terms'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('invoice-terms')">{{ __('Invoice terms') }}</a>
+                        <a href="#default-payment-status" @click="active = 'default-payment-status'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('default-payment-status')">{{ __('Default bill status') }}</a>
                     @endif
                     <a href="#notifications" @click="active = 'notifications'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('notifications')">{{ __('Notifications') }}</a>
                     <a href="#password" @click="active = 'password'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('password')">{{ __('Password & security') }}</a>
@@ -141,6 +142,10 @@
 
                         <div id="invoice-terms" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('invoice-terms')">
                             @include('profile.partials.invoice-terms-form')
+                        </div>
+
+                        <div id="default-payment-status" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('default-payment-status')">
+                            @include('profile.partials.default-payment-status-form')
                         </div>
                     @endif
 

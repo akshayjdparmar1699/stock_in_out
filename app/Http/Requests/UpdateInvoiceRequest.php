@@ -21,6 +21,8 @@ class UpdateInvoiceRequest extends FormRequest
             'discount' => ['nullable', 'numeric', 'min:0'],
             'tax' => ['nullable', 'numeric', 'min:0'],
             'transportation' => ['nullable', 'numeric', 'min:0'],
+            'payment_status' => ['required', 'in:unpaid,partial,paid'],
+            'paid_amount' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.item_id' => ['required', Rule::exists('items', 'id')->where('company_id', $this->user()?->company_id)],

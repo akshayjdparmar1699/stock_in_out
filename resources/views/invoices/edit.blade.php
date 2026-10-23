@@ -340,16 +340,43 @@
                             <span>{{ __('Total') }}</span>
                             <span x-text="'₹' + total.toFixed(0)"></span>
                         </div>
+
+                        <div class="pt-1">
+                            <p class="text-sm font-semibold text-gray-700 mb-2">{{ __('Payment status') }}</p>
+                            <div class="grid grid-cols-3 gap-2">
+                                @foreach (['unpaid' => __('Unpaid'), 'partial' => __('Partial'), 'paid' => __('Paid')] as $value => $label)
+                                    <button type="button" @click="paymentStatus = '{{ $value }}'"
+                                        class="px-2 py-2 text-sm font-medium rounded-lg border-2"
+                                        :class="paymentStatus === '{{ $value }}' ? 'border-brand-600 text-brand-700 bg-brand-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
+                                        {{ $label }}
+                                    </button>
+                                @endforeach
+                            </div>
+
+                            <div class="mt-2" x-show="paymentStatus === 'partial'">
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                                    <input type="number" step="0.01" min="0" :max="total" x-model.number="editedPaidAmount"
+                                        class="no-spinner w-full pl-7 border-gray-300 rounded-lg shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm" placeholder="{{ __('Amount received') }}">
+                                </div>
+                            </div>
+
+                            <p class="text-xs text-gray-400 mt-2">{{ __('Corrects the bill\'s own recorded status — it does not add a new entry to the payment history below.') }}</p>
+                        </div>
+
+                        <input type="hidden" name="payment_status" :value="paymentStatus">
+                        <input type="hidden" name="paid_amount" :value="paidAmount">
+
                         <div class="flex justify-between items-center text-sm text-gray-500">
                             <span>{{ __('Paid so far') }}</span>
-                            <span>&#8377;{{ number_format($invoice->paid_amount, 2) }}</span>
+                            <span x-text="'₹' + paidAmount.toFixed(2)"></span>
                         </div>
                         <div class="flex justify-between items-center text-sm font-bold pt-1.5 border-t border-gray-100"
-                            :class="(total - {{ (float) $invoice->paid_amount }}) > 0 ? 'text-red-600' : 'text-green-600'">
-                            <span x-text="(total - {{ (float) $invoice->paid_amount }}) > 0 ? '{{ __('New balance due') }}' : '{{ __('Settled / In credit') }}'"></span>
-                            <span x-text="(total - {{ (float) $invoice->paid_amount }}) < 0
-                                ? '₹' + Math.abs(total - {{ (float) $invoice->paid_amount }}).toFixed(0) + ' CR'
-                                : '₹' + (total - {{ (float) $invoice->paid_amount }}).toFixed(0)"></span>
+                            :class="(total - paidAmount) > 0 ? 'text-red-600' : 'text-green-600'">
+                            <span x-text="(total - paidAmount) > 0 ? '{{ __('New balance due') }}' : '{{ __('Settled / In credit') }}'"></span>
+                            <span x-text="(total - paidAmount) < 0
+                                ? '₹' + Math.abs(total - paidAmount).toFixed(0) + ' CR'
+                                : '₹' + (total - paidAmount).toFixed(0)"></span>
                         </div>
 
                         <button type="submit" class="hidden lg:block w-full px-4 py-3 bg-brand-700 text-white text-sm font-semibold rounded-lg hover:bg-brand-800">
@@ -412,12 +439,19 @@
                 discountPercent: 0,
                 tax: {{ (float) $invoice->tax }},
                 transportation: {{ (float) $invoice->transportation }},
+                paymentStatus: {{ \Illuminate\Support\Js::from($invoice->status) }},
+                editedPaidAmount: {{ (float) $invoice->paid_amount }},
 
                 get subtotal() {
                     return this.lines.reduce((sum, line) => sum + (line.quantity * (line.unit_price || 0)), 0);
                 },
                 get total() {
                     return Math.max(0, this.subtotal - (this.discount || 0) + (this.tax || 0) + (this.transportation || 0));
+                },
+                get paidAmount() {
+                    if (this.paymentStatus === 'paid') return this.total;
+                    if (this.paymentStatus === 'partial') return Math.min(this.editedPaidAmount || 0, this.total);
+                    return 0;
                 },
                 get exactNameMatch() {
                     const q = this.customerQuery.trim().toLowerCase();

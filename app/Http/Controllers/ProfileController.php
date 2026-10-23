@@ -24,6 +24,7 @@ class ProfileController extends Controller
             'subscription' => $user->isSuperAdmin() ? null : $user->company?->subscription?->load('plan'),
             'gstEnabled' => ! $user->isSuperAdmin() && (bool) $user->company?->gst_enabled,
             'invoiceTerms' => $user->isSuperAdmin() ? null : $user->company?->invoice_terms,
+            'defaultPaymentStatus' => $user->isSuperAdmin() ? null : ($user->company?->default_invoice_payment_status ?? 'paid'),
         ]);
     }
 
@@ -72,6 +73,26 @@ class ProfileController extends Controller
         ]);
 
         return back()->with('status', 'invoice-terms-updated');
+    }
+
+    /**
+     * Which payment status the New Bill screen starts on — lets a company
+     * that bills mostly on credit (or mostly collects in full up front)
+     * pick the button that matches their usual case as the default,
+     * instead of always starting on "Paid" and having to switch it every
+     * single bill.
+     */
+    public function updateDefaultPaymentStatus(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'default_invoice_payment_status' => ['required', 'in:unpaid,partial,paid'],
+        ]);
+
+        $request->user()->company->update([
+            'default_invoice_payment_status' => $request->input('default_invoice_payment_status'),
+        ]);
+
+        return back()->with('status', 'default-payment-status-updated');
     }
 
     /**

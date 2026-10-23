@@ -203,6 +203,7 @@ class InvoiceController extends Controller
             'items' => $items,
             'nextInvoiceNumber' => $this->nextInvoiceNumber($branchId),
             'gstEnabled' => (bool) auth()->user()->company?->gst_enabled,
+            'defaultPaymentStatus' => auth()->user()->company?->default_invoice_payment_status ?? 'paid',
         ]);
     }
 
@@ -449,6 +450,26 @@ class InvoiceController extends Controller
 
             $total = round($subtotal - $discount + $tax + $transportation, 2);
 
+            // The payment status buttons here correct the bill's own
+            // recorded state (e.g. it was billed as "Unpaid" by mistake and
+            // should say "Paid") — they don't create a new InvoicePayment
+            // row, since no real payment actually happened just now. A
+            // genuine new payment still goes through "Record a payment" on
+            // the invoice page, which does create one.
+            $paymentStatus = $data['payment_status'];
+            $paidAmount = match ($paymentStatus) {
+                'paid' => $total,
+                'partial' => min((float) ($data['paid_amount'] ?? 0), $total),
+                default => 0.0,
+            };
+
+            // A "partial" amount clamped all the way up to the total is
+            // fully paid, not partial — avoids a "Partial" badge sitting at
+            // exactly 100%.
+            if ($paymentStatus === 'partial' && $total > 0 && $paidAmount >= $total) {
+                $paymentStatus = 'paid';
+            }
+
             $invoice->update([
                 'customer_id' => $customerId,
                 'guest_customer_name' => $customerId ? null : $data['guest_customer_name'],
@@ -458,7 +479,8 @@ class InvoiceController extends Controller
                 'tax' => $tax,
                 'transportation' => $transportation,
                 'total' => $total,
-                'status' => $invoice->paid_amount >= $total ? 'paid' : ($invoice->paid_amount > 0 ? 'partial' : 'unpaid'),
+                'paid_amount' => $paidAmount,
+                'status' => $paymentStatus,
                 'notes' => $data['notes'] ?? null,
             ]);
         });

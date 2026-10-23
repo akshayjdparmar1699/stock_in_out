@@ -211,6 +211,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
     Route::post('/profile/gst-toggle', [ProfileController::class, 'toggleGst'])->name('profile.gst-toggle');
     Route::patch('/profile/invoice-terms', [ProfileController::class, 'updateInvoiceTerms'])->name('profile.invoice-terms');
+    Route::patch('/profile/default-payment-status', [ProfileController::class, 'updateDefaultPaymentStatus'])->name('profile.default-payment-status');
     Route::get('/profile/download', [ProfileController::class, 'downloadData'])->name('profile.download');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });

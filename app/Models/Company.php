@@ -16,6 +16,7 @@ class Company extends Model
         'is_active',
         'gst_enabled',
         'invoice_terms',
+        'default_invoice_payment_status',
     ];
 
     protected function casts(): array

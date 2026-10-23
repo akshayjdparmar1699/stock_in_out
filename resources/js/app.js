@@ -431,17 +431,23 @@ document.addEventListener('submit', (e) => {
     const form = e.target;
     // e.submitter is the exact button that triggered this submission — a
     // plain form.querySelector() instead would always grab the first
-    // submit button in DOM order, and disabling that one is harmless for
-    // most forms (they only ever have one submit button) but breaks any
-    // form with several real submit buttons sharing one name (e.g. three
-    // "pick one of these" buttons): disabling the wrong one does nothing,
-    // but if the first button is the one actually clicked, disabling it
-    // mid-submit drops its own name=value pair from what gets sent.
+    // submit button in DOM order, which is wrong for any form with several
+    // real submit buttons sharing one name (e.g. three "pick one of these"
+    // buttons).
     const btn = e.submitter || form.querySelector('button[type="submit"]') || form.querySelector('button:not([type="button"])');
     if (btn && !btn.disabled) {
-        btn.disabled = true;
-        btn.classList.add('opacity-75', 'cursor-wait');
-        btn.insertAdjacentHTML('afterbegin', spinnerSvg('w-4 h-4 inline -ml-1 mr-2'));
+        // The browser builds this submission's form-data set from live DOM
+        // state right after this 'submit' event finishes dispatching —
+        // disabling the submitter itself in this same handler drops its
+        // own name=value pair from what actually gets sent (a disabled
+        // control never contributes, submitter or not). Deferring the
+        // disable by one tick lets the browser capture this click's data
+        // first; the visual delay is imperceptible.
+        setTimeout(() => {
+            btn.disabled = true;
+            btn.classList.add('opacity-75', 'cursor-wait');
+            btn.insertAdjacentHTML('afterbegin', spinnerSvg('w-4 h-4 inline -ml-1 mr-2'));
+        }, 0);
     }
 });
 

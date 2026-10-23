@@ -21,7 +21,7 @@
 
     @php $currentBranchId = \App\Services\BranchContext::id(); @endphp
 
-    <div class="py-6 sm:py-12 pb-28 lg:pb-12" x-data="{ deleteOpen: false, deleteForm: null, deleteLabel: '' }">
+    <div class="py-6 sm:py-12 pb-28 lg:pb-12">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -34,36 +34,17 @@
                             : trans_choice('{1} 1 staff user|[2,*] :count staff users', $branch->users_count, ['count' => $branch->users_count]);
                     @endphp
                     <div class="bg-white rounded-2xl border {{ $branch->id === $currentBranchId ? 'border-brand-300' : 'border-gray-100' }} shadow-sm p-5">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <span class="w-11 h-11 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center shrink-0">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21" /></svg>
-                                </span>
-                                <div class="min-w-0">
-                                    <div class="font-semibold text-gray-900 truncate">{{ $branch->name }}</div>
-                                    <div class="flex items-center gap-1.5 mt-1 flex-wrap">
-                                        <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{{ __('Code') }} {{ $branch->code }}</span>
-                                        @if ($branch->id === $currentBranchId)
-                                            <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">{{ __('YOU ARE HERE') }}</span>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="relative shrink-0" x-data="{ menuOpen: false }">
-                                <button type="button" @click="menuOpen = !menuOpen" class="w-8 h-8 rounded-lg text-gray-500 flex items-center justify-center hover:bg-gray-100">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm8 0a2 2 0 11-4 0 2 2 0 014 0zm6 2a2 2 0 100-4 2 2 0 000 4z"/></svg>
-                                </button>
-                                <div x-show="menuOpen" @click.outside="menuOpen = false" style="display: none"
-                                    x-transition class="absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10">
-                                    <form method="POST" action="{{ route('branches.destroy', $branch) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button"
-                                            @click="deleteForm = $el.closest('form'); deleteLabel = {{ \Illuminate\Support\Js::from($branch->name) }}; deleteOpen = true; menuOpen = false"
-                                            class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50">
-                                            {{ __('Delete') }}
-                                        </button>
-                                    </form>
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="w-11 h-11 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21" /></svg>
+                            </span>
+                            <div class="min-w-0">
+                                <div class="font-semibold text-gray-900 truncate">{{ $branch->name }}</div>
+                                <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{{ __('Code') }} {{ $branch->code }}</span>
+                                    @if ($branch->id === $currentBranchId)
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">{{ __('YOU ARE HERE') }}</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -128,7 +109,5 @@
                 {{ __('+ Add Branch') }}
             </a>
         </div>
-
-        @include('partials.delete-confirm-modal')
     </div>
 </x-app-layout>

@@ -81,12 +81,10 @@
                     active: 'profile-information',
                     isActive(id) { return this.active === id },
                     cardClass(id) {
-                        if (!this.isActive(id)) return 'border-gray-100';
-                        return id === 'delete-account' ? 'border-red-200 ring-2 ring-red-100' : 'border-brand-200 ring-2 ring-brand-100';
+                        return this.isActive(id) ? 'border-brand-200 ring-2 ring-brand-100' : 'border-gray-100';
                     },
-                    navClass(id, danger) {
-                        if (this.isActive(id)) return danger ? 'bg-red-50 text-red-600' : 'bg-brand-50 text-brand-700';
-                        return danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-600 hover:bg-gray-50';
+                    navClass(id) {
+                        return this.isActive(id) ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50';
                     },
                 }"
                 x-init="
@@ -117,7 +115,6 @@
                     @endif
                     <a href="#notifications" @click="active = 'notifications'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('notifications')">{{ __('Notifications') }}</a>
                     <a href="#password" @click="active = 'password'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('password')">{{ __('Password & security') }}</a>
-                    <a href="#delete-account" @click="active = 'delete-account'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('delete-account', true)">{{ __('Delete account') }}</a>
                 </nav>
 
                 <div class="space-y-6 min-w-0">
@@ -165,10 +162,6 @@
                     <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">
                         @csrf
                     </form>
-
-                    <div id="delete-account" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('delete-account')">
-                        @include('profile.partials.delete-user-form')
-                    </div>
                 </div>
             </div>
         </div>

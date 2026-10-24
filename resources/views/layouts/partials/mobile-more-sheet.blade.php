@@ -27,47 +27,59 @@
 
         <div class="overflow-y-auto px-4 py-4" style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);">
             <div class="grid grid-cols-3 gap-3">
+                @if (Auth::user()->canAccess('items', 'view'))
                 <a href="{{ route('items.index') }}" class="{{ $moreLinkClass(request()->routeIs('items.*')) }}">
                     <svg class="{{ $moreIconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
                     </svg>
                     <span class="text-xs font-medium text-center">{{ __('Items') }}</span>
                 </a>
+                @endif
 
+                @if (Auth::user()->canAccess('stock', 'view'))
                 <a href="{{ route('batches.index') }}" class="{{ $moreLinkClass(request()->routeIs('batches.*')) }}">
                     <svg class="{{ $moreIconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
                     </svg>
                     <span class="text-xs font-medium text-center">{{ __('Maal In Out') }}</span>
                 </a>
+                @endif
 
+                @if (Auth::user()->canAccess('purchases', 'view'))
                 <a href="{{ route('purchases.index') }}" class="{{ $moreLinkClass(request()->routeIs('purchases.*')) }}">
                     <svg class="{{ $moreIconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                     </svg>
                     <span class="text-xs font-medium text-center">{{ __('Purchases') }}</span>
                 </a>
+                @endif
 
+                @if (Auth::user()->canAccess('suppliers', 'view'))
                 <a href="{{ route('suppliers.index') }}" class="{{ $moreLinkClass(request()->routeIs('suppliers.*')) }}">
                     <svg class="{{ $moreIconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 0h-12" />
                     </svg>
                     <span class="text-xs font-medium text-center">{{ __('Suppliers') }}</span>
                 </a>
+                @endif
 
+                @if (Auth::user()->canAccess('staff', 'view'))
                 <a href="{{ route('staff.index') }}" class="{{ $moreLinkClass(request()->routeIs('staff.*')) }}">
                     <svg class="{{ $moreIconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                     </svg>
                     <span class="text-xs font-medium text-center">{{ __('Staff & Partners') }}</span>
                 </a>
+                @endif
 
+                @if (Auth::user()->canAccess('expenses', 'view'))
                 <a href="{{ route('expenses.index') }}" class="{{ $moreLinkClass(request()->routeIs('expenses.*')) }}">
                     <svg class="{{ $moreIconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span class="text-xs font-medium text-center">{{ __('Expenses') }}</span>
                 </a>
+                @endif
 
                 @if (Auth::user()->isAdmin())
                     <a href="{{ route('sales-reports.index') }}" class="{{ $moreLinkClass(request()->routeIs('sales-reports.*')) }}">

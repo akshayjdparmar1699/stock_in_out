@@ -63,6 +63,19 @@ class User extends Authenticatable
         return $this->role === self::ROLE_SUPER_ADMIN;
     }
 
+    /**
+     * Admins and super admins always have full access — Role permission in
+     * Settings only ever restricts the "staff" role.
+     */
+    public function canAccess(string $module, string $action): bool
+    {
+        if ($this->isAdmin() || $this->isSuperAdmin()) {
+            return true;
+        }
+
+        return \App\Models\RolePermission::allows($this->company_id, $module, $action);
+    }
+
     public function avatarUrl(): ?string
     {
         return $this->avatar_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar_path) : null;

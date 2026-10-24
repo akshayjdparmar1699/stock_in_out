@@ -37,7 +37,7 @@
                         @include('layouts.partials.mobile-top-strip')
                     @endunless
 
-                    <div class="{{ request()->routeIs('dashboard', 'profile.edit') ? 'hidden lg:flex' : 'flex' }} items-center gap-4 px-4 sm:px-6 lg:px-6 py-4">
+                    <div class="{{ request()->routeIs('dashboard', 'profile.edit', 'settings.edit') ? 'hidden lg:flex' : 'flex' }} items-center gap-4 px-4 sm:px-6 lg:px-6 py-4">
                         @if (Auth::user()->isSuperAdmin())
                             <form method="POST" action="{{ route('logout') }}" class="lg:hidden">
                                 @csrf

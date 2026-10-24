@@ -144,51 +144,68 @@ Route::middleware(['auth', 'verified', 'not_super_admin', 'subscription.check'])
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit')->middleware('admin');
     Route::put('/settings/invoice-format', [SettingsController::class, 'updateInvoiceFormat'])->name('settings.invoice-format')->middleware('admin');
     Route::get('/settings/invoice-format/preview', [SettingsController::class, 'previewInvoiceFormat'])->name('settings.invoice-format.preview')->middleware('admin');
+    Route::put('/settings/role-permissions', [SettingsController::class, 'updateRolePermissions'])->name('settings.role-permissions')->middleware('admin');
 
-    Route::get('/items/search', [ItemController::class, 'search'])->name('items.search');
-    Route::get('/items/export', [ItemController::class, 'export'])->name('items.export');
-    Route::resource('items', ItemController::class);
+    Route::middleware('module:items')->group(function () {
+        Route::get('/items/search', [ItemController::class, 'search'])->name('items.search');
+        Route::get('/items/export', [ItemController::class, 'export'])->name('items.export');
+        Route::resource('items', ItemController::class);
+    });
 
-    Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
-    Route::get('/stock/create', [StockController::class, 'create'])->name('stock.create');
-    Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
-    Route::get('/stock/{movement}/edit', [StockController::class, 'edit'])->name('stock.edit');
-    Route::put('/stock/{movement}', [StockController::class, 'update'])->name('stock.update');
-    Route::delete('/stock/{movement}', [StockController::class, 'destroy'])->name('stock.destroy');
+    Route::middleware('module:stock')->group(function () {
+        Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
+        Route::get('/stock/create', [StockController::class, 'create'])->name('stock.create');
+        Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
+        Route::get('/stock/{movement}/edit', [StockController::class, 'edit'])->name('stock.edit');
+        Route::put('/stock/{movement}', [StockController::class, 'update'])->name('stock.update');
+        Route::delete('/stock/{movement}', [StockController::class, 'destroy'])->name('stock.destroy');
 
-    Route::resource('batches', BatchController::class)->only(['index', 'show']);
+        Route::resource('batches', BatchController::class)->only(['index', 'show']);
+    });
 
-    Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
-    Route::get('/customers/export', [CustomerController::class, 'export'])->name('customers.export');
-    Route::patch('/customers/{customer}/toggle-active', [CustomerController::class, 'toggleActive'])->name('customers.toggle-active');
-    Route::get('/customers/{customer}/statement-pdf', [CustomerController::class, 'statementPdf'])->name('customers.statement-pdf');
-    Route::post('/customers/{customer}/payments', [CustomerController::class, 'storePayment'])->name('customers.payments.store');
-    Route::delete('/customers/{customer}/payments/{key}', [CustomerController::class, 'destroyPayment'])->name('customers.payments.destroy');
-    Route::resource('customers', CustomerController::class);
+    Route::middleware('module:customers')->group(function () {
+        Route::get('/customers/search', [CustomerController::class, 'search'])->name('customers.search');
+        Route::get('/customers/export', [CustomerController::class, 'export'])->name('customers.export');
+        Route::patch('/customers/{customer}/toggle-active', [CustomerController::class, 'toggleActive'])->name('customers.toggle-active');
+        Route::get('/customers/{customer}/statement-pdf', [CustomerController::class, 'statementPdf'])->name('customers.statement-pdf');
+        Route::post('/customers/{customer}/payments', [CustomerController::class, 'storePayment'])->name('customers.payments.store');
+        Route::delete('/customers/{customer}/payments/{key}', [CustomerController::class, 'destroyPayment'])->name('customers.payments.destroy');
+        Route::resource('customers', CustomerController::class);
+    });
 
-    Route::get('/invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
-    Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
-    Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])->name('invoices.payments.store');
-    Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+    Route::middleware('module:invoices')->group(function () {
+        Route::get('/invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
+        Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+        Route::post('/invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])->name('invoices.payments.store');
+        Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+    });
 
-    Route::get('/suppliers/search', [SupplierController::class, 'search'])->name('suppliers.search');
-    Route::get('/suppliers/export', [SupplierController::class, 'export'])->name('suppliers.export');
-    Route::get('/suppliers/{supplier}/statement-pdf', [SupplierController::class, 'statementPdf'])->name('suppliers.statement-pdf');
-    Route::post('/suppliers/{supplier}/payments', [SupplierController::class, 'storePayment'])->name('suppliers.payments.store');
-    Route::delete('/suppliers/{supplier}/payments/{key}', [SupplierController::class, 'destroyPayment'])->name('suppliers.payments.destroy');
-    Route::resource('suppliers', SupplierController::class)->except(['destroy']);
+    Route::middleware('module:suppliers')->group(function () {
+        Route::get('/suppliers/search', [SupplierController::class, 'search'])->name('suppliers.search');
+        Route::get('/suppliers/export', [SupplierController::class, 'export'])->name('suppliers.export');
+        Route::get('/suppliers/{supplier}/statement-pdf', [SupplierController::class, 'statementPdf'])->name('suppliers.statement-pdf');
+        Route::post('/suppliers/{supplier}/payments', [SupplierController::class, 'storePayment'])->name('suppliers.payments.store');
+        Route::delete('/suppliers/{supplier}/payments/{key}', [SupplierController::class, 'destroyPayment'])->name('suppliers.payments.destroy');
+        Route::resource('suppliers', SupplierController::class)->except(['destroy']);
+    });
 
-    Route::get('/purchases/export', [PurchaseController::class, 'export'])->name('purchases.export');
-    Route::resource('purchases', PurchaseController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
-    Route::post('/purchases/{purchase}/payments', [PurchaseController::class, 'storePayment'])->name('purchases.payments.store');
-    Route::get('/purchases/{purchase}/pdf', [PurchaseController::class, 'pdf'])->name('purchases.pdf');
+    Route::middleware('module:purchases')->group(function () {
+        Route::get('/purchases/export', [PurchaseController::class, 'export'])->name('purchases.export');
+        Route::resource('purchases', PurchaseController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+        Route::post('/purchases/{purchase}/payments', [PurchaseController::class, 'storePayment'])->name('purchases.payments.store');
+        Route::get('/purchases/{purchase}/pdf', [PurchaseController::class, 'pdf'])->name('purchases.pdf');
+    });
 
-    Route::patch('/staff/{staffMember}/toggle-active', [StaffMemberController::class, 'toggleActive'])->name('staff.toggle-active');
-    Route::post('/staff/{staffMember}/payments', [StaffMemberController::class, 'storePayment'])->name('staff.payments.store');
-    Route::resource('staff', StaffMemberController::class)->except(['destroy'])->parameters(['staff' => 'staffMember']);
+    Route::middleware('module:staff')->group(function () {
+        Route::patch('/staff/{staffMember}/toggle-active', [StaffMemberController::class, 'toggleActive'])->name('staff.toggle-active');
+        Route::post('/staff/{staffMember}/payments', [StaffMemberController::class, 'storePayment'])->name('staff.payments.store');
+        Route::resource('staff', StaffMemberController::class)->except(['destroy'])->parameters(['staff' => 'staffMember']);
+    });
 
-    Route::get('/expenses/export', [ExpenseController::class, 'export'])->name('expenses.export');
-    Route::resource('expenses', ExpenseController::class)->except(['show']);
+    Route::middleware('module:expenses')->group(function () {
+        Route::get('/expenses/export', [ExpenseController::class, 'export'])->name('expenses.export');
+        Route::resource('expenses', ExpenseController::class)->except(['show']);
+    });
 
     Route::prefix('sales-reports')->name('sales-reports.')->middleware('admin')->group(function () {
         Route::get('/', [SalesReportController::class, 'index'])->name('index');

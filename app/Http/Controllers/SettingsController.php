@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Invoice;
+use App\Models\RolePermission;
 use App\Services\BranchContext;
 use App\Support\InvoiceFormat;
 use App\Support\InvoiceFormatData;
@@ -44,7 +45,43 @@ class SettingsController extends Controller
             'defaultPaymentStatus' => $company?->default_invoice_payment_status ?? 'paid',
             'defaultPurchasePaymentStatus' => $company?->default_purchase_payment_status ?? 'paid',
             'subscription' => $company?->subscription?->load('plan'),
+            'rolePermissions' => $company ? RolePermission::forCompany($company->id) : collect(),
         ]);
+    }
+
+    /**
+     * One row per module, always saved in full (unchecked boxes don't post
+     * at all, so every module's 4 booleans are derived from which keys are
+     * present rather than trusting a default) — admins and super admins are
+     * never affected by this, only the "staff" role.
+     */
+    public function updateRolePermissions(Request $request): RedirectResponse
+    {
+        $company = auth()->user()->company;
+        abort_unless($company, 404);
+
+        $request->validate([
+            'modules' => ['nullable', 'array'],
+            'modules.*' => ['array'],
+        ]);
+
+        $submitted = (array) $request->input('modules', []);
+
+        foreach (array_keys(RolePermission::MODULES) as $module) {
+            $flags = $submitted[$module] ?? [];
+
+            RolePermission::updateOrCreate(
+                ['company_id' => $company->id, 'module' => $module],
+                [
+                    'can_view' => in_array('view', $flags, true),
+                    'can_add' => in_array('add', $flags, true),
+                    'can_edit' => in_array('edit', $flags, true),
+                    'can_delete' => in_array('delete', $flags, true),
+                ]
+            );
+        }
+
+        return back()->with('status', 'Role permissions updated.');
     }
 
     public function updateInvoiceFormat(Request $request): RedirectResponse

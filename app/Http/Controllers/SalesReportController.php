@@ -117,7 +117,7 @@ class SalesReportController extends Controller
         $period = $this->resolvePeriod($request, 'all', ['month', 'all']);
         [$from, $to] = $this->periodRange($period);
 
-        return view('sales-reports.profit-loss', $this->profitLossData($branchIds, $from, $to) + [
+        return view('sales-reports.profit-loss', $this->profitLossData($branchIds, $from, $to, $branches) + [
             'branches' => $branches,
             'selectedBranchId' => $request->string('branch_id', 'all')->toString(),
             'period' => $period,
@@ -131,7 +131,7 @@ class SalesReportController extends Controller
         $period = $this->resolvePeriod($request, 'all', ['month', 'all']);
         [$from, $to] = $this->periodRange($period);
 
-        $data = $this->profitLossData($branchIds, $from, $to);
+        $data = $this->profitLossData($branchIds, $from, $to, $branches);
         $data['periodLabel'] = $period === 'month' ? 'This month' : 'All time';
         $data['companyName'] = $request->user()->company?->name ?? 'Company';
 
@@ -168,6 +168,7 @@ class SalesReportController extends Controller
             'selectedBranchId' => $request->string('branch_id', 'all')->toString(),
             'period' => $period,
             'sort' => $sortColumn,
+            'profitByBranch' => $this->profitByBranch($branchIds, $from, $to, $branches),
         ]);
     }
 
@@ -200,7 +201,7 @@ class SalesReportController extends Controller
         ];
     }
 
-    private function profitLossData(array $branchIds, ?Carbon $from, ?Carbon $to): array
+    private function profitLossData(array $branchIds, ?Carbon $from, ?Carbon $to, $branches): array
     {
         $salesTotal = $this->salesTotal($branchIds, $from, $to);
         $grossProfit = $this->totalProfit($branchIds, $from, $to);
@@ -228,6 +229,7 @@ class SalesReportController extends Controller
             'supplierDueTotal' => $this->supplierDueTotal($branchIds),
             'stockValue' => $this->stockValue($branchIds),
             'insight' => $this->insightText($customerDue, $netProfit),
+            'branchBreakdown' => $this->profitLossByBranch($branchIds, $from, $to, $branches),
         ];
     }
 
@@ -334,7 +336,7 @@ class SalesReportController extends Controller
 
     private function topCustomers(array $branchIds, ?Carbon $from, ?Carbon $to, int $limit)
     {
-        return $this->invoiceQuery($branchIds, $from, $to)
+        $rows = $this->invoiceQuery($branchIds, $from, $to)
             ->whereNotNull('customer_id')
             ->select('customer_id')
             ->selectRaw('SUM(total) as sales_total')
@@ -344,14 +346,18 @@ class SalesReportController extends Controller
             ->limit($limit)
             ->with('customer')
             ->get()
-            ->filter(fn ($row) => $row->customer !== null)
-            ->map(fn ($row) => [
-                'customer' => $row->customer,
-                'sales_total' => (float) $row->sales_total,
-                'bill_count' => (int) $row->bill_count,
-                'due' => $row->customer->dueAmount(),
-            ])
-            ->values();
+            ->filter(fn ($row) => $row->customer !== null);
+
+        // Batched into 2 queries total instead of one dueAmount() query per
+        // row here — the same fix already applied to the invoice list page.
+        $dues = Customer::dueAmountsFor($rows->pluck('customer_id'));
+
+        return $rows->map(fn ($row) => [
+            'customer' => $row->customer,
+            'sales_total' => (float) $row->sales_total,
+            'bill_count' => (int) $row->bill_count,
+            'due' => $dues->get($row->customer_id, 0.0),
+        ])->values();
     }
 
     /**
@@ -411,6 +417,78 @@ class SalesReportController extends Controller
             'percent' => round((float) $row->total / $grandTotal * 100),
             'color' => $palette[$i % count($palette)],
         ]);
+    }
+
+    /**
+     * Same shape as salesByBranch() but for profit — profitQuery() is a
+     * plain DB::table() builder (not Eloquent), so there's no with('branch')
+     * to eager-load; branch names are resolved from the $branches already
+     * loaded for the page instead of a second query.
+     */
+    private function profitByBranch(array $branchIds, ?Carbon $from, ?Carbon $to, $branches)
+    {
+        $rows = $this->profitQuery($branchIds, $from, $to)
+            ->select('invoices.branch_id')
+            ->selectRaw($this->profitSelectExpression().' as profit')
+            ->groupBy('invoices.branch_id')
+            ->orderByDesc('profit')
+            ->get();
+
+        $grandTotal = (float) $rows->sum('profit') ?: 1;
+        $palette = ['bg-brand-600', 'bg-purple-300', 'bg-blue-400', 'bg-teal-400', 'bg-pink-400'];
+        $branchNames = $branches->pluck('name', 'id');
+
+        return $rows->values()->map(fn ($row, $i) => [
+            'name' => $branchNames[$row->branch_id] ?? 'Branch',
+            'total' => (float) $row->profit,
+            'percent' => round((float) $row->profit / $grandTotal * 100),
+            'color' => $palette[$i % count($palette)],
+        ]);
+    }
+
+    /**
+     * One row per branch in scope (even a branch with zero activity this
+     * period, so it's explicit that it did nothing rather than silently
+     * missing) — sales, gross profit, expenses and net profit, each summed
+     * independently per branch rather than only as one combined total.
+     */
+    private function profitLossByBranch(array $branchIds, ?Carbon $from, ?Carbon $to, $branches)
+    {
+        $salesByBranch = $this->invoiceQuery($branchIds, $from, $to)
+            ->select('branch_id')
+            ->selectRaw('SUM(total) as total')
+            ->groupBy('branch_id')
+            ->pluck('total', 'branch_id');
+
+        $profitByBranch = $this->profitQuery($branchIds, $from, $to)
+            ->select('invoices.branch_id')
+            ->selectRaw($this->profitSelectExpression().' as profit')
+            ->groupBy('invoices.branch_id')
+            ->pluck('profit', 'branch_id');
+
+        $expensesByBranch = Expense::query()->whereIn('branch_id', $branchIds)
+            ->when($from, fn ($q) => $q->whereBetween('expense_date', [$from, $to]))
+            ->select('branch_id')
+            ->selectRaw('SUM(amount) as total')
+            ->groupBy('branch_id')
+            ->pluck('total', 'branch_id');
+
+        return $branches->filter(fn ($branch) => in_array($branch->id, $branchIds, true))
+            ->map(function ($branch) use ($salesByBranch, $profitByBranch, $expensesByBranch) {
+                $sales = (float) ($salesByBranch[$branch->id] ?? 0);
+                $grossProfit = (float) ($profitByBranch[$branch->id] ?? 0);
+                $expenses = (float) ($expensesByBranch[$branch->id] ?? 0);
+
+                return [
+                    'name' => $branch->name,
+                    'sales' => $sales,
+                    'grossProfit' => $grossProfit,
+                    'expenses' => $expenses,
+                    'netProfit' => round($grossProfit - $expenses, 2),
+                ];
+            })
+            ->sortByDesc('netProfit')
+            ->values();
     }
 
     private function billsMadeBy(array $branchIds, ?Carbon $from, ?Carbon $to)

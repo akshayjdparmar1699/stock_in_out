@@ -41,6 +41,25 @@
                 </div>
             </div>
 
+            @if ($profitByBranch->isNotEmpty())
+                <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-4 lg:p-5">
+                    <h3 class="font-semibold text-gray-900 mb-3">{{ __('Profit by branch') }}</h3>
+                    <div class="h-2.5 rounded-full bg-gray-100 overflow-hidden flex mb-3">
+                        @foreach ($profitByBranch as $row)
+                            <div class="{{ $row['color'] }} h-full" style="width: {{ $row['percent'] }}%"></div>
+                        @endforeach
+                    </div>
+                    <div class="space-y-1.5">
+                        @foreach ($profitByBranch as $row)
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="flex items-center gap-2 text-gray-600"><span class="w-2.5 h-2.5 rounded-full {{ $row['color'] }}"></span>{{ $row['name'] }}</span>
+                                <span class="font-medium {{ $row['total'] >= 0 ? 'text-gray-800' : 'text-red-600' }}">&#8377;{{ number_format($row['total'], 0) }} &middot; {{ $row['percent'] }}%</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">

@@ -116,6 +116,25 @@
                 </div>
 
                 <div class="space-y-4">
+                    @if ($branchBreakdown->count() > 1)
+                        <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-4 lg:p-5">
+                            <h3 class="font-semibold text-gray-900 mb-1">{{ __('Profit by branch') }}</h3>
+                            <div class="divide-y divide-gray-50">
+                                @foreach ($branchBreakdown as $row)
+                                    <div class="flex items-center justify-between py-2.5">
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-medium text-gray-800 truncate">{{ $row['name'] }}</div>
+                                            <div class="text-xs text-gray-400">&#8377;{{ number_format($row['sales'], 0) }} {{ __('sales') }}</div>
+                                        </div>
+                                        <span class="text-sm font-bold {{ $row['netProfit'] >= 0 ? 'text-green-600' : 'text-red-600' }} shrink-0">
+                                            &#8377;{{ number_format($row['netProfit'], 0) }}
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-4 lg:p-5">
                         <h3 class="font-semibold text-gray-900 mb-3">{{ __('Money position today') }}</h3>
                         <div class="space-y-2.5">

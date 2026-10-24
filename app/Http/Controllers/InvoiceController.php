@@ -20,6 +20,8 @@ use App\Services\AdminAlertService;
 use App\Services\BranchContext;
 use App\Services\NotificationService;
 use App\Services\PerPagePreference;
+use App\Support\InvoiceFormat;
+use App\Support\InvoiceFormatData;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -230,6 +232,10 @@ class InvoiceController extends Controller
 
             $invoice = Invoice::create([
                 'invoice_number' => $this->nextInvoiceNumber($branchId),
+                // Snapshot of the branch's format at the moment of billing,
+                // so changing it later never repaints a bill already shared
+                // with a customer.
+                'invoice_format' => BranchContext::current()?->invoice_format,
                 'branch_id' => $branchId,
                 'customer_id' => $customerId,
                 'guest_customer_name' => $customerId ? null : $data['guest_customer_name'],
@@ -775,6 +781,12 @@ class InvoiceController extends Controller
 
     private function renderPdf(Invoice $invoice)
     {
+        $formatView = InvoiceFormat::viewFor($invoice, $invoice->branch);
+
+        if ($formatView) {
+            return Pdf::loadView($formatView, InvoiceFormatData::build($invoice, forPdf: true))->setPaper('a4');
+        }
+
         return Pdf::loadView('invoices.tax-invoice-pdf', [
             'invoice' => $invoice,
             'customerDue' => $invoice->customer?->dueAmount(),

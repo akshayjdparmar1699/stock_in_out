@@ -28,6 +28,8 @@ class Branch extends Model
         'gstin',
         'state',
         'state_code',
+        'invoice_format',
+        'invoice_accent',
     ];
 
     protected function casts(): array

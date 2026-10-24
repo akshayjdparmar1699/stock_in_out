@@ -20,6 +20,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\StaffMemberController;
 use App\Http\Controllers\SalesReportController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SubscriptionRenewalController;
 use App\Http\Controllers\SupplierController;
@@ -139,6 +140,10 @@ Route::middleware(['auth', 'verified', 'not_super_admin', 'subscription.check'])
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->middleware('admin');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update')->middleware('admin');
     Route::patch('/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle-active')->middleware('admin');
+
+    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit')->middleware('admin');
+    Route::put('/settings/invoice-format', [SettingsController::class, 'updateInvoiceFormat'])->name('settings.invoice-format')->middleware('admin');
+    Route::get('/settings/invoice-format/preview', [SettingsController::class, 'previewInvoiceFormat'])->name('settings.invoice-format.preview')->middleware('admin');
 
     Route::get('/items/search', [ItemController::class, 'search'])->name('items.search');
     Route::get('/items/export', [ItemController::class, 'export'])->name('items.export');

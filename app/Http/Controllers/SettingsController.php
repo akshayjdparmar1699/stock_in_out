@@ -13,26 +13,37 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Settings for the currently selected branch — the admin switches branches
- * with the existing branch switcher to configure each one separately, the
- * same way other branch-scoped admin screens already work.
+ * Settings for the currently selected branch/company. Invoice format is
+ * branch-scoped (the admin switches branches with the existing branch
+ * switcher to configure each one separately); GST, invoice terms, default
+ * payment statuses and subscription are company-wide, same as they were on
+ * the Profile page these moved here from — only their saving methods still
+ * live on ProfileController/BranchController, unchanged.
  *
- * Only Invoice & Templates is built for now; the other sections in the nav
- * are placeholders for later.
+ * The rest of the nav (Business profile, Payment details, etc.) is still
+ * placeholders for later.
  */
 class SettingsController extends Controller
 {
     public function edit(): View
     {
         $branch = BranchContext::current();
+        $user = auth()->user();
+        $company = $user->company;
 
         return view('settings.edit', [
+            'user' => $user,
             'branch' => $branch,
             'formats' => InvoiceFormat::all(),
             'selectedFormat' => $branch && array_key_exists((string) $branch->invoice_format, InvoiceFormat::all())
                 ? $branch->invoice_format
                 : config('invoice_formats.default'),
             'accent' => $branch?->invoice_accent,
+            'gstEnabled' => (bool) $company?->gst_enabled,
+            'invoiceTerms' => $company?->invoice_terms,
+            'defaultPaymentStatus' => $company?->default_invoice_payment_status ?? 'paid',
+            'defaultPurchasePaymentStatus' => $company?->default_purchase_payment_status ?? 'paid',
+            'subscription' => $company?->subscription?->load('plan'),
         ]);
     }
 

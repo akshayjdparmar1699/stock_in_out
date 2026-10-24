@@ -22,10 +22,6 @@ class ProfileController extends Controller
         return view('profile.edit', [
             'user' => $user,
             'subscription' => $user->isSuperAdmin() ? null : $user->company?->subscription?->load('plan'),
-            'gstEnabled' => ! $user->isSuperAdmin() && (bool) $user->company?->gst_enabled,
-            'invoiceTerms' => $user->isSuperAdmin() ? null : $user->company?->invoice_terms,
-            'defaultPaymentStatus' => $user->isSuperAdmin() ? null : ($user->company?->default_invoice_payment_status ?? 'paid'),
-            'defaultPurchasePaymentStatus' => $user->isSuperAdmin() ? null : ($user->company?->default_purchase_payment_status ?? 'paid'),
         ]);
     }
 

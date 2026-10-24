@@ -292,12 +292,10 @@
                     </div>
                 </form>
 
-                {{-- Totals + Payment sidebar — both cards live in one sticky
-                     wrapper so they scroll and stick together as a unit.
-                     The Totals card's own fields live physically outside
-                     #invoice-form (its sibling <form> for Record Payment
-                     below can't nest inside another form), so they're
-                     wired back to it via form="invoice-form" instead. --}}
+                {{-- Totals sidebar — its fields live physically outside
+                     #invoice-form (can't nest a <form> inside another),
+                     so they're wired back to it via form="invoice-form"
+                     instead. --}}
                 <div class="mt-4 lg:mt-0 lg:sticky lg:top-20 space-y-4">
                     <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 space-y-4">
                         <div class="flex items-center gap-2.5">
@@ -403,153 +401,7 @@
                             {{ __('Update bill') }}
                         </button>
                     </div>
-
-                    {{--
-                        A separate <form> (can't nest inside #invoice-form)
-                        that records a real new payment against this bill,
-                        exactly like the "Record payment" card on the
-                        invoice's own view page. Unlike the Payment status
-                        buttons above (which only correct this bill's own
-                        recorded state), submitting this creates a real
-                        InvoicePayment row, so it shows up in the history
-                        below and reduces the customer's running due the
-                        same way a payment recorded from Create or View
-                        does. It's a sibling card in this same sticky
-                        wrapper, not a separate block below it, so the two
-                        scroll and stick together as one unit.
-                    --}}
-                    <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-semibold text-gray-900">{{ __('Payment') }}</h3>
-                        <span @class([
-                            'px-2.5 py-1 rounded-full text-xs font-semibold',
-                            'bg-green-50 text-green-700' => $invoice->status === 'paid',
-                            'bg-amber-50 text-amber-700' => $invoice->status === 'partial',
-                            'bg-red-50 text-red-600' => $invoice->status === 'unpaid',
-                        ])>
-                            {{ $invoice->status === 'paid' ? __('Fully paid') : ($invoice->status === 'partial' ? __('Partially paid') : __('Unpaid')) }}
-                        </span>
-                    </div>
-
-                    <div class="flex justify-between text-sm text-gray-500">
-                        <span>{{ __('Received') }}</span>
-                        <span class="font-medium text-gray-800">&#8377;{{ number_format($invoice->paid_amount, 2) }} {{ __('of') }} &#8377;{{ number_format($invoice->total, 2) }}</span>
-                    </div>
-
-                    @if ($invoice->payments->isNotEmpty())
-                        <div class="pt-3 border-t border-gray-100">
-                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{{ __('History') }}</p>
-                            <div class="space-y-2.5 max-h-56 overflow-y-auto">
-                                @foreach ($invoice->payments as $payment)
-                                    <div class="flex justify-between text-sm">
-                                        <div>
-                                            <div class="text-gray-800">{{ $payment->note ?: __('Payment recorded') }}{{ $payment->mode ? ' · '.ucfirst($payment->mode) : '' }}</div>
-                                            <div class="text-xs text-gray-400">{{ $payment->created_at->format('d M, h:i A') }} &middot; {{ $payment->user->name ?? '—' }}</div>
-                                        </div>
-                                        <span class="font-medium text-gray-800 shrink-0">&#8377;{{ number_format($payment->amount, 2) }}</span>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-
-                    @php $editCustomerDue = $invoice->customer?->dueAmount() ?? 0.0; @endphp
-                    <div class="pt-3 border-t border-gray-100">
-                        @if ($invoice->balanceDue() > 0 || ($invoice->customer && $editCustomerDue > 0))
-                            <button type="button" @click="payOpen = !payOpen" class="w-full text-center px-4 py-2.5 border border-brand-600 text-brand-700 text-sm font-semibold rounded-lg">
-                                {{ __('Record payment') }}
-                            </button>
-                            <form method="POST"
-                                action="{{ $invoice->balanceDue() > 0 ? route('invoices.payments.store', $invoice) : route('customers.payments.store', $invoice->customer) }}"
-                                class="space-y-3 mt-3" x-show="payOpen" style="display: none" x-cloak>
-                                @csrf
-                                <input type="hidden" name="mode" :value="payMode">
-                                <div>
-                                    <x-input-label for="edit_payment_amount" :value="__('Amount received')" />
-                                    <x-text-input id="edit_payment_amount" name="amount" type="number" step="0.01" min="0.01" @if ($invoice->balanceDue() > 0) :max="$invoice->balanceDue()" @endif class="mt-1 w-full" value="{{ old('amount') }}" required />
-                                </div>
-                                <div class="grid grid-cols-3 gap-2">
-                                    @foreach (['cash' => __('Cash'), 'upi' => __('UPI'), 'bank' => __('Bank')] as $value => $label)
-                                        <button type="button" @click="payMode = '{{ $value }}'"
-                                            class="px-2 py-1.5 text-sm font-medium rounded-md border-2"
-                                            :class="payMode === '{{ $value }}' ? 'border-brand-600 text-brand-700 bg-brand-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50'">
-                                            {{ $label }}
-                                        </button>
-                                    @endforeach
-                                </div>
-                                <x-text-input name="note" type="text" class="w-full" value="{{ old('note') }}" placeholder="{{ __('Note (optional)') }}" />
-                                <x-primary-button class="w-full justify-center">{{ __('Record payment') }}</x-primary-button>
-                                @if ($invoice->balanceDue() <= 0)
-                                    <p class="text-xs text-gray-400 text-center">{{ __('This bill is already fully paid — this settles their other outstanding due instead.') }}</p>
-                                @endif
-                            </form>
-                        @else
-                            <button type="button" disabled class="w-full text-center px-4 py-2.5 bg-gray-50 text-gray-400 text-sm font-semibold rounded-lg cursor-not-allowed">
-                                {{ __('Record payment (nothing due)') }}
-                            </button>
-                        @endif
-                    </div>
                 </div>
-
-                {{--
-                    Same standalone "settle their older due" section the New
-                    Bill screen has — separate from the Payment card above,
-                    which is about this one bill's own payments. Posts to
-                    the customer's own FIFO-allocation endpoint, same as on
-                    Create.
-                --}}
-                @if ($invoice->customer)
-                    <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 space-y-4"
-                        x-data="{ dueType: 'paid', dueMode: 'cash' }">
-                        <h3 class="font-semibold text-gray-900">{{ __('Record payment') }}</h3>
-
-                        <form method="POST" action="{{ route('customers.payments.store', $invoice->customer) }}" class="space-y-4">
-                            @csrf
-                            <input type="hidden" name="type" :value="dueType">
-                            <input type="hidden" name="mode" :value="dueMode">
-
-                            <div class="inline-flex rounded-lg border border-gray-200 overflow-hidden text-sm w-full">
-                                <button type="button" @click="dueType = 'paid'" class="flex-1 px-3 py-1.5 font-medium" :class="dueType === 'paid' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600'">
-                                    {{ __('We received from them') }}
-                                </button>
-                                <button type="button" @click="dueType = 'received'" class="flex-1 px-3 py-1.5 font-medium border-l border-gray-200" :class="dueType === 'received' ? 'bg-brand-600 text-white' : 'bg-white text-gray-600'">
-                                    {{ __('Refund given to them') }}
-                                </button>
-                            </div>
-
-                            <div>
-                                <x-input-label x-text="dueType === 'received' ? '{{ __('Refund amount') }}' : '{{ __('Amount received') }}'" />
-                                <div class="relative mt-1">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
-                                    <input type="number" step="0.01" min="0.01" name="amount"
-                                        class="no-spinner w-full pl-7 border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm" required>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2" x-show="dueType === 'paid'">
-                                @foreach (['cash' => __('Cash'), 'upi' => __('UPI'), 'bank' => __('Bank')] as $value => $label)
-                                    <button type="button" @click="dueMode = '{{ $value }}'"
-                                        class="px-3 py-2 text-sm font-medium rounded-md border"
-                                        :class="dueMode === '{{ $value }}' ? 'bg-brand-50 border-brand-500 text-brand-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'">
-                                        {{ $label }}
-                                    </button>
-                                @endforeach
-                            </div>
-
-                            <div>
-                                <x-input-label :value="__('Note (optional)')" />
-                                <x-text-input name="note" type="text" class="mt-1 w-full" placeholder="{{ __('e.g. Paid by Rameshbhai') }}" />
-                            </div>
-
-                            <button type="submit" class="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold text-sm rounded-lg py-2.5">
-                                {{ __('Save') }}
-                            </button>
-
-                            <p class="text-xs text-gray-400 text-center">{{ __('Payment is adjusted against their oldest unpaid bill first.') }}</p>
-                        </form>
-                    </div>
-                @endif
-            </div>
             </div>
         </div>
 
@@ -607,8 +459,6 @@
                 transportation: {{ (float) $invoice->transportation }},
                 paymentStatus: {{ \Illuminate\Support\Js::from($invoice->status) }},
                 editedPaidAmount: {{ (float) $invoice->paid_amount }},
-                payOpen: false,
-                payMode: 'cash',
                 // The customer's due from every OTHER invoice, excluding
                 // this one's own current (pre-edit) contribution — same
                 // formula the invoice PDF and show page use for "Previous

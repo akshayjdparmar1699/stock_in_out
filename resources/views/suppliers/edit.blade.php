@@ -40,6 +40,30 @@
                         <x-input-error :messages="$errors->get('opening_balance')" class="mt-2" />
                     </div>
 
+                    @if (Auth::user()->isAdmin())
+                        @php $currentBranchIds = old('branch_ids', $supplier->branches->pluck('id')->all()); @endphp
+                        <div>
+                            <x-input-label :value="__('Belongs to Branch(es)')" />
+                            <div class="mt-2 space-y-2">
+                                @foreach ($branches as $branch)
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" name="branch_ids[]" value="{{ $branch->id }}"
+                                            class="rounded border-gray-300 text-brand-600 shadow-sm focus:ring-brand-500"
+                                            @checked(collect($currentBranchIds)->contains($branch->id))>
+                                        <span class="text-sm text-gray-700">{{ $branch->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">{{ __('Select more than one branch if you buy from this supplier at multiple branches.') }}</p>
+                            <x-input-error :messages="$errors->get('branch_ids')" class="mt-2" />
+                        </div>
+                    @else
+                        <div>
+                            <x-input-label :value="__('Branch(es)')" />
+                            <p class="text-sm text-gray-600 mt-1">{{ $supplier->branches->pluck('name')->join(', ') }}</p>
+                        </div>
+                    @endif
+
                     <div class="border-t border-gray-100 pt-4">
                         <button type="button" @click="open = !open" class="flex items-center justify-between w-full text-left">
                             <span class="text-sm font-medium text-gray-700">{{ __('More details') }}</span>

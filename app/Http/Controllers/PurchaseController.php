@@ -168,7 +168,7 @@ class PurchaseController extends Controller
 
         if ($request->filled('supplier_id')) {
             $supplier = Supplier::query()
-                ->where('company_id', auth()->user()->company_id)
+                ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
                 ->find($request->integer('supplier_id'));
 
             if ($supplier) {
@@ -211,6 +211,8 @@ class PurchaseController extends Controller
     {
         $branchId = BranchContext::id();
         $data = $request->validated();
+
+        $this->assertSupplierInBranch((int) $data['supplier_id'], $branchId);
 
         $purchase = DB::transaction(function () use ($data, $branchId) {
             $discount = (float) ($data['discount'] ?? 0);
@@ -307,6 +309,20 @@ class PurchaseController extends Controller
     private function belongsToCurrentCompany(Purchase $purchase): bool
     {
         return $purchase->branch?->company_id === auth()->user()->company_id;
+    }
+
+    private function assertSupplierInBranch(int $supplierId, int $branchId): void
+    {
+        $belongsToBranch = Supplier::query()
+            ->where('id', $supplierId)
+            ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
+            ->exists();
+
+        if (! $belongsToBranch) {
+            throw ValidationException::withMessages([
+                'supplier_id' => 'This supplier does not belong to the current branch.',
+            ]);
+        }
     }
 
     public function edit(Purchase $purchase): View

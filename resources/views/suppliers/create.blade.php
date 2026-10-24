@@ -40,6 +40,24 @@
                         <x-input-error :messages="$errors->get('opening_balance')" class="mt-2" />
                     </div>
 
+                    @if (Auth::user()->isAdmin())
+                        <div>
+                            <x-input-label :value="__('Belongs to Branch(es)')" />
+                            <div class="mt-2 space-y-2">
+                                @foreach ($branches as $branch)
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" name="branch_ids[]" value="{{ $branch->id }}"
+                                            class="rounded border-gray-300 text-brand-600 shadow-sm focus:ring-brand-500"
+                                            @checked(collect(old('branch_ids', [\App\Services\BranchContext::id()]))->contains($branch->id))>
+                                        <span class="text-sm text-gray-700">{{ $branch->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">{{ __('Select more than one branch if you buy from this supplier at multiple branches.') }}</p>
+                            <x-input-error :messages="$errors->get('branch_ids')" class="mt-2" />
+                        </div>
+                    @endif
+
                     <div class="border-t border-gray-100 pt-4" x-data="{ open: false }">
                         <button type="button" @click="open = !open" class="flex items-center justify-between w-full text-left">
                             <span class="text-sm font-medium text-gray-700">{{ __('More details') }}</span>
@@ -115,6 +133,22 @@
                         <x-input-error :messages="$errors->get('opening_balance')" class="mt-2" />
                     </div>
                 </div>
+
+                @if (Auth::user()->isAdmin())
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-2">
+                        <x-input-label :value="__('Belongs to Branch(es)')" />
+                        @foreach ($branches as $branch)
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" name="branch_ids[]" value="{{ $branch->id }}"
+                                    class="rounded border-gray-300 text-brand-600 shadow-sm focus:ring-brand-500"
+                                    @checked(collect(old('branch_ids', [\App\Services\BranchContext::id()]))->contains($branch->id))>
+                                <span class="text-sm text-gray-700">{{ $branch->name }}</span>
+                            </label>
+                        @endforeach
+                        <p class="text-xs text-gray-400">{{ __('Select more than one branch if you buy from this supplier at multiple branches.') }}</p>
+                        <x-input-error :messages="$errors->get('branch_ids')" class="mt-2" />
+                    </div>
+                @endif
 
                 <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4" x-data="{ open: false }">
                     <button type="button" @click="open = !open" class="flex items-center justify-between w-full text-left">

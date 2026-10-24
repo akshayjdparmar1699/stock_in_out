@@ -38,6 +38,12 @@ class StoreBranchRequest extends FormRequest
                 'required_if:copy_items,1',
                 Rule::exists('branches', 'id')->where('company_id', $this->user()?->company_id),
             ],
+            'copy_suppliers' => ['nullable', 'boolean'],
+            'copy_suppliers_from_branch_id' => [
+                'nullable',
+                'required_if:copy_suppliers,1',
+                Rule::exists('branches', 'id')->where('company_id', $this->user()?->company_id),
+            ],
         ];
     }
 }

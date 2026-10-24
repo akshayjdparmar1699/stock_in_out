@@ -10,6 +10,7 @@ use App\Services\BranchContext;
 use App\Support\GstStateCodes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -63,8 +64,12 @@ class BranchController extends Controller
         $data = $request->validated();
         $companyId = auth()->user()->company_id;
         $copyFromBranchId = $request->boolean('copy_items') ? $data['copy_from_branch_id'] : null;
+        $copySuppliersFromBranchId = $request->boolean('copy_suppliers') ? $data['copy_suppliers_from_branch_id'] : null;
         $data['state_code'] = GstStateCodes::code($data['state'] ?? null);
-        unset($data['copy_items'], $data['copy_from_branch_id'], $data['qr_code_photo'], $data['remove_qr_code']);
+        unset(
+            $data['copy_items'], $data['copy_from_branch_id'], $data['qr_code_photo'], $data['remove_qr_code'],
+            $data['copy_suppliers'], $data['copy_suppliers_from_branch_id']
+        );
 
         if ($request->hasFile('qr_code_photo')) {
             $data['qr_code_path'] = $request->file('qr_code_photo')->store('branch-qr-codes', 'public');
@@ -89,6 +94,13 @@ class BranchController extends Controller
             if ($stockRows->isNotEmpty()) {
                 ItemStock::insert($stockRows->all());
             }
+        }
+
+        // Same re-check as above, for the same reason — a supplier is only
+        // ever this branch's own once it's explicitly linked to it.
+        if ($copySuppliersFromBranchId && Branch::whereKey($copySuppliersFromBranchId)->where('company_id', $companyId)->exists()) {
+            $supplierIds = DB::table('branch_supplier')->where('branch_id', $copySuppliersFromBranchId)->pluck('supplier_id');
+            $branch->suppliers()->sync($supplierIds);
         }
 
         return redirect()->route('branches.index')->with('status', "Branch \"{$branch->name}\" created.");

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateSupplierRequest extends FormRequest
 {
@@ -20,6 +21,8 @@ class UpdateSupplierRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:255'],
             'gst_number' => ['nullable', 'string', 'max:30'],
             'opening_balance' => ['nullable', 'numeric', 'min:0'],
+            'branch_ids' => ['nullable', 'array'],
+            'branch_ids.*' => ['integer', Rule::exists('branches', 'id')->where('company_id', $this->user()?->company_id)],
         ];
     }
 }

@@ -7,9 +7,11 @@ use App\Support\Sql;
 use App\Http\Requests\StoreSupplierPaymentRequest;
 use App\Http\Requests\StoreSupplierRequest;
 use App\Http\Requests\UpdateSupplierRequest;
+use App\Models\Branch;
 use App\Models\Purchase;
 use App\Models\PurchasePayment;
 use App\Models\Supplier;
+use App\Services\BranchContext;
 use App\Services\PerPagePreference;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -96,10 +98,11 @@ class SupplierController extends Controller
      */
     private function filteredSuppliers(Request $request): array
     {
+        $branchId = BranchContext::id();
         $search = $request->string('q')->toString();
 
         $all = Supplier::query()
-            ->where('company_id', auth()->user()->company_id)
+            ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
             ->when($search !== '', function ($query) use ($search) {
                 $term = '%'.$search.'%';
                 $query->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)
@@ -212,7 +215,9 @@ class SupplierController extends Controller
 
     public function create(): View
     {
-        return view('suppliers.create');
+        $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+
+        return view('suppliers.create', ['branches' => $branches]);
     }
 
     public function store(StoreSupplierRequest $request): RedirectResponse|JsonResponse
@@ -220,8 +225,14 @@ class SupplierController extends Controller
         $data = $request->validated();
         $data['opening_balance'] = $data['opening_balance'] ?? 0;
         $data['company_id'] = auth()->user()->company_id;
+        $branchIds = $data['branch_ids'] ?? null;
+        unset($data['branch_ids']);
 
         $supplier = Supplier::create($data);
+
+        $supplier->branches()->sync(
+            auth()->user()->isAdmin() && $branchIds ? $branchIds : [BranchContext::id()]
+        );
 
         if ($request->wantsJson()) {
             $supplier->due = $supplier->dueAmount();
@@ -489,7 +500,11 @@ class SupplierController extends Controller
     {
         abort_unless($supplier->company_id === auth()->user()->company_id, 404);
 
-        return view('suppliers.edit', ['supplier' => $supplier]);
+        $supplier->load('branches');
+
+        $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+
+        return view('suppliers.edit', ['supplier' => $supplier, 'branches' => $branches]);
     }
 
     public function update(UpdateSupplierRequest $request, Supplier $supplier): RedirectResponse
@@ -498,18 +513,25 @@ class SupplierController extends Controller
 
         $data = $request->validated();
         $data['opening_balance'] = $data['opening_balance'] ?? 0;
+        $branchIds = $data['branch_ids'] ?? null;
+        unset($data['branch_ids']);
 
         $supplier->update($data);
+
+        if (auth()->user()->isAdmin() && $branchIds) {
+            $supplier->branches()->sync($branchIds);
+        }
 
         return redirect()->route('suppliers.index')->with('status', "Supplier \"{$supplier->name}\" updated.");
     }
 
     public function search(Request $request): JsonResponse
     {
+        $branchId = BranchContext::id();
         $term = '%'.$request->string('q').'%';
 
         $suppliers = Supplier::query()
-            ->where('company_id', auth()->user()->company_id)
+            ->whereHas('branches', fn ($q) => $q->where('branches.id', $branchId))
             ->where('is_active', true)
             ->where(fn ($q) => $q->where('name', Sql::caseInsensitiveLike(), $term)->orWhere('phone', Sql::caseInsensitiveLike(), $term))
             ->orderBy('name')

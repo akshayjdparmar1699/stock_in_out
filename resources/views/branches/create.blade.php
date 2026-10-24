@@ -26,7 +26,7 @@
     <div class="py-6 sm:py-12 pb-28 lg:pb-12">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <form method="POST" action="{{ route('branches.store') }}" enctype="multipart/form-data" id="branch-form"
-                x-data="{ copyItems: {{ old('copy_items') ? 'true' : 'false' }} }">
+                x-data="{ copyItems: {{ old('copy_items') ? 'true' : 'false' }}, copySuppliers: {{ old('copy_suppliers') ? 'true' : 'false' }} }">
                 @csrf
 
                 @include('branches.partials.form', ['branch' => null])
@@ -65,6 +65,41 @@
                             </select>
                             <p class="text-xs text-gray-400 mt-2">{{ __('Only item names, units and prices are copied. Stock starts at 0.') }}</p>
                             <x-input-error :messages="$errors->get('copy_from_branch_id')" class="mt-2" />
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 mt-4">
+                        <div class="flex items-center gap-2.5 mb-4">
+                            <span class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold flex items-center justify-center shrink-0">{{ $gstEnabled ? 5 : 4 }}</span>
+                            <h3 class="font-semibold text-gray-900">{{ __('Suppliers in this branch') }}</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button type="button" @click="copySuppliers = true"
+                                class="text-left p-4 rounded-xl border-2"
+                                :class="copySuppliers ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:bg-gray-50'">
+                                <div class="font-semibold text-gray-900">{{ __('Same suppliers as a branch') }}</div>
+                                <div class="text-xs text-gray-500 mt-0.5">{{ __('Use that branch\'s own supplier list here too') }}</div>
+                            </button>
+                            <button type="button" @click="copySuppliers = false"
+                                class="text-left p-4 rounded-xl border-2"
+                                :class="!copySuppliers ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:bg-gray-50'">
+                                <div class="font-semibold text-gray-900">{{ __('Separate suppliers for this branch') }}</div>
+                                <div class="text-xs text-gray-500 mt-0.5">{{ __('Starts empty — add this branch\'s own suppliers') }}</div>
+                            </button>
+                        </div>
+
+                        <input type="hidden" name="copy_suppliers" :value="copySuppliers ? '1' : '0'">
+
+                        <div class="mt-4" x-show="copySuppliers" style="display: none;">
+                            <x-input-label for="copy_suppliers_from_branch_id" :value="__('Use suppliers from')" />
+                            <select id="copy_suppliers_from_branch_id" name="copy_suppliers_from_branch_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
+                                <option value="">{{ __('Select branch') }}</option>
+                                @foreach ($branches as $b)
+                                    <option value="{{ $b->id }}" @selected(old('copy_suppliers_from_branch_id') == $b->id)>{{ $b->name }}</option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('copy_suppliers_from_branch_id')" class="mt-2" />
                         </div>
                     </div>
                 @endif

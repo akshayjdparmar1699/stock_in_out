@@ -20,8 +20,15 @@
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
             </a>
             <h1 class="font-semibold text-base">{{ __('Profile') }}</h1>
-            <div class="relative w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0 [&>div>button]:!text-white [&>div>button]:!p-0 [&>div>button>svg]:w-6 [&>div>button>svg]:h-6">
-                @include('layouts.partials.notification-bell')
+            <div class="flex items-center gap-1 shrink-0">
+                @if (Auth::user()->isAdmin())
+                    <div class="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0 [&>a]:!text-white [&>a]:!p-0 [&>a>svg]:w-6 [&>a>svg]:h-6">
+                        @include('layouts.partials.settings-icon-mobile')
+                    </div>
+                @endif
+                <div class="relative w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0 [&>div>button]:!text-white [&>div>button]:!p-0 [&>div>button>svg]:w-6 [&>div>button>svg]:h-6">
+                    @include('layouts.partials.notification-bell')
+                </div>
             </div>
         </div>
 

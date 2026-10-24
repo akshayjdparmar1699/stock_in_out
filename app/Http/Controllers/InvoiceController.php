@@ -783,14 +783,17 @@ class InvoiceController extends Controller
     {
         $formatView = InvoiceFormat::viewFor($invoice, $invoice->branch);
 
-        if ($formatView) {
-            return Pdf::loadView($formatView, InvoiceFormatData::build($invoice, forPdf: true))->setPaper('a4');
+        // Only reachable if the configured default format's own view is
+        // somehow missing — falls back to the app's original template
+        // rather than a hard error.
+        if (! $formatView) {
+            return Pdf::loadView('invoices.tax-invoice-pdf', [
+                'invoice' => $invoice,
+                'customerDue' => $invoice->customer?->dueAmount(),
+            ])->setPaper('a4');
         }
 
-        return Pdf::loadView('invoices.tax-invoice-pdf', [
-            'invoice' => $invoice,
-            'customerDue' => $invoice->customer?->dueAmount(),
-        ])->setPaper('a4');
+        return Pdf::loadView($formatView, InvoiceFormatData::build($invoice, forPdf: true))->setPaper('a4');
     }
 
     public function storePayment(StoreInvoicePaymentRequest $request, Invoice $invoice): RedirectResponse

@@ -5,10 +5,10 @@ namespace App\Support;
 use Illuminate\Support\Arr;
 
 /**
- * Resolves which of the 5 selectable formats (if any) an invoice renders
- * with. Returning null from keyFor() means "none of these" — the branch
- * hasn't picked one, so the invoice renders with the app's own original
- * design instead, exactly as it always has.
+ * Resolves which of the selectable formats an invoice renders with — every
+ * invoice always renders with one of these; there's no separate "original"
+ * design any more. A branch that's never touched this setting falls back to
+ * config('invoice_formats.default') (GST Tax Invoice).
  *
  * Priority for a chosen format: the one saved on the invoice itself (set
  * once, at creation, from the branch's setting at that time) first, then
@@ -29,25 +29,23 @@ class InvoiceFormat
         );
     }
 
-    public static function keyFor(mixed $invoice, mixed $branch): ?string
+    public static function keyFor(mixed $invoice, mixed $branch): string
     {
         $key = data_get($invoice, 'invoice_format') ?: data_get($branch, 'invoice_format');
 
-        return $key && array_key_exists((string) $key, self::all()) ? (string) $key : null;
+        return $key && array_key_exists((string) $key, self::all())
+            ? (string) $key
+            : config('invoice_formats.default');
     }
 
     public static function viewFor(mixed $invoice, mixed $branch): ?string
     {
-        $key = self::keyFor($invoice, $branch);
-
-        return $key ? Arr::get(self::all(), $key.'.view') : null;
+        return Arr::get(self::all(), self::keyFor($invoice, $branch).'.view');
     }
 
     public static function accentFor(mixed $invoice, mixed $branch): string
     {
-        $key = self::keyFor($invoice, $branch);
-
         return data_get($branch, 'invoice_accent')
-            ?: ($key ? Arr::get(self::all(), $key.'.accent', '#6A00D9') : '#6A00D9');
+            ?: Arr::get(self::all(), self::keyFor($invoice, $branch).'.accent', '#6A00D9');
     }
 }

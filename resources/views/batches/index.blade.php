@@ -8,7 +8,8 @@
                     <p class="hidden lg:block text-sm text-gray-400 mt-0.5">{{ __('Every lot of stock that came in, and how much of it is sold') }}</p>
                 </div>
             </div>
-            <div class="lg:hidden">
+            <div class="lg:hidden flex items-center">
+                @include('layouts.partials.settings-icon-mobile')
                 @include('layouts.partials.notification-bell')
             </div>
         </div>

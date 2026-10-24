@@ -20,7 +20,7 @@
                 </nav>
 
                 <div x-data="{
-                    selected: {{ \Illuminate\Support\Js::from($selectedFormat ?? '') }},
+                    selected: {{ \Illuminate\Support\Js::from($selectedFormat) }},
                     get previewUrl() {
                         return {{ \Illuminate\Support\Js::from(route('settings.invoice-format.preview')) }} + '?format=' + encodeURIComponent(this.selected);
                     }
@@ -39,23 +39,6 @@
                             @method('PUT')
 
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                <button type="button" @click="selected = ''" class="text-left rounded-xl border-2 overflow-hidden relative"
-                                    :class="selected === '' ? 'border-brand-500' : 'border-gray-200 hover:border-gray-300'">
-                                    <div class="absolute top-2 right-2 w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center" x-show="selected === ''" style="display: none;">
-                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                                    </div>
-                                    <div class="aspect-[480/677] bg-gray-50 overflow-hidden">
-                                        <img src="{{ asset('images/invoice-formats/original.jpg') }}" alt="{{ __('Original') }}" class="w-full h-full object-cover object-top">
-                                    </div>
-                                    <div class="p-3">
-                                        <div class="flex items-center justify-between gap-2">
-                                            <span class="font-semibold text-gray-900 text-sm">{{ __('Original') }}</span>
-                                            <span class="shrink-0 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5">{{ __('Default') }}</span>
-                                        </div>
-                                        <div class="text-xs text-gray-500 mt-0.5">{{ __("Your bill's current design.") }}</div>
-                                    </div>
-                                </button>
-
                                 @foreach ($formats as $key => $format)
                                     <button type="button" @click="selected = '{{ $key }}'" class="text-left rounded-xl border-2 overflow-hidden relative"
                                         :class="selected === '{{ $key }}' ? 'border-brand-500' : 'border-gray-200 hover:border-gray-300'">
@@ -66,7 +49,12 @@
                                             <img src="{{ asset($format['thumbnail']) }}" alt="{{ $format['name'] }}" class="w-full h-full object-cover object-top">
                                         </div>
                                         <div class="p-3">
-                                            <div class="font-semibold text-gray-900 text-sm">{{ $format['name'] }}</div>
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="font-semibold text-gray-900 text-sm">{{ $format['name'] }}</span>
+                                                @if ($key === config('invoice_formats.default'))
+                                                    <span class="shrink-0 text-[10px] font-semibold uppercase tracking-wide bg-amber-100 text-amber-700 rounded-full px-1.5 py-0.5">{{ __('Default') }}</span>
+                                                @endif
+                                            </div>
                                             <div class="text-xs text-gray-500 mt-0.5">{{ $format['description'] }}</div>
                                         </div>
                                     </button>

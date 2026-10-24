@@ -14,7 +14,8 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <div class="lg:hidden">
+                <div class="lg:hidden flex items-center">
+                    @include('layouts.partials.settings-icon-mobile')
                     @include('layouts.partials.notification-bell')
                 </div>
                 <div class="hidden lg:flex items-center gap-2">

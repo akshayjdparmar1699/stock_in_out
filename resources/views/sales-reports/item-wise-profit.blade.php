@@ -12,7 +12,8 @@
                 </nav>
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight lg:hidden">{{ __('Item-wise profit') }}</h2>
             </div>
-            <div class="lg:hidden shrink-0">
+            <div class="lg:hidden shrink-0 flex items-center">
+                @include('layouts.partials.settings-icon-mobile')
                 @include('layouts.partials.notification-bell')
             </div>
         </div>

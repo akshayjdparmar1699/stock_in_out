@@ -49,6 +49,11 @@
                 </div>
             </div>
             <div class="flex items-center gap-2 shrink-0">
+                @if (Auth::user()->isAdmin())
+                    <div class="w-12 h-12 rounded-full bg-white/15 flex items-center justify-center shrink-0 [&>a]:!text-white [&>a]:!p-0 [&>a>svg]:w-7 [&>a>svg]:h-7">
+                        @include('layouts.partials.settings-icon-mobile')
+                    </div>
+                @endif
                 <div class="relative w-12 h-12 rounded-full bg-white/15 flex items-center justify-center shrink-0 [&>div>button]:!text-white [&>div>button]:!p-0 [&>div>button>svg]:w-7 [&>div>button>svg]:h-7">
                     @include('layouts.partials.notification-bell')
                 </div>

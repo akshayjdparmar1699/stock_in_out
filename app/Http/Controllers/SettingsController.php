@@ -29,7 +29,9 @@ class SettingsController extends Controller
         return view('settings.edit', [
             'branch' => $branch,
             'formats' => InvoiceFormat::all(),
-            'selectedFormat' => $branch?->invoice_format,
+            'selectedFormat' => $branch && array_key_exists((string) $branch->invoice_format, InvoiceFormat::all())
+                ? $branch->invoice_format
+                : config('invoice_formats.default'),
             'accent' => $branch?->invoice_accent,
         ]);
     }
@@ -40,12 +42,12 @@ class SettingsController extends Controller
         abort_unless($branch, 404);
 
         $data = $request->validate([
-            'invoice_format' => ['nullable', Rule::in(array_keys(InvoiceFormat::all()))],
+            'invoice_format' => ['required', Rule::in(array_keys(InvoiceFormat::all()))],
             'invoice_accent' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
         $branch->update([
-            'invoice_format' => $data['invoice_format'] ?? null,
+            'invoice_format' => $data['invoice_format'],
             'invoice_accent' => $data['invoice_accent'] ?? null,
         ]);
 
@@ -73,9 +75,9 @@ class SettingsController extends Controller
         }
 
         $formatKey = $request->string('format')->toString();
-        $view = $formatKey !== '' ? (InvoiceFormat::all()[$formatKey]['view'] ?? null) : null;
+        $format = InvoiceFormat::all()[$formatKey] ?? InvoiceFormat::all()[config('invoice_formats.default')] ?? null;
 
-        if (! $view) {
+        if (! $format) {
             return response()->view('invoices.tax-invoice-pdf', [
                 'invoice' => $invoice,
                 'customerDue' => $invoice->customer?->dueAmount(),
@@ -83,8 +85,8 @@ class SettingsController extends Controller
         }
 
         $data = InvoiceFormatData::build($invoice, forPdf: false);
-        $data['accent'] = InvoiceFormat::all()[$formatKey]['accent'] ?? $data['accent'];
+        $data['accent'] = $format['accent'];
 
-        return response()->view($view, $data);
+        return response()->view($format['view'], $data);
     }
 }

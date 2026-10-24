@@ -1,12 +1,15 @@
 <?php
 
 /*
- * Invoice formats offered in Settings, in addition to the original design
- * (which has no entry here — it's what every branch uses until it picks one
- * of these). The key is stored on branches.invoice_format and invoices.invoice_format;
- * "view" is the Blade view rendered for HTML, print and PDF.
+ * Invoice formats offered in Settings. A branch that's never touched its
+ * setting (or picked one the view for which no longer exists) falls back to
+ * "default" below. The key is stored on branches.invoice_format and
+ * invoices.invoice_format; "view" is the Blade view rendered for HTML,
+ * print and PDF.
  */
 return [
+    'default' => 'gst-tax-invoice',
+
     'formats' => [
         'gst-tax-invoice' => [
             'name' => 'GST Tax Invoice',

@@ -22,7 +22,8 @@
                     @endforeach
                 </div>
             </div>
-            <div class="lg:hidden shrink-0">
+            <div class="lg:hidden shrink-0 flex items-center">
+                @include('layouts.partials.settings-icon-mobile')
                 @include('layouts.partials.notification-bell')
             </div>
         </div>

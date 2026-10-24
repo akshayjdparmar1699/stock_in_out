@@ -793,7 +793,8 @@ class InvoiceController extends Controller
             ])->setPaper('a4');
         }
 
-        return Pdf::loadView($formatView, InvoiceFormatData::build($invoice, forPdf: true))->setPaper('a4');
+        return Pdf::loadView($formatView, InvoiceFormatData::build($invoice, forPdf: true))
+            ->setPaper(InvoiceFormat::paperFor($invoice, $invoice->branch));
     }
 
     public function storePayment(StoreInvoicePaymentRequest $request, Invoice $invoice): RedirectResponse

@@ -46,5 +46,15 @@ return [
             'accent' => '#8B1E1E',
             'thumbnail' => 'images/invoice-formats/bill-book.jpg',
         ],
+        'thermal-80' => [
+            'name' => 'Thermal 80mm',
+            'description' => 'Small receipt for counter billing printers.',
+            'view' => 'invoices.formats.thermal-80',
+            'accent' => '#111111',
+            'thumbnail' => 'images/invoice-formats/thermal-80.jpg',
+            // Page height grows with the item count (see InvoiceFormat::paperFor())
+            // instead of a fixed A4 page, so the receipt never splits across pages.
+            'paper' => 'thermal-80',
+        ],
     ],
 ];

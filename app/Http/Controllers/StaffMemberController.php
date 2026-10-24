@@ -57,7 +57,17 @@ class StaffMemberController extends Controller
             return view('staff.partials.table', ['staff' => $staff]);
         }
 
-        return view('staff.index', ['staff' => $staff, 'filter' => $filter, 'stats' => $stats]);
+        $company = auth()->user()->company;
+        $canAddStaffMember = $company->canAddStaffMember();
+        $plan = $company->subscription?->plan;
+
+        return view('staff.index', [
+            'staff' => $staff,
+            'filter' => $filter,
+            'stats' => $stats,
+            'canAddStaffMember' => $canAddStaffMember,
+            'planLimitMessage' => $canAddStaffMember ? null : "Your {$plan?->name} plan allows up to {$plan?->staff_limit} staff and partners. Upgrade your plan to add more.",
+        ]);
     }
 
     public function create(): View

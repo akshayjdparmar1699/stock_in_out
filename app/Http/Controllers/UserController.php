@@ -33,7 +33,15 @@ class UserController extends Controller
             return view('users.partials.table', ['users' => $users]);
         }
 
-        return view('users.index', ['users' => $users]);
+        $company = auth()->user()->company;
+        $canAddUser = $company->canAddUser();
+        $plan = $company->subscription?->plan;
+
+        return view('users.index', [
+            'users' => $users,
+            'canAddUser' => $canAddUser,
+            'planLimitMessage' => $canAddUser ? null : "Your {$plan?->name} plan allows up to {$plan?->user_limit} logins. Upgrade your plan to add more.",
+        ]);
     }
 
     public function edit(User $user): View

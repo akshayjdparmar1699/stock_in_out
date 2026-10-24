@@ -12,7 +12,9 @@
                 <div class="lg:hidden">
                     @include('layouts.partials.notification-bell')
                 </div>
-                <a href="{{ route('branches.create') }}" class="hidden lg:inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
+                <a href="{{ route('branches.create') }}"
+                    @if (! $canAddBranch) @click.prevent="planLimitMessage = {{ \Illuminate\Support\Js::from($planLimitMessage) }}; planLimitOpen = true" @endif
+                    class="hidden lg:inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
                     {{ __('+ Add Branch') }}
                 </a>
             </div>
@@ -92,7 +94,9 @@
                     </div>
                 @endforeach
 
-                <a href="{{ route('branches.create') }}" class="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 hover:bg-brand-50 p-8 text-center min-h-[200px]">
+                <a href="{{ route('branches.create') }}"
+                    @if (! $canAddBranch) @click.prevent="planLimitMessage = {{ \Illuminate\Support\Js::from($planLimitMessage) }}; planLimitOpen = true" @endif
+                    class="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 hover:bg-brand-50 p-8 text-center min-h-[200px]">
                     <span class="w-11 h-11 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                     </span>
@@ -104,7 +108,9 @@
 
         {{-- Mobile sticky action bar --}}
         <div class="lg:hidden fixed inset-x-0 bottom-16 z-30 bg-white border-t border-gray-100 px-4 py-3 transform-gpu" style="padding-bottom: env(safe-area-inset-bottom);">
-            <a href="{{ route('branches.create') }}" class="block w-full text-center px-4 py-2.5 bg-brand-700 text-white text-sm font-semibold rounded-lg">
+            <a href="{{ route('branches.create') }}"
+                @if (! $canAddBranch) @click.prevent="planLimitMessage = {{ \Illuminate\Support\Js::from($planLimitMessage) }}; planLimitOpen = true" @endif
+                class="block w-full text-center px-4 py-2.5 bg-brand-700 text-white text-sm font-semibold rounded-lg">
                 {{ __('+ Add Branch') }}
             </a>
         </div>

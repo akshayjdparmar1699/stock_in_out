@@ -12,7 +12,9 @@
                 <div class="lg:hidden">
                     @include('layouts.partials.notification-bell')
                 </div>
-                <a href="{{ route('users.create') }}" class="hidden lg:inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
+                <a href="{{ route('users.create') }}"
+                    @if (! $canAddUser) @click.prevent="planLimitMessage = {{ \Illuminate\Support\Js::from($planLimitMessage) }}; planLimitOpen = true" @endif
+                    class="hidden lg:inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
                     {{ __('+ Add User') }}
                 </a>
             </div>
@@ -72,7 +74,9 @@
         </div>
 
         <div class="lg:hidden fixed inset-x-0 bottom-16 z-30 bg-white border-t border-gray-100 px-4 py-3 transform-gpu" style="padding-bottom: env(safe-area-inset-bottom);">
-            <a href="{{ route('users.create') }}" class="block w-full text-center px-4 py-2.5 bg-brand-700 text-white text-sm font-semibold rounded-lg">
+            <a href="{{ route('users.create') }}"
+                @if (! $canAddUser) @click.prevent="planLimitMessage = {{ \Illuminate\Support\Js::from($planLimitMessage) }}; planLimitOpen = true" @endif
+                class="block w-full text-center px-4 py-2.5 bg-brand-700 text-white text-sm font-semibold rounded-lg">
                 {{ __('+ Add User') }}
             </a>
         </div>

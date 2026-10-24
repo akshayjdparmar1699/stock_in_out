@@ -18,7 +18,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div x-data="{ moreOpen: false }" class="min-h-screen bg-gray-100 {{ isset($subscriptionBlocked) ? 'blur-sm pointer-events-none select-none' : '' }}">
+        <div x-data="{ moreOpen: false, planLimitOpen: false, planLimitMessage: '' }" class="min-h-screen bg-gray-100 {{ isset($subscriptionBlocked) ? 'blur-sm pointer-events-none select-none' : '' }}">
 
             <!-- Desktop sidebar -->
             @include('layouts.navigation')
@@ -92,6 +92,8 @@
                     {{ $slot }}
                 </main>
             </div>
+
+            @include('layouts.partials.plan-limit-modal')
         </div>
 
         @isset($subscriptionBlocked)

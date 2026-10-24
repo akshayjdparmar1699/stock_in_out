@@ -17,9 +17,16 @@ class BranchController extends Controller
 {
     public function index(): View
     {
-        $branches = Branch::where('company_id', auth()->user()->company_id)->withCount('users')->latest()->get();
+        $company = auth()->user()->company;
+        $branches = Branch::where('company_id', $company->id)->withCount('users')->latest()->get();
+        $canAddBranch = $company->canAddBranch();
+        $plan = $company->subscription?->plan;
 
-        return view('branches.index', ['branches' => $branches]);
+        return view('branches.index', [
+            'branches' => $branches,
+            'canAddBranch' => $canAddBranch,
+            'planLimitMessage' => $canAddBranch ? null : "Your {$plan?->name} plan allows up to {$plan?->branch_limit} branch(es). Upgrade your plan to add more.",
+        ]);
     }
 
     public function create(): View

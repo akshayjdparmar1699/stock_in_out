@@ -12,7 +12,9 @@
                 <div class="lg:hidden">
                     @include('layouts.partials.notification-bell')
                 </div>
-                <a href="{{ route('staff.create') }}" class="hidden lg:inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
+                <a href="{{ route('staff.create') }}"
+                    @if (! $canAddStaffMember) @click.prevent="planLimitMessage = {{ \Illuminate\Support\Js::from($planLimitMessage) }}; planLimitOpen = true" @endif
+                    class="hidden lg:inline-flex items-center px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700">
                     {{ __('+ Add person') }}
                 </a>
             </div>
@@ -106,6 +108,7 @@
         </div>
 
         <a href="{{ route('staff.create') }}" aria-label="{{ __('Add person') }}"
+            @if (! $canAddStaffMember) @click.prevent="planLimitMessage = {{ \Illuminate\Support\Js::from($planLimitMessage) }}; planLimitOpen = true" @endif
             class="lg:hidden fixed right-4 bottom-20 z-30 w-14 h-14 rounded-full bg-brand-600 text-white shadow-lg flex items-center justify-center hover:bg-brand-700 transform-gpu">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
         </a>

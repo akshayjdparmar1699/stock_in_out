@@ -25,8 +25,7 @@
 
     <div class="py-6 sm:py-12 pb-28 lg:pb-12">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <form method="POST" action="{{ route('branches.update', $branch) }}" enctype="multipart/form-data" id="branch-form"
-                x-data="{ bankMode: '{{ old('bank_mode', ($branch->bank_name || $branch->account_number || $branch->account_holder_name || $branch->ifsc_code || $branch->qr_code_path) ? 'own' : 'default') }}' }">
+            <form method="POST" action="{{ route('branches.update', $branch) }}" enctype="multipart/form-data" id="branch-form">
                 @csrf
                 @method('PUT')
 

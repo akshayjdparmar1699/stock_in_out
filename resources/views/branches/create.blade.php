@@ -26,7 +26,7 @@
     <div class="py-6 sm:py-12 pb-28 lg:pb-12">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <form method="POST" action="{{ route('branches.store') }}" enctype="multipart/form-data" id="branch-form"
-                x-data="{ bankMode: '{{ old('bank_mode', 'default') }}', copyItems: {{ old('copy_items') ? 'true' : 'false' }} }">
+                x-data="{ copyItems: {{ old('copy_items') ? 'true' : 'false' }} }">
                 @csrf
 
                 @include('branches.partials.form', ['branch' => null])

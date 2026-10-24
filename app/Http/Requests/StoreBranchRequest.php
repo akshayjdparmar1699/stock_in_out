@@ -24,7 +24,6 @@ class StoreBranchRequest extends FormRequest
             ],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'bank_mode' => ['nullable', 'in:default,own'],
             'bank_name' => ['nullable', 'string', 'max:255'],
             'account_number' => ['nullable', 'string', 'max:50'],
             'account_holder_name' => ['nullable', 'string', 'max:255'],

@@ -1,11 +1,7 @@
 @php
     $branch ??= null;
-    $hasCustomBank = $branch && ($branch->bank_name || $branch->account_number || $branch->account_holder_name || $branch->ifsc_code || $branch->qr_code_path);
     $gstEnabled = $gstEnabled ?? false;
 @endphp
-
-<input type="hidden" name="bank_mode" :value="bankMode">
-<input type="hidden" name="remove_qr_code" :value="bankMode === 'default' ? '1' : '0'">
 
 {{-- Section 1: Branch details --}}
 <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6">
@@ -40,46 +36,38 @@
 </div>
 
 {{-- Section 2: Payment details on bills --}}
-<div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 mt-4">
+<div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6 mt-4" x-data="{ removeQr: false }">
     <div class="flex items-center gap-2.5 mb-4">
         <span class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold flex items-center justify-center shrink-0">2</span>
         <h3 class="font-semibold text-gray-900">{{ __('Payment details on bills') }}</h3>
     </div>
+    <p class="text-xs text-gray-400 -mt-2 mb-4">{{ __("Set this branch's own QR and bank account — they print on this branch's bills. Left blank, no payment block prints.") }}</p>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button type="button" @click="bankMode = 'default'"
-            class="text-left p-4 rounded-xl border-2"
-            :class="bankMode === 'default' ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:bg-gray-50'">
-            <div class="font-semibold text-gray-900">{{ __('Same as main bank') }}</div>
-            <div class="text-xs text-gray-500 mt-0.5">{{ __('Shows the default QR and bank details') }}</div>
-        </button>
-        <button type="button" @click="bankMode = 'own'"
-            class="text-left p-4 rounded-xl border-2"
-            :class="bankMode === 'own' ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:bg-gray-50'">
-            <div class="font-semibold text-gray-900">{{ __("Use this branch's own") }}</div>
-            <div class="text-xs text-gray-500 mt-0.5">{{ __('Different bank account or QR for this shop') }}</div>
-        </button>
-    </div>
+    <input type="hidden" name="remove_qr_code" :value="removeQr ? '1' : '0'">
 
-    <div class="mt-4 space-y-4" x-show="bankMode === 'own'" style="display: none;">
+    <div class="space-y-4">
         <div x-data="qrCodeUpload()">
             <x-input-label for="qr_code_photo" :value="__('Payment QR code')" />
 
             @if ($branch?->qr_code_path)
-                <div class="flex items-center gap-3 mt-2" x-show="!previewUrl">
+                <div class="flex items-center gap-3 mt-2" x-show="!previewUrl && !removeQr">
                     <img src="{{ $branch->paymentQrUrl() }}" alt="{{ __('Current QR code') }}" class="w-20 h-20 object-contain border border-gray-200 rounded-lg p-1">
                     <span class="text-xs text-gray-400">{{ __('Current QR — upload a new one to replace it') }}</span>
+                    <button type="button" @click="removeQr = true" class="text-xs font-medium text-red-600 hover:text-red-700">{{ __('Remove') }}</button>
                 </div>
+                <p class="text-xs text-amber-600 mt-2" x-show="removeQr">
+                    {{ __('QR will be removed when you save.') }}
+                    <button type="button" @click="removeQr = false" class="underline">{{ __('Undo') }}</button>
+                </p>
             @endif
 
             <div class="flex items-start gap-4 mt-2">
                 <label for="qr_code_photo"
-                    class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white"
-                    :class="bankMode !== 'own' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'">
+                    class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white cursor-pointer hover:bg-gray-50">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg>
                     {{ __('Choose QR image') }}
                 </label>
-                <input id="qr_code_photo" name="qr_code_photo" type="file" accept="image/*" x-bind:disabled="bankMode !== 'own'" @change="onFileChange" class="sr-only">
+                <input id="qr_code_photo" name="qr_code_photo" type="file" accept="image/*" @change="onFileChange" class="sr-only">
 
                 <template x-if="previewUrl">
                     <div class="flex items-start gap-3 min-w-0">
@@ -117,22 +105,22 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <x-input-label for="bank_name" :value="__('Bank name')" />
-                <x-text-input id="bank_name" name="bank_name" type="text" class="mt-1 block w-full" x-bind:disabled="bankMode !== 'own'" :value="old('bank_name', $branch?->bank_name)" />
+                <x-text-input id="bank_name" name="bank_name" type="text" class="mt-1 block w-full" :value="old('bank_name', $branch?->bank_name)" />
                 <x-input-error :messages="$errors->get('bank_name')" class="mt-2" />
             </div>
             <div>
                 <x-input-label for="account_number" :value="__('Account number')" />
-                <x-text-input id="account_number" name="account_number" type="text" class="mt-1 block w-full" x-bind:disabled="bankMode !== 'own'" :value="old('account_number', $branch?->account_number)" />
+                <x-text-input id="account_number" name="account_number" type="text" class="mt-1 block w-full" :value="old('account_number', $branch?->account_number)" />
                 <x-input-error :messages="$errors->get('account_number')" class="mt-2" />
             </div>
             <div>
                 <x-input-label for="account_holder_name" :value="__('Account holder name')" />
-                <x-text-input id="account_holder_name" name="account_holder_name" type="text" class="mt-1 block w-full" x-bind:disabled="bankMode !== 'own'" :value="old('account_holder_name', $branch?->account_holder_name)" />
+                <x-text-input id="account_holder_name" name="account_holder_name" type="text" class="mt-1 block w-full" :value="old('account_holder_name', $branch?->account_holder_name)" />
                 <x-input-error :messages="$errors->get('account_holder_name')" class="mt-2" />
             </div>
             <div>
                 <x-input-label for="ifsc_code" :value="__('IFSC code')" />
-                <x-text-input id="ifsc_code" name="ifsc_code" type="text" class="mt-1 block w-full" x-bind:disabled="bankMode !== 'own'" :value="old('ifsc_code', $branch?->ifsc_code)" />
+                <x-text-input id="ifsc_code" name="ifsc_code" type="text" class="mt-1 block w-full" :value="old('ifsc_code', $branch?->ifsc_code)" />
                 <x-input-error :messages="$errors->get('ifsc_code')" class="mt-2" />
             </div>
         </div>

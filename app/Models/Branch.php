@@ -13,14 +13,6 @@ class Branch extends Model
 {
     use HasFactory;
 
-    protected const DEFAULT_BANK_NAME = 'HDFC Bank';
-
-    protected const DEFAULT_ACCOUNT_NUMBER = '50200097420397';
-
-    protected const DEFAULT_ACCOUNT_HOLDER_NAME = 'Om Sai Aalubhandar';
-
-    protected const DEFAULT_IFSC_CODE = 'HDFC0004196';
-
     protected $fillable = [
         'company_id',
         'name',
@@ -91,46 +83,49 @@ class Branch extends Model
     }
 
     /**
-     * Falls back to the original single-branch defaults so a branch with no
-     * payment details of its own keeps showing what it always showed,
-     * instead of a blank QR/bank block.
+     * A branch only prints a "Scan and pay" block on its bills once it has
+     * every one of its own payment details set — no more falling back to
+     * another branch's real bank account just because this one hasn't
+     * configured its own yet.
      */
-    public function paymentQrUrl(): string
+    public function hasPaymentDetails(): bool
     {
-        return $this->qr_code_path
-            ? Storage::disk('public')->url($this->qr_code_path)
-            : asset('images/payment-qr.png');
+        return (bool) ($this->qr_code_path && $this->bank_name && $this->account_number
+            && $this->account_holder_name && $this->ifsc_code);
     }
 
-    public function paymentQrPath(): string
+    public function paymentQrUrl(): ?string
     {
-        return $this->qr_code_path
-            ? Storage::disk('public')->path($this->qr_code_path)
-            : public_path('images/payment-qr.png');
+        return $this->qr_code_path ? Storage::disk('public')->url($this->qr_code_path) : null;
+    }
+
+    public function paymentQrPath(): ?string
+    {
+        return $this->qr_code_path ? Storage::disk('public')->path($this->qr_code_path) : null;
     }
 
     public function paymentQrMimeType(): string
     {
-        return mime_content_type($this->paymentQrPath()) ?: 'image/png';
+        return ($this->paymentQrPath() ? mime_content_type($this->paymentQrPath()) : null) ?: 'image/png';
     }
 
-    public function paymentBankName(): string
+    public function paymentBankName(): ?string
     {
-        return $this->bank_name ?: self::DEFAULT_BANK_NAME;
+        return $this->bank_name;
     }
 
-    public function paymentAccountNumber(): string
+    public function paymentAccountNumber(): ?string
     {
-        return $this->account_number ?: self::DEFAULT_ACCOUNT_NUMBER;
+        return $this->account_number;
     }
 
-    public function paymentAccountHolderName(): string
+    public function paymentAccountHolderName(): ?string
     {
-        return $this->account_holder_name ?: self::DEFAULT_ACCOUNT_HOLDER_NAME;
+        return $this->account_holder_name;
     }
 
-    public function paymentIfscCode(): string
+    public function paymentIfscCode(): ?string
     {
-        return $this->ifsc_code ?: self::DEFAULT_IFSC_CODE;
+        return $this->ifsc_code;
     }
 }

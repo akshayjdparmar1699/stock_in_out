@@ -447,16 +447,20 @@
         <table><tr>
             <td class="vr pad" style="width: 56%;">
                 <table><tr>
-                    <td style="width: 100px;">
-                        <img src="{{ 'data:'.$branch->paymentQrMimeType().';base64,'.base64_encode(file_get_contents($branch->paymentQrPath())) }}" alt="UPI payment QR code" style="width: 88px; height: 88px;">
-                        <div class="lb" style="text-align: center; margin-top: 2px;">Scan &amp; Pay</div>
-                    </td>
+                    @if ($branch->hasPaymentDetails())
+                        <td style="width: 100px;">
+                            <img src="{{ 'data:'.$branch->paymentQrMimeType().';base64,'.base64_encode(file_get_contents($branch->paymentQrPath())) }}" alt="UPI payment QR code" style="width: 88px; height: 88px;">
+                            <div class="lb" style="text-align: center; margin-top: 2px;">Scan &amp; Pay</div>
+                        </td>
+                    @endif
                     <td>
-                        <div class="lb">Bank details</div>
-                        <div><b>{{ $branch->paymentBankName() }}</b></div>
-                        <div>A/c {{ $branch->paymentAccountNumber() }}</div>
-                        <div>{{ $branch->paymentAccountHolderName() }}</div>
-                        <div>IFSC {{ $branch->paymentIfscCode() }}</div>
+                        @if ($branch->hasPaymentDetails())
+                            <div class="lb">Bank details</div>
+                            <div><b>{{ $branch->paymentBankName() }}</b></div>
+                            <div>A/c {{ $branch->paymentAccountNumber() }}</div>
+                            <div>{{ $branch->paymentAccountHolderName() }}</div>
+                            <div>IFSC {{ $branch->paymentIfscCode() }}</div>
+                        @endif
 
                         @if ($company?->invoice_terms)
                             <div class="lb" style="margin-top: 8px;">Terms</div>

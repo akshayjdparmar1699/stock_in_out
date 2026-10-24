@@ -188,16 +188,18 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-6">
-                        <div class="print:block">
-                            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">{{ __('Scan and pay') }}</div>
-                            <img src="{{ $invoice->branch->paymentQrUrl() }}" alt="{{ __('Payment QR code') }}" class="w-28 h-28 rounded-lg border border-gray-100">
-                            <div class="mt-2 text-xs text-gray-500 leading-relaxed">
-                                <div class="font-medium text-gray-700">{{ $invoice->branch->paymentBankName() }}</div>
-                                <div>{{ __('A/c') }} {{ $invoice->branch->paymentAccountNumber() }}</div>
-                                <div>{{ $invoice->branch->paymentAccountHolderName() }}</div>
-                                <div>IFSC {{ $invoice->branch->paymentIfscCode() }}</div>
+                        @if ($invoice->branch->hasPaymentDetails())
+                            <div class="print:block">
+                                <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">{{ __('Scan and pay') }}</div>
+                                <img src="{{ $invoice->branch->paymentQrUrl() }}" alt="{{ __('Payment QR code') }}" class="w-28 h-28 rounded-lg border border-gray-100">
+                                <div class="mt-2 text-xs text-gray-500 leading-relaxed">
+                                    <div class="font-medium text-gray-700">{{ $invoice->branch->paymentBankName() }}</div>
+                                    <div>{{ __('A/c') }} {{ $invoice->branch->paymentAccountNumber() }}</div>
+                                    <div>{{ $invoice->branch->paymentAccountHolderName() }}</div>
+                                    <div>IFSC {{ $invoice->branch->paymentIfscCode() }}</div>
+                                </div>
                             </div>
-                        </div>
+                        @endif
                         <div class="w-full sm:w-72 space-y-1">
                             <div class="flex justify-between text-sm text-gray-600">
                                 <span>{{ __('Subtotal') }}</span>

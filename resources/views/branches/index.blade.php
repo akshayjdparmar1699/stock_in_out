@@ -28,7 +28,6 @@
                 @foreach ($branches as $branch)
                     @php
                         $missingContact = ! $branch->phone || ! $branch->address;
-                        $hasCustomBank = $branch->bank_name || $branch->account_number || $branch->account_holder_name || $branch->ifsc_code || $branch->qr_code_path;
                         $userLabel = $branch->users_count === 0
                             ? __('Only admin')
                             : trans_choice('{1} 1 staff user|[2,*] :count staff users', $branch->users_count, ['count' => $branch->users_count]);
@@ -64,8 +63,8 @@
                             </div>
                             <div>
                                 <div class="text-xs text-gray-400">{{ __('Bank and QR on bills') }}</div>
-                                <div class="text-gray-700 font-medium">
-                                    {{ $hasCustomBank ? $branch->paymentBankName() : __('Default (:bank)', ['bank' => $branch->paymentBankName()]) }}
+                                <div class="{{ $branch->hasPaymentDetails() ? 'text-gray-700' : 'text-amber-600' }} font-medium">
+                                    {{ $branch->hasPaymentDetails() ? $branch->paymentBankName() : __('Not set') }}
                                 </div>
                             </div>
                         </div>

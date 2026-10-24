@@ -387,17 +387,20 @@ class PurchaseController extends Controller
             // isn't present, so this stays safe even if ever hit without it.
             $paymentStatus = $data['payment_status']
                 ?? ($purchase->paid_amount >= $total ? 'paid' : ($purchase->paid_amount > 0 ? 'partial' : 'unpaid'));
-            $paidAmount = match ($paymentStatus) {
+            $chosenAmount = match ($paymentStatus) {
                 'paid' => $total,
                 'partial' => min((float) ($data['paid_amount'] ?? $purchase->paid_amount), $total),
                 default => 0.0,
             };
 
-            // A "partial" amount clamped all the way up to the total is
-            // fully paid, not partial.
-            if ($paymentStatus === 'partial' && $total > 0 && $paidAmount >= $total) {
-                $paymentStatus = 'paid';
-            }
+            // Never let these buttons set paid_amount below what real
+            // PurchasePayment rows already show as paid on this purchase —
+            // that money genuinely went out, even if the admin picks (by
+            // mistake or otherwise) a status that implies less. The status
+            // is then derived fresh from whichever amount wins.
+            $actuallyPaid = (float) $purchase->payments()->sum('amount');
+            $paidAmount = max($chosenAmount, $actuallyPaid);
+            $paymentStatus = $total > 0 && $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid');
 
             $purchase->update([
                 'supplier_id' => $data['supplier_id'],

@@ -457,18 +457,22 @@ class InvoiceController extends Controller
             // genuine new payment still goes through "Record a payment" on
             // the invoice page, which does create one.
             $paymentStatus = $data['payment_status'];
-            $paidAmount = match ($paymentStatus) {
+            $chosenAmount = match ($paymentStatus) {
                 'paid' => $total,
                 'partial' => min((float) ($data['paid_amount'] ?? 0), $total),
                 default => 0.0,
             };
 
-            // A "partial" amount clamped all the way up to the total is
-            // fully paid, not partial — avoids a "Partial" badge sitting at
-            // exactly 100%.
-            if ($paymentStatus === 'partial' && $total > 0 && $paidAmount >= $total) {
-                $paymentStatus = 'paid';
-            }
+            // Never let these buttons set paid_amount below what real
+            // InvoicePayment rows already show as received on this bill —
+            // that money genuinely came in, even if the admin picks (by
+            // mistake or otherwise) a status that implies less, e.g.
+            // "Unpaid" on a bill that already has a real payment recorded.
+            // The status is then derived fresh from whichever amount wins,
+            // the same way a brand-new bill's status is derived.
+            $actuallyReceived = (float) $invoice->payments()->sum('amount');
+            $paidAmount = max($chosenAmount, $actuallyReceived);
+            $paymentStatus = $total > 0 && $paidAmount >= $total ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid');
 
             $invoice->update([
                 'customer_id' => $customerId,

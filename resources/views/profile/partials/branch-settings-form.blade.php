@@ -25,8 +25,8 @@
                         <p class="text-sm font-semibold text-gray-800 truncate">{{ \App\Services\BranchContext::current()?->name }}</p>
                     </div>
                 </div>
-                <select name="branch_id" id="profile-branch-switcher-desktop"
-                    onchange="document.getElementById('profile-branch-switcher-mobile').value = this.value; window.showCubeLoader(); this.form.submit()"
+                <select name="branch_id"
+                    onchange="this.form.querySelectorAll('[name=branch_id]').forEach(el => el.value = this.value); window.showCubeLoader(); this.form.submit()"
                     class="w-56 shrink-0 rounded-lg border-gray-300 text-sm focus:border-brand-500 focus:ring-brand-500">
                     @foreach (\App\Models\Branch::where('company_id', Auth::user()->company_id)->orderBy('name')->get() as $branch)
                         <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>
@@ -41,14 +41,17 @@
                 the desktop one above) because the desktop and mobile
                 layouts look different enough that one shared element
                 doesn't fit both — CSS only hides one of them, it doesn't
-                remove it from the form. Without the sync in each onchange
-                below, changing the visible one still submits both selects
-                under the same name, and the untouched hidden one (still on
-                its old value) would silently win and the branch would
-                never actually switch.
+                remove it from the form. The sync in each onchange below
+                keeps the hidden one's value matching before submit, so the
+                stale one never silently wins. It targets `this.form`
+                (not a hardcoded id) because this partial itself gets
+                included twice on one page — e.g. Settings' mobile and
+                desktop layouts each pull in their own copy — so two
+                document-wide ids would collide and resolve to the wrong
+                copy's element.
             --}}
-            <select name="branch_id" id="profile-branch-switcher-mobile"
-                onchange="document.getElementById('profile-branch-switcher-desktop').value = this.value; window.showCubeLoader(); this.form.submit()"
+            <select name="branch_id"
+                onchange="this.form.querySelectorAll('[name=branch_id]').forEach(el => el.value = this.value); window.showCubeLoader(); this.form.submit()"
                 class="lg:hidden w-full rounded-lg border-gray-300 text-sm focus:border-brand-500 focus:ring-brand-500">
                 @foreach (\App\Models\Branch::where('company_id', Auth::user()->company_id)->orderBy('name')->get() as $branch)
                     <option value="{{ $branch->id }}" @selected(\App\Services\BranchContext::id() === $branch->id)>

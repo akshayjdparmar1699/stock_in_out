@@ -8,7 +8,13 @@
         </div>
     </x-slot>
 
-    <link rel="stylesheet" href="{{ asset('css/wnv-settings.css') }}">
+    {{--
+        Versioned with the file's own mtime so every deploy busts the
+        browser's cache automatically — without this, a phone that already
+        cached an older wnv-settings.css keeps using it after a fix ships,
+        making the fix look like it never landed.
+    --}}
+    <link rel="stylesheet" href="{{ asset('css/wnv-settings.css') }}?v={{ filemtime(public_path('css/wnv-settings.css')) }}">
 
     <div x-data="{ mobileScreen: 'home' }">
 
@@ -339,5 +345,5 @@
         </div>
     </div>
 
-    <script src="{{ asset('js/wnv-settings-search.js') }}" defer></script>
+    <script src="{{ asset('js/wnv-settings-search.js') }}?v={{ filemtime(public_path('js/wnv-settings-search.js')) }}" defer></script>
 </x-app-layout>

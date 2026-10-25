@@ -144,7 +144,6 @@ Route::middleware(['auth', 'verified', 'not_super_admin', 'subscription.check'])
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit')->middleware('admin');
     Route::put('/settings/invoice-format', [SettingsController::class, 'updateInvoiceFormat'])->name('settings.invoice-format')->middleware('admin');
     Route::get('/settings/invoice-format/preview', [SettingsController::class, 'previewInvoiceFormat'])->name('settings.invoice-format.preview')->middleware('admin');
-    Route::put('/settings/role-permissions', [SettingsController::class, 'updateRolePermissions'])->name('settings.role-permissions')->middleware('admin');
 
     Route::middleware('module:items')->group(function () {
         Route::get('/items/search', [ItemController::class, 'search'])->name('items.search');

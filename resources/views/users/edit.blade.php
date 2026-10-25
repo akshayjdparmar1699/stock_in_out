@@ -104,6 +104,10 @@
                         </div>
                     </div>
                 </div>
+
+                <div x-show="role === 'staff'" style="display: none;">
+                    @include('users.partials.module-permissions')
+                </div>
             </form>
 
             @unless ($isSelf)

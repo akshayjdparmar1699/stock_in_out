@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\RolePermission;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,9 +55,10 @@ class RegisteredUserController extends Controller
                 'nullable', 'required_if:role,staff',
                 Rule::exists('branches', 'id')->where('company_id', $companyId),
             ],
+            'modules' => ['nullable', 'array'],
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
@@ -65,6 +67,8 @@ class RegisteredUserController extends Controller
             'company_id' => $companyId,
             'email_verified_at' => now(),
         ]);
+
+        RolePermission::syncForUser($user->id, $request->input('modules', []));
 
         return redirect()->route('users.index')->with('status', "User \"{$data['name']}\" created.");
     }

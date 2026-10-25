@@ -6,6 +6,7 @@ use App\Support\Sql;
 
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Branch;
+use App\Models\RolePermission;
 use App\Models\User;
 use App\Services\PerPagePreference;
 use Illuminate\Http\RedirectResponse;
@@ -50,7 +51,11 @@ class UserController extends Controller
 
         $branches = Branch::where('company_id', auth()->user()->company_id)->orderBy('name')->get();
 
-        return view('users.edit', ['user' => $user, 'branches' => $branches]);
+        return view('users.edit', [
+            'user' => $user,
+            'branches' => $branches,
+            'userPermissions' => RolePermission::forUser($user->id),
+        ]);
     }
 
     /**
@@ -77,6 +82,8 @@ class UserController extends Controller
             'branch_id' => $data['role'] === User::ROLE_STAFF ? $data['branch_id'] : null,
             ...(! empty($data['password']) ? ['password' => Hash::make($data['password'])] : []),
         ]);
+
+        RolePermission::syncForUser($user->id, $request->input('modules', []));
 
         return redirect()->route('users.index')->with('status', "User \"{$user->name}\" updated.");
     }

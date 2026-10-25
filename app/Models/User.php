@@ -64,8 +64,8 @@ class User extends Authenticatable
     }
 
     /**
-     * Admins and super admins always have full access — Role permission in
-     * Settings only ever restricts the "staff" role.
+     * Admins and super admins always have full access — module permissions
+     * (set per person on the Users page) only ever restrict staff logins.
      */
     public function canAccess(string $module, string $action): bool
     {
@@ -73,7 +73,7 @@ class User extends Authenticatable
             return true;
         }
 
-        return \App\Models\RolePermission::allows($this->company_id, $module, $action);
+        return \App\Models\RolePermission::allows($this->id, $module, $action);
     }
 
     public function avatarUrl(): ?string

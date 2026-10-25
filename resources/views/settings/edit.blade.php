@@ -110,14 +110,14 @@
                                 <span class="wnv-row__text"><span class="wnv-row__label">{{ __('Branches') }}</span></span>
                                 <span class="wnv-row__chev">@include('settings.partials.icon', ['name' => 'chevron', 'stroke' => 2.2])</span>
                             </button>
-                            <button type="button" @click="mobileScreen = 'role-permission'" class="wnv-row" data-wnv-row="role permission" style="width: 100%; text-align: left; border: 0; background: none;">
+                            <a href="{{ route('users.index') }}" class="wnv-row" data-wnv-row="users roles permission">
                                 <span class="wnv-row__icon wnv-tone--blue">@include('settings.partials.icon', ['name' => 'users'])</span>
                                 <span class="wnv-row__text">
-                                    <span class="wnv-row__label">{{ __('Role permission') }}</span>
-                                    <span class="wnv-row__sub">{{ __('What staff can do') }}</span>
+                                    <span class="wnv-row__label">{{ __('Users & roles') }}</span>
+                                    <span class="wnv-row__sub">{{ __('Add people and set what each can do') }}</span>
                                 </span>
                                 <span class="wnv-row__chev">@include('settings.partials.icon', ['name' => 'chevron', 'stroke' => 2.2])</span>
-                            </button>
+                            </a>
                         </div>
                     </section>
 
@@ -199,7 +199,6 @@
                 'gst' => ['title' => __('GST & tax'), 'view' => 'profile.partials.gst-settings-form'],
                 'subscription' => ['title' => __('Subscription'), 'view' => 'profile.partials.plan-info'],
                 'branches' => ['title' => __('Branches'), 'view' => 'profile.partials.branch-settings-form'],
-                'role-permission' => ['title' => __('Role permission'), 'view' => 'settings.partials.role-permissions-form'],
             ] as $screen => $section)
                 <div x-show="mobileScreen === '{{ $screen }}'" style="display: none;" class="wnv-settings wnv-settings--detail">
                     <header class="wnv-topbar">
@@ -262,7 +261,7 @@
                         <a href="#gst" @click="active = 'gst'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('gst')">{{ __('GST & tax') }}</a>
                         <a href="#subscription" @click="active = 'subscription'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('subscription')">{{ __('Subscription') }}</a>
                         <a href="#branches" @click="active = 'branches'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('branches')">{{ __('Branches') }}</a>
-                        <a href="#role-permission" @click="active = 'role-permission'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('role-permission')">{{ __('Role permission') }}</a>
+                        <a href="{{ route('users.index') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">{{ __('Users & roles') }}</a>
                     </nav>
 
                     <div class="space-y-6 min-w-0">
@@ -342,10 +341,6 @@
 
                         <div id="branches" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('branches')">
                             @include('profile.partials.branch-settings-form')
-                        </div>
-
-                        <div id="role-permission" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('role-permission')">
-                            @include('settings.partials.role-permissions-form')
                         </div>
                     </div>
                 </div>

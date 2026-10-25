@@ -25,6 +25,7 @@ class UpdateUserRequest extends FormRequest
             ],
             // Left blank to keep the current password unchanged.
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
+            'modules' => ['nullable', 'array'],
         ];
     }
 }

@@ -50,9 +50,9 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'in:admin,staff'],
+            'role' => ['required', Rule::in([User::ROLE_ADMIN, User::ROLE_PARTNER, User::ROLE_STAFF])],
             'branch_id' => [
-                'nullable', 'required_if:role,staff',
+                'nullable', 'required_if:role,staff,partner',
                 Rule::exists('branches', 'id')->where('company_id', $companyId),
             ],
             'modules' => ['nullable', 'array'],
@@ -63,7 +63,7 @@ class RegisteredUserController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role' => $data['role'],
-            'branch_id' => $data['role'] === 'staff' ? $data['branch_id'] : null,
+            'branch_id' => in_array($data['role'], User::RESTRICTED_ROLES, true) ? $data['branch_id'] : null,
             'company_id' => $companyId,
             'email_verified_at' => now(),
         ]);

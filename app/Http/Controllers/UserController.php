@@ -79,7 +79,7 @@ class UserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'role' => $data['role'],
-            'branch_id' => $data['role'] === User::ROLE_STAFF ? $data['branch_id'] : null,
+            'branch_id' => in_array($data['role'], User::RESTRICTED_ROLES, true) ? $data['branch_id'] : null,
             ...(! empty($data['password']) ? ['password' => Hash::make($data['password'])] : []),
         ]);
 

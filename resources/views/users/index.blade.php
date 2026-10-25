@@ -26,19 +26,23 @@
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
             {{-- Role explainer (desktop: two cards, mobile: one combined banner) --}}
-            <div class="hidden lg:grid lg:grid-cols-2 gap-4">
+            <div class="hidden lg:grid lg:grid-cols-3 gap-4">
                 <div class="bg-white shadow-sm rounded-xl p-4 border border-gray-100">
                     <span class="font-semibold text-gray-900">{{ __('Admin') }}</span>
                     <span class="text-sm text-gray-500">{{ __('Sees all branches and can manage everything, including users and branches.') }}</span>
                 </div>
                 <div class="bg-white shadow-sm rounded-xl p-4 border border-gray-100">
+                    <span class="font-semibold text-gray-900">{{ __('Partner') }}</span>
+                    <span class="text-sm text-gray-500">{{ __('Works in one branch, with permissions you choose when adding them.') }}</span>
+                </div>
+                <div class="bg-white shadow-sm rounded-xl p-4 border border-gray-100">
                     <span class="font-semibold text-gray-900">{{ __('Staff') }}</span>
-                    <span class="text-sm text-gray-500">{{ __('Works in one branch only. Good for counter staff who make bills.') }}</span>
+                    <span class="text-sm text-gray-500">{{ __('Works in one branch, with permissions you choose when adding them.') }}</span>
                 </div>
             </div>
             <div class="lg:hidden bg-white shadow-sm rounded-xl p-4 border border-gray-100 text-sm space-x-1">
                 <span><span class="font-semibold text-brand-700">{{ __('Admin:') }}</span> {{ __('all branches, can manage everything.') }}</span>
-                <span class="block mt-1"><span class="font-semibold text-blue-600">{{ __('Staff:') }}</span> {{ __('works in one branch only.') }}</span>
+                <span class="block mt-1"><span class="font-semibold text-blue-600">{{ __('Partner/Staff:') }}</span> {{ __('one branch, with permissions you choose.') }}</span>
             </div>
 
             <div class="hidden lg:flex items-center justify-between gap-3">

@@ -20,6 +20,8 @@ class User extends Authenticatable
 
     public const ROLE_ADMIN = 'admin';
 
+    public const ROLE_PARTNER = 'partner';
+
     public const ROLE_STAFF = 'staff';
 
     /**
@@ -28,6 +30,14 @@ class User extends Authenticatable
      * to running one company's own branches/items/invoices.
      */
     public const ROLE_SUPER_ADMIN = 'super_admin';
+
+    /**
+     * Roles locked to one branch, with module access set per person by an
+     * admin — as opposed to admin/super_admin, who always see everything.
+     * Partner exists only as a distinct label from Staff; both work
+     * identically from here on.
+     */
+    public const RESTRICTED_ROLES = [self::ROLE_STAFF, self::ROLE_PARTNER];
 
     /**
      * Get the attributes that should be cast.

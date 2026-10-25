@@ -33,7 +33,7 @@
 
                 <div class="bg-white rounded-2xl lg:shadow-sm border border-gray-100 lg:border-0 p-4 lg:p-6">
                     <h3 class="font-semibold text-gray-900 mb-4">{{ __('Role') }}</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <label class="relative flex items-start gap-3 rounded-xl border-2 p-4" :class="[role === 'admin' ? 'border-brand-600 bg-brand-50/40' : 'border-gray-200', {{ $isSelf ? 'true' : 'false' }} ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer']">
                             <input type="radio" name="role" value="admin" x-model="role" class="sr-only" {{ $isSelf ? 'disabled' : '' }}>
                             <span class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0" :class="role === 'admin' ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-500'">A</span>
@@ -42,12 +42,20 @@
                                 <span class="block text-xs text-gray-400 mt-0.5">{{ __('All branches, all modules') }}</span>
                             </span>
                         </label>
+                        <label class="relative flex items-start gap-3 rounded-xl border-2 p-4" :class="[role === 'partner' ? 'border-brand-600 bg-brand-50/40' : 'border-gray-200', {{ $isSelf ? 'true' : 'false' }} ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer']">
+                            <input type="radio" name="role" value="partner" x-model="role" class="sr-only" {{ $isSelf ? 'disabled' : '' }}>
+                            <span class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0" :class="role === 'partner' ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-500'">P</span>
+                            <span>
+                                <span class="block text-sm font-semibold text-gray-900">{{ __('Partner') }}</span>
+                                <span class="block text-xs text-gray-400 mt-0.5">{{ __('One branch, permissions you set') }}</span>
+                            </span>
+                        </label>
                         <label class="relative flex items-start gap-3 rounded-xl border-2 p-4" :class="[role === 'staff' ? 'border-brand-600 bg-brand-50/40' : 'border-gray-200', {{ $isSelf ? 'true' : 'false' }} ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer']">
                             <input type="radio" name="role" value="staff" x-model="role" class="sr-only" {{ $isSelf ? 'disabled' : '' }}>
                             <span class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0" :class="role === 'staff' ? 'bg-brand-100 text-brand-700' : 'bg-gray-100 text-gray-500'">S</span>
                             <span>
                                 <span class="block text-sm font-semibold text-gray-900">{{ __('Staff') }}</span>
-                                <span class="block text-xs text-gray-400 mt-0.5">{{ __('One branch only') }}</span>
+                                <span class="block text-xs text-gray-400 mt-0.5">{{ __('One branch, permissions you set') }}</span>
                             </span>
                         </label>
                     </div>
@@ -57,7 +65,7 @@
                     @endif
                     <x-input-error :messages="$errors->get('role')" class="mt-2" />
 
-                    <div class="mt-4" x-show="role === 'staff'" style="display: none;">
+                    <div class="mt-4" x-show="role === 'staff' || role === 'partner'" style="display: none;">
                         <x-input-label for="branch_id">{{ __('Works at branch') }} <span class="text-red-500">*</span></x-input-label>
                         <select id="branch_id" name="branch_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-brand-500 focus:ring-brand-500">
                             <option value="">{{ __('Select branch') }}</option>
@@ -105,7 +113,7 @@
                     </div>
                 </div>
 
-                <div x-show="role === 'staff'" style="display: none;">
+                <div x-show="role === 'staff' || role === 'partner'" style="display: none;">
                     @include('users.partials.module-permissions')
                 </div>
             </form>

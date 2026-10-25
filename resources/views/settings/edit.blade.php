@@ -110,14 +110,6 @@
                                 <span class="wnv-row__text"><span class="wnv-row__label">{{ __('Branches') }}</span></span>
                                 <span class="wnv-row__chev">@include('settings.partials.icon', ['name' => 'chevron', 'stroke' => 2.2])</span>
                             </button>
-                            <a href="{{ route('users.index') }}" class="wnv-row" data-wnv-row="users roles permission">
-                                <span class="wnv-row__icon wnv-tone--blue">@include('settings.partials.icon', ['name' => 'users'])</span>
-                                <span class="wnv-row__text">
-                                    <span class="wnv-row__label">{{ __('Users & roles') }}</span>
-                                    <span class="wnv-row__sub">{{ __('Add people and set what each can do') }}</span>
-                                </span>
-                                <span class="wnv-row__chev">@include('settings.partials.icon', ['name' => 'chevron', 'stroke' => 2.2])</span>
-                            </a>
                         </div>
                     </section>
 
@@ -261,7 +253,6 @@
                         <a href="#gst" @click="active = 'gst'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('gst')">{{ __('GST & tax') }}</a>
                         <a href="#subscription" @click="active = 'subscription'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('subscription')">{{ __('Subscription') }}</a>
                         <a href="#branches" @click="active = 'branches'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('branches')">{{ __('Branches') }}</a>
-                        <a href="{{ route('users.index') }}" class="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">{{ __('Users & roles') }}</a>
                     </nav>
 
                     <div class="space-y-6 min-w-0">

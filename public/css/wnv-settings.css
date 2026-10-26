@@ -21,8 +21,12 @@
 }
 .wnv-settings *, .wnv-settings *::before, .wnv-settings *::after { box-sizing: border-box; }
 .wnv-settings h1, .wnv-settings h2, .wnv-settings p { margin: 0; }
-.wnv-settings a { color: var(--wnv-brand); text-decoration: none; }
-.wnv-settings a:hover { color: var(--wnv-brand-dark); }
+/* :not(.text-white) so a solid-background CTA button reused here from
+   outside Settings (e.g. profile.partials.plan-info's "Manage plan" link)
+   keeps its own white text instead of this default winning the cascade
+   and rendering as invisible brand-purple-on-purple. */
+.wnv-settings a:not(.text-white) { color: var(--wnv-brand); text-decoration: none; }
+.wnv-settings a:not(.text-white):hover { color: var(--wnv-brand-dark); }
 .wnv-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 /* Header (home) */

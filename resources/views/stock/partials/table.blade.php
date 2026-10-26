@@ -168,7 +168,8 @@
     @endforelse
 </div>
 
-<div class="flex flex-wrap items-center justify-between gap-3 mt-4" @click="onClick($event)" @change="onChange($event)">
+{{-- mb-20 on mobile clears the "+" FAB (fixed, bottom-20) so its Next link isn't covered. --}}
+<div class="flex flex-wrap items-center justify-between gap-3 mt-4 mb-20 lg:mb-0" @click="onClick($event)" @change="onChange($event)">
     @include('partials.per-page-selector')
     {{ $movements->links() }}
 </div>

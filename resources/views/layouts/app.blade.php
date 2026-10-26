@@ -18,7 +18,11 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div x-data="{ moreOpen: false, planLimitOpen: false, planLimitMessage: '' }" class="min-h-screen bg-gray-100 {{ isset($subscriptionBlocked) ? 'blur-sm pointer-events-none select-none' : '' }}">
+        {{-- min-h-dvh (not min-h-screen/100vh) tracks the mobile browser's actual visible
+             viewport as its address bar collapses/expands on scroll, instead of staying
+             pinned to the largest possible one - that mismatch was what made the fixed
+             bottom tab bar visibly jump on scroll. --}}
+        <div x-data="{ moreOpen: false, planLimitOpen: false, planLimitMessage: '' }" class="min-h-dvh bg-gray-100 {{ isset($subscriptionBlocked) ? 'blur-sm pointer-events-none select-none' : '' }}">
 
             <!-- Desktop sidebar -->
             @include('layouts.navigation')
@@ -29,7 +33,7 @@
                 @include('layouts.partials.mobile-more-sheet')
             @endunless
 
-            <div class="lg:pl-64 flex flex-col min-h-screen">
+            <div class="lg:pl-64 flex flex-col min-h-dvh">
                 <!-- Top bar -->
                 <div class="sticky top-0 z-30 bg-white border-b border-gray-100">
                     @unless (Auth::user()->isSuperAdmin() || request()->routeIs('dashboard', 'profile.edit', 'customers.index', 'customers.show', 'customers.create', 'customers.edit', 'items.index', 'items.show', 'items.create', 'items.edit', 'invoices.index', 'invoices.show', 'invoices.create', 'invoices.edit', 'stock.index', 'stock.create', 'stock.edit', 'batches.index', 'batches.show', 'purchases.index', 'purchases.show', 'purchases.create', 'purchases.edit', 'suppliers.index', 'suppliers.show', 'suppliers.create', 'suppliers.edit', 'staff.index', 'staff.show', 'staff.create', 'staff.edit', 'expenses.index', 'expenses.create', 'expenses.edit', 'branches.index', 'branches.create', 'branches.edit', 'users.index', 'users.create', 'users.edit', 'settings.edit', 'sales-reports.index', 'sales-reports.sales', 'sales-reports.profit-loss', 'sales-reports.item-wise-profit'))

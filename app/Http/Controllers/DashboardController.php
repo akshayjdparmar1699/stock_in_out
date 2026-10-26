@@ -13,6 +13,7 @@ use App\Services\BranchContext;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -77,10 +78,10 @@ class DashboardController extends Controller
                 'purchasesCount' => (clone $purchasesQuery)->count(),
                 'profit' => $this->calculateProfit($branchId, $from, $to),
                 'totalStockValue' => $this->totalStockValue($branchId),
-                'lowStockCount' => $this->lowStockItemsQuery($branchId)->count(),
+                'lowStockCount' => $this->lowStockCount($branchId),
             ]),
             'trend' => view('dashboard.partials.trend', $this->salesProfitTrend($branchId) + [
-                'lowStockCount' => $this->lowStockItemsQuery($branchId)->count(),
+                'lowStockCount' => $this->lowStockCount($branchId),
                 'totalStockValue' => $this->totalStockValue($branchId),
             ]),
             'dues' => view('dashboard.partials.dues', [
@@ -214,13 +215,27 @@ class DashboardController extends Controller
         return compact('labels', 'sales', 'profit');
     }
 
+    /**
+     * The dashboard's "stats" and "trend" sections each fetch themselves
+     * independently (two parallel requests on page load), and both need
+     * this and lowStockCount() — caching them briefly means the second
+     * request reuses the first's answer instead of re-running the same
+     * aggregate query a moment later. 10 seconds is short enough that
+     * nobody would notice the figure lagging behind a stock change, but
+     * long enough to absorb both requests landing together.
+     */
     private function totalStockValue(int $branchId): float
     {
-        return (float) (ItemStock::query()
+        return (float) Cache::remember("dashboard:stock-value:{$branchId}", 10, fn () => ItemStock::query()
             ->where('branch_id', $branchId)
             ->join('items', 'items.id', '=', 'item_stocks.item_id')
             ->select(DB::raw('SUM(item_stocks.quantity * items.selling_price) as value'))
             ->value('value') ?? 0);
+    }
+
+    private function lowStockCount(int $branchId): int
+    {
+        return Cache::remember("dashboard:low-stock-count:{$branchId}", 10, fn () => $this->lowStockItemsQuery($branchId)->count());
     }
 
     /**

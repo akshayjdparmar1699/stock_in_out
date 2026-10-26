@@ -32,7 +32,7 @@
                 <p class="mt-3 text-gray-500">{{ __('Choose a plan to keep billing, managing stock and seeing reports for :company.', ['company' => $company->name]) }}</p>
             </div>
 
-            <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
+            <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto">
                 @foreach ($plans as $plan)
                     @php $isGold = (bool) $plan->is_popular; @endphp
                     <div class="relative rounded-2xl p-6 flex flex-col {{ $isGold ? 'bg-gradient-to-br from-brand-600 to-brand-800 border-2 border-[#FFB020] shadow-xl' : 'bg-white border border-gray-200 shadow-sm' }}">
@@ -51,7 +51,7 @@
                         </div>
 
                         <span class="inline-block mt-3 self-start px-3 py-1 rounded-full text-xs font-medium {{ $isGold ? 'bg-white/15 text-white' : 'bg-brand-50 text-brand-700' }}">
-                            {{ $plan->hasUnlimitedBranches() ? __('Unlimited branches') : __('1 branch') }}
+                            {{ $plan->hasUnlimitedBranches() ? __('Unlimited branches') : trans_choice('{1} 1 branch|[2,*] :count branches', $plan->branch_limit, ['count' => $plan->branch_limit]) }}
                         </span>
 
                         <div class="border-t mt-5 pt-4 space-y-2.5 flex-1 {{ $isGold ? 'border-white/15' : 'border-gray-100' }}">

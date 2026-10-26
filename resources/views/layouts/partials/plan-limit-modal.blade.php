@@ -22,9 +22,13 @@
 
         <p class="text-sm text-gray-500 mt-2" x-text="planLimitMessage"></p>
 
-        <div class="mt-7">
+        <div class="mt-7 space-y-2">
+            <a href="{{ route('subscription.renew') }}"
+                class="block w-full px-4 py-2.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-sm font-medium">
+                {{ __('Upgrade plan') }}
+            </a>
             <button type="button" @click="planLimitOpen = false"
-                class="w-full px-4 py-2.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-sm font-medium">
+                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium">
                 {{ __('OK') }}
             </button>
         </div>

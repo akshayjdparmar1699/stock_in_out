@@ -110,6 +110,22 @@ class ProfileController extends Controller
     }
 
     /**
+     * Per-person, not per-company — each login picks their own language,
+     * so a staff login can use Hindi/Gujarati while an admin keeps English,
+     * both on the same account.
+     */
+    public function updateLocale(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'locale' => ['required', 'in:'.implode(',', array_keys(config('app.available_locales')))],
+        ]);
+
+        $request->user()->update(['locale' => $data['locale']]);
+
+        return back()->with('status', 'locale-updated');
+    }
+
+    /**
      * Replace the user's avatar photo.
      */
     public function updateAvatar(Request $request): RedirectResponse

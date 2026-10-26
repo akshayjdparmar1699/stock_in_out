@@ -112,6 +112,7 @@
                 <nav class="hidden lg:block bg-white rounded-xl border border-gray-100 shadow-sm p-2 sticky top-24 space-y-0.5">
                     <a href="#profile-information" @click="active = 'profile-information'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('profile-information')">{{ __('Profile information') }}</a>
                     <a href="#notifications" @click="active = 'notifications'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('notifications')">{{ __('Notifications') }}</a>
+                    <a href="#language" @click="active = 'language'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('language')">{{ __('Language') }}</a>
                     <a href="#password" @click="active = 'password'" class="block px-3 py-2 rounded-lg text-sm font-medium" :class="navClass('password')">{{ __('Password & security') }}</a>
                 </nav>
 
@@ -122,6 +123,10 @@
 
                     <div id="notifications" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('notifications')">
                         @include('profile.partials.notification-settings-form')
+                    </div>
+
+                    <div id="language" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('language')">
+                        @include('profile.partials.language-form')
                     </div>
 
                     <div id="password" data-section class="bg-white rounded-2xl border shadow-sm p-5 sm:p-6 scroll-mt-24 transition-colors" :class="cardClass('password')">

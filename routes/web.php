@@ -234,6 +234,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile/invoice-terms', [ProfileController::class, 'updateInvoiceTerms'])->name('profile.invoice-terms');
     Route::patch('/profile/default-payment-status', [ProfileController::class, 'updateDefaultPaymentStatus'])->name('profile.default-payment-status');
     Route::patch('/profile/default-purchase-payment-status', [ProfileController::class, 'updateDefaultPurchasePaymentStatus'])->name('profile.default-purchase-payment-status');
+    Route::patch('/profile/locale', [ProfileController::class, 'updateLocale'])->name('profile.locale');
     Route::get('/profile/download', [ProfileController::class, 'downloadData'])->name('profile.download');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });

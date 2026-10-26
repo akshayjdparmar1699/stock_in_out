@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'module' => \App\Http\Middleware\CheckModulePermission::class,
         ]);
 
+        $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
+
         // Razorpay posts this server-to-server with no session/CSRF token of
         // ours — it's authenticated instead by verifying the webhook
         // signature inside the controller.

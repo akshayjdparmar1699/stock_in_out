@@ -86,6 +86,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Available Locales
+    |--------------------------------------------------------------------------
+    |
+    | Languages a user can pick in Settings > Language. Keyed by the locale
+    | code used in lang/{code}.json, with the label shown in its own
+    | language (so a user can recognise their language even if the UI is
+    | currently showing a different one).
+    |
+    */
+
+    'available_locales' => [
+        'en' => 'English',
+        'hi' => 'हिंदी',
+        'gu' => 'ગુજરાતી',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Encryption Key
     |--------------------------------------------------------------------------
     |

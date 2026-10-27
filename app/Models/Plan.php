@@ -18,6 +18,15 @@ class Plan extends Model
 
     public const KEY_PLATINUM = 'platinum';
 
+    /**
+     * Multi-year purchase options shown on the renew/upgrade page, and the
+     * discount applied when paying for all of them upfront — 30% off the
+     * plain 3x total, not 30% off each individual year.
+     */
+    public const YEARS_OPTIONS = [1, 3];
+
+    public const DISCOUNT_FOR_3_YEARS = 0.30;
+
     protected $fillable = [
         'key',
         'name',
@@ -67,5 +76,29 @@ class Plan extends Model
     public function hasUnlimitedUsers(): bool
     {
         return $this->user_limit === null;
+    }
+
+    /**
+     * The total for paying upfront for $years at once — plain price × years
+     * for 1 year, or 30% off that total for the 3-year option. Whole
+     * rupees throughout, matching how `price` itself is stored.
+     */
+    public function priceForYears(int $years): int
+    {
+        if ($years === 3) {
+            return (int) round($this->price * 3 * (1 - self::DISCOUNT_FOR_3_YEARS));
+        }
+
+        return $this->price;
+    }
+
+    /**
+     * What that same purchase works out to per month — shown under the
+     * yearly price so a buyer can compare it to a monthly expense instead
+     * of having to do the division themselves.
+     */
+    public function monthlyEquivalent(int $years = 1): int
+    {
+        return (int) round($this->priceForYears($years) / ($years * 12));
     }
 }

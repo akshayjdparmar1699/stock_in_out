@@ -24,6 +24,7 @@ class Subscription extends Model
     protected $fillable = [
         'company_id',
         'plan_id',
+        'term_years',
         'status',
         'is_lifetime',
         'trial_ends_at',

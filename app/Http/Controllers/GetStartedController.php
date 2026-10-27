@@ -178,12 +178,16 @@ class GetStartedController extends Controller
         }
 
         $plan = $subscription->plan;
+        // Set on the subscription by the caller before activation (trial
+        // signup never touches this, so it's always 1 there) — see
+        // SubscriptionRenewalController::verify().
+        $years = $subscription->term_years ?: 1;
 
         SubscriptionPayment::create([
             'subscription_id' => $subscription->id,
             'razorpay_payment_id' => $paymentId,
             'razorpay_order_id' => $orderId,
-            'amount' => $plan->price * 100,
+            'amount' => $plan->priceForYears($years) * 100,
             'status' => SubscriptionPayment::STATUS_PAID,
             'paid_at' => now(),
         ]);
@@ -202,7 +206,7 @@ class GetStartedController extends Controller
         $subscription->update([
             'status' => Subscription::STATUS_ACTIVE,
             'current_period_start' => now(),
-            'current_period_end' => $plan->billing_period === 'yearly' ? now()->addYear() : now()->addMonth(),
+            'current_period_end' => $plan->billing_period === 'yearly' ? now()->addYears($years) : now()->addMonth(),
         ]);
     }
 

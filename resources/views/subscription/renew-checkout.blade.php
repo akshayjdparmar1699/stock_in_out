@@ -36,16 +36,25 @@
                     </div>
                 </div>
 
-                <div class="mt-6 flex items-center justify-between border-t border-b border-gray-100 py-4">
+                <div class="mt-6 flex justify-center">
+                    <div class="inline-flex items-center bg-gray-100 rounded-full p-1">
+                        <button type="button" id="term-1-button" class="term-button px-4 py-1.5 rounded-full text-sm font-semibold transition-colors">{{ __('1 year') }}</button>
+                        <button type="button" id="term-3-button" class="term-button px-4 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5">
+                            {{ __('3 years') }}
+                            <span class="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 text-[10px] font-bold">{{ __('Save 30%') }}</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-center justify-between border-t border-b border-gray-100 py-4">
                     <div>
                         <p class="font-semibold text-gray-900">{{ $plan->name }}</p>
-                        <p class="text-xs text-gray-400">
-                            {{ $plan->hasUnlimitedBranches() ? __('Unlimited branches') : __('1 branch') }} &middot;
-                            {{ $plan->billing_period === 'yearly' ? __('Billed yearly') : __('Billed monthly') }}
-                        </p>
+                        <p class="text-xs text-gray-400" id="term-caption"></p>
+                        <p class="text-xs text-green-600 font-medium mt-0.5 hidden" id="term-discount-note">{{ __('30% off the regular 3-year price') }}</p>
                     </div>
-                    <p class="text-2xl font-extrabold text-gray-900">&#8377;{{ number_format($plan->price) }}
-                        <span class="text-sm font-normal text-gray-400">/{{ $plan->billing_period === 'yearly' ? __('yr') : __('mo') }}</span>
+                    <p class="text-2xl font-extrabold text-gray-900">
+                        <span id="term-amount"></span>
+                        <span class="text-sm font-normal text-gray-400" id="term-unit"></span>
                     </p>
                 </div>
 
@@ -54,7 +63,7 @@
                 </p>
 
                 <button id="pay-button" type="button" class="mt-6 w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold text-sm rounded-lg py-3 transition-colors">
-                    {{ __('Pay :amount now', ['amount' => '₹'.number_format($plan->price)]) }}
+                    <span id="pay-button-label"></span>
                 </button>
 
                 <p id="pay-error" class="hidden text-sm text-red-600 text-center mt-3"></p>
@@ -64,16 +73,45 @@
         <form id="verify-form" method="POST" action="{{ route('subscription.renew.verify') }}" class="hidden">
             @csrf
             <input type="hidden" name="plan_id" value="{{ $plan->id }}">
+            <input type="hidden" name="years" id="verify-years">
             <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
             <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
             <input type="hidden" name="razorpay_signature" id="razorpay_signature">
         </form>
 
         <script>
+            // One Razorpay order per term was already created server-side (an
+            // order is fixed to the amount it was made with, so the term
+            // toggle below can only switch between orders prepared upfront,
+            // not change one after the fact).
+            var orderIds = @json($orderIds);
+            var prices = @json($prices);
+            var term = {{ $initialTerm }};
+
+            function formatRupees(n) {
+                return '₹' + Number(n).toLocaleString('en-IN');
+            }
+
+            function renderTerm() {
+                document.getElementById('term-1-button').className = 'term-button px-4 py-1.5 rounded-full text-sm font-semibold transition-colors' + (term === 1 ? ' bg-white shadow-sm text-gray-900' : ' text-gray-500');
+                document.getElementById('term-3-button').className = 'term-button px-4 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5' + (term === 3 ? ' bg-white shadow-sm text-gray-900' : ' text-gray-500');
+
+                document.getElementById('term-caption').textContent = @json($plan->hasUnlimitedBranches() ? __('Unlimited branches') : __('1 branch')) + ' · ' + (term === 3 ? @json(__('Billed once for 3 years')) : @json(__('Billed yearly')));
+                document.getElementById('term-discount-note').classList.toggle('hidden', term !== 3);
+                document.getElementById('term-amount').textContent = formatRupees(prices[term]);
+                document.getElementById('term-unit').textContent = '/' + (term === 3 ? @json(__('3 yrs')) : @json(__('yr')));
+                document.getElementById('pay-button-label').textContent = @json(__('Pay :amount now', ['amount' => ':amount'])).replace(':amount', formatRupees(prices[term]));
+                document.getElementById('verify-years').value = term;
+            }
+
+            document.getElementById('term-1-button').addEventListener('click', function () { term = 1; renderTerm(); });
+            document.getElementById('term-3-button').addEventListener('click', function () { term = 3; renderTerm(); });
+            renderTerm();
+
             document.getElementById('pay-button').addEventListener('click', function () {
                 var rzp = new Razorpay({
                     key: @json($razorpayKey),
-                    order_id: @json($orderId),
+                    order_id: orderIds[term],
                     name: @json(config('app.name')),
                     description: @json($plan->name . ' ' . __('plan')),
                     prefill: {

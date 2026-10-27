@@ -6,6 +6,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Razorpay\Api\Api;
 
@@ -56,25 +57,42 @@ class SubscriptionRenewalController extends Controller
                 ->findOrFail($request->integer('plan'))
             : $currentPlan;
 
+        $initialTerm = in_array($request->integer('years'), Plan::YEARS_OPTIONS, true) ? $request->integer('years') : 1;
+
         $api = new Api(config('services.razorpay.key'), config('services.razorpay.secret'));
 
-        $order = $api->order->create([
-            'receipt' => 'resub_'.$subscription->id.'_'.now()->timestamp,
-            'amount' => $plan->price * 100,
-            'currency' => 'INR',
-            'notes' => [
-                'company_id' => (string) $company->id,
-                'subscription_id' => (string) $subscription->id,
-                'plan_id' => (string) $plan->id,
-            ],
-        ]);
+        // One order per term, created upfront — a Razorpay order is fixed to
+        // the amount it was created with, so a term toggle on the checkout
+        // page itself (letting someone renewing their current plan reach
+        // the 3-year discount too, not just a trial picking their first
+        // paid plan) needs both ready before the page renders, not one
+        // created after the fact based on whichever the buyer ends up
+        // choosing.
+        $orderIds = [];
+        $prices = [];
+        foreach (Plan::YEARS_OPTIONS as $years) {
+            $prices[$years] = $plan->priceForYears($years);
+            $orderIds[$years] = $api->order->create([
+                'receipt' => 'resub_'.$subscription->id.'_'.$years.'y_'.now()->timestamp,
+                'amount' => $prices[$years] * 100,
+                'currency' => 'INR',
+                'notes' => [
+                    'company_id' => (string) $company->id,
+                    'subscription_id' => (string) $subscription->id,
+                    'plan_id' => (string) $plan->id,
+                    'years' => (string) $years,
+                ],
+            ])['id'];
+        }
 
         return view('subscription.renew-checkout', [
             'plan' => $plan,
+            'initialTerm' => $initialTerm,
+            'prices' => $prices,
+            'orderIds' => $orderIds,
             'company' => $company,
             'admin' => $request->user(),
             'razorpayKey' => config('services.razorpay.key'),
-            'orderId' => $order['id'],
         ]);
     }
 
@@ -85,6 +103,7 @@ class SubscriptionRenewalController extends Controller
             'razorpay_order_id' => ['required', 'string'],
             'razorpay_signature' => ['required', 'string'],
             'plan_id' => ['required', 'integer', 'exists:plans,id'],
+            'years' => ['required', 'integer', Rule::in(Plan::YEARS_OPTIONS)],
         ]);
 
         $subscription = $request->user()->company?->subscription;
@@ -103,13 +122,14 @@ class SubscriptionRenewalController extends Controller
                 ->with('status_type', 'danger');
         }
 
-        // activateSubscription() trusts $subscription->plan as-is and never
-        // reassigns plan_id itself, so a trial -> Silver/Gold move (or any
-        // plan change on renewal) has to happen here, before activating.
-        if ((int) $subscription->plan_id !== (int) $data['plan_id']) {
-            $subscription->update(['plan_id' => $data['plan_id']]);
-            $subscription->refresh();
-        }
+        // activateSubscription() trusts $subscription->plan/term_years as-is
+        // and never reassigns them itself, so a trial -> Silver/Gold move
+        // (or any plan/term change on renewal) has to happen here, before
+        // activating — term_years always needs setting, even when the plan
+        // itself is unchanged, since a same-plan 3-year renewal still needs
+        // it updated from whatever it was before.
+        $subscription->update(['plan_id' => $data['plan_id'], 'term_years' => $data['years']]);
+        $subscription->refresh();
 
         app(GetStartedController::class)->activateSubscription(
             $subscription,

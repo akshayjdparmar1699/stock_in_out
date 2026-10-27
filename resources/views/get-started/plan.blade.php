@@ -17,16 +17,24 @@
     <body class="font-sans text-gray-900 antialiased bg-gray-50"
         x-data="{
             selectedPlan: {{ $plans->firstWhere('is_popular', true)?->id ?? $plans->first()->id }},
+            term: 1,
             plans: {{ \Illuminate\Support\Js::from($plans->map(fn ($p) => [
                 'id' => $p->id,
                 'key' => $p->key,
                 'name' => $p->name,
-                'price' => $p->price,
-                'period' => $p->billing_period === 'trial' ? ('for ' . $p->trial_days . ' days') : ($p->billing_period === 'yearly' ? '/ year' : '/ month'),
+                // The trial is a flat one-time charge with no multi-year
+                // concept at all, so its 1/3 figures are identical on
+                // purpose — the toggle simply has nothing to change there.
+                'price1' => $p->isFreeTrial() ? $p->price : $p->priceForYears(1),
+                'price3' => $p->isFreeTrial() ? $p->price : $p->priceForYears(3),
+                'period1' => $p->billing_period === 'trial' ? ('for ' . $p->trial_days . ' days') : ($p->billing_period === 'yearly' ? '/ year' : '/ month'),
+                'period3' => $p->billing_period === 'trial' ? ('for ' . $p->trial_days . ' days') : ($p->billing_period === 'yearly' ? '/ 3 years' : '/ month'),
                 'branchText' => $p->hasUnlimitedBranches() ? 'unlimited branches' : ($p->branch_limit == 1 ? '1 branch' : $p->branch_limit . ' branches'),
                 'cta' => $p->isFreeTrial() ? 'Start trial' : ('Continue with ' . $p->name),
             ])) }},
             get plan() { return this.plans.find((p) => p.id === this.selectedPlan); },
+            get price() { return this.term === 3 ? this.plan.price3 : this.plan.price1; },
+            get period() { return this.term === 3 ? this.plan.period3 : this.plan.period1; },
         }">
 
         <!-- Top bar -->
@@ -99,6 +107,18 @@
 
         <!-- Plan cards -->
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 lg:-mt-24 relative">
+            <div class="flex justify-center mb-6">
+                <div class="inline-flex items-center bg-white rounded-full p-1 shadow-sm">
+                    <button type="button" @click="term = 1" class="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors" :class="term === 1 ? 'bg-brand-600 text-white' : 'text-gray-500'">
+                        {{ __('1 year') }}
+                    </button>
+                    <button type="button" @click="term = 3" class="px-4 py-1.5 rounded-full text-sm font-semibold transition-colors flex items-center gap-1.5" :class="term === 3 ? 'bg-brand-600 text-white' : 'text-gray-500'">
+                        {{ __('3 years') }}
+                        <span class="px-1.5 py-0.5 rounded-full bg-[#FFB020] text-brand-900 text-[10px] font-bold">{{ __('Save 30%') }}</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="flex flex-col-reverse gap-5 lg:grid lg:grid-cols-4 lg:gap-5 lg:items-stretch">
                 @foreach ($plans as $plan)
                     @php
@@ -133,11 +153,29 @@
                         <p class="text-sm mt-3" :class="{{ $selectedCond }} ? 'text-white/80' : 'text-gray-500'">{{ $plan->tagline }}</p>
 
                         <div class="mt-5 flex items-end gap-1.5 flex-wrap">
-                            <span class="text-3xl font-extrabold" :class="{{ $selectedCond }} ? 'text-white' : 'text-gray-900'">&#8377;{{ number_format($plan->price) }}</span>
+                            <span class="text-3xl font-extrabold" :class="{{ $selectedCond }} ? 'text-white' : 'text-gray-900'">
+                                @if ($plan->isFreeTrial())
+                                    &#8377;{{ number_format($plan->price) }}
+                                @else
+                                    <span x-show="term === 1">&#8377;{{ number_format($plan->priceForYears(1)) }}</span>
+                                    <span x-show="term === 3" style="display: none;">&#8377;{{ number_format($plan->priceForYears(3)) }}</span>
+                                @endif
+                            </span>
                             <span class="text-sm mb-1" :class="{{ $selectedCond }} ? 'text-white/70' : 'text-gray-400'">
-                                {{ $plan->isFreeTrial() ? __('for :days days', ['days' => $plan->trial_days]) : ($plan->billing_period === 'yearly' ? __('/ year') : __('/ month')) }}
+                                @if ($plan->isFreeTrial())
+                                    {{ __('for :days days', ['days' => $plan->trial_days]) }}
+                                @else
+                                    <span x-show="term === 1">{{ __('/ year') }}</span>
+                                    <span x-show="term === 3" style="display: none;">{{ __('/ 3 years') }}</span>
+                                @endif
                             </span>
                         </div>
+                        @unless ($plan->isFreeTrial())
+                            <p class="text-xs" :class="{{ $selectedCond }} ? 'text-white/60' : 'text-gray-400'">
+                                <span x-show="term === 1">{{ __('≈ :amount / month', ['amount' => '₹'.number_format($plan->monthlyEquivalent(1))]) }}</span>
+                                <span x-show="term === 3" style="display: none;">{{ __('≈ :amount / month', ['amount' => '₹'.number_format($plan->monthlyEquivalent(3))]) }}</span>
+                            </p>
+                        @endunless
 
                         <span class="inline-block mt-3 self-start px-3 py-1 rounded-full text-xs font-medium"
                             :class="{{ $selectedCond }} ? 'bg-white/15 text-white' : '{{ $plan->isFreeTrial() ? 'bg-green-50 text-green-700' : 'bg-brand-50 text-brand-700' }}'">
@@ -364,11 +402,11 @@
                 <div class="min-w-0">
                     <p class="text-xs text-gray-400">{{ __('Selected plan') }}</p>
                     <p class="font-semibold text-gray-900 text-sm lg:text-base truncate">
-                        <span x-text="plan.name"></span> &middot; <span x-text="plan.price > 0 ? ('₹' + plan.price.toLocaleString('en-IN') + ' ' + plan.period) : ('₹0 ' + plan.period)"></span>
+                        <span x-text="plan.name"></span> &middot; <span x-text="price > 0 ? ('₹' + price.toLocaleString('en-IN') + ' ' + period) : ('₹0 ' + period)"></span>
                         <span class="hidden lg:inline"> &middot; <span x-text="plan.branchText"></span></span>
                     </p>
                 </div>
-                <a :href="'{{ route('get-started.details') }}?plan=' + selectedPlan"
+                <a :href="'{{ route('get-started.details') }}?plan=' + selectedPlan + '&years=' + term"
                     class="shrink-0 inline-flex items-center justify-center px-5 lg:px-6 py-2.5 lg:py-3 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-lg">
                     <span x-text="plan.cta"></span>
                 </a>

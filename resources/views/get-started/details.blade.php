@@ -57,7 +57,7 @@
                 <h1 class="text-2xl lg:text-3xl font-bold text-gray-900">{{ __('Tell us about your business') }}</h1>
                 <p class="text-gray-500 text-sm mt-2">
                     {{ __('You picked :name', ['name' => $plan->name]) }}
-                    &middot; <span class="font-medium text-brand-700">{{ $plan->isFreeTrial() ? __(':price for :days days', ['price' => '₹'.$plan->price, 'days' => $plan->trial_days]) : '₹'.number_format($plan->price).' / '.($plan->billing_period === 'yearly' ? __('year') : __('month')) }}</span>
+                    &middot; <span class="font-medium text-brand-700">{{ $plan->isFreeTrial() ? __(':price for :days days', ['price' => '₹'.$plan->price, 'days' => $plan->trial_days]) : '₹'.number_format($plan->priceForYears($years)).' / '.($plan->billing_period === 'yearly' ? ($years === 3 ? __('3 years') : __('year')) : __('month')) }}</span>
                 </p>
             </div>
 
@@ -74,6 +74,7 @@
             <form method="POST" action="{{ route('get-started.details.store') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 lg:p-8 space-y-5">
                 @csrf
                 <input type="hidden" name="plan_id" value="{{ $plan->id }}">
+                <input type="hidden" name="years" value="{{ $years }}">
 
                 <div>
                     <x-input-label for="company_name" :value="__('Business name')" />

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 use Razorpay\Api\Api;
@@ -38,7 +39,9 @@ class GetStartedController extends Controller
     {
         $plan = Plan::where('is_active', true)->findOrFail($request->integer('plan'));
 
-        return view('get-started.details', ['plan' => $plan]);
+        $years = in_array($request->integer('years'), Plan::YEARS_OPTIONS, true) ? $request->integer('years') : 1;
+
+        return view('get-started.details', ['plan' => $plan, 'years' => $years]);
     }
 
     public function storeDetails(Request $request): RedirectResponse
@@ -52,7 +55,13 @@ class GetStartedController extends Controller
             'admin_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class.',email'],
             'admin_phone' => ['nullable', 'string', 'max:20'],
             'admin_password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'years' => ['nullable', 'integer', Rule::in(Plan::YEARS_OPTIONS)],
         ]);
+
+        // The trial has no multi-year concept at all (see plan.blade.php) —
+        // force 1 regardless of what was submitted, rather than trusting a
+        // tampered request to shorten/lengthen its fixed trial period.
+        $years = $plan->isFreeTrial() ? 1 : ($data['years'] ?? 1);
 
         if ($plan->price === 0) {
             $company = $this->createCompany($data, $plan);
@@ -80,6 +89,7 @@ class GetStartedController extends Controller
         Subscription::create([
             'company_id' => $company->id,
             'plan_id' => $plan->id,
+            'term_years' => $years,
             'status' => Subscription::STATUS_INCOMPLETE,
         ]);
 
@@ -102,12 +112,14 @@ class GetStartedController extends Controller
 
         $plan = $company->subscription->plan;
         $admin = $company->users()->where('role', User::ROLE_ADMIN)->first();
+        $years = $company->subscription->term_years ?: 1;
+        $amount = $plan->priceForYears($years);
 
         $api = new Api(config('services.razorpay.key'), config('services.razorpay.secret'));
 
         $order = $api->order->create([
             'receipt' => 'sub_'.$company->subscription->id.'_'.now()->timestamp,
-            'amount' => $plan->price * 100,
+            'amount' => $amount * 100,
             'currency' => 'INR',
             'notes' => [
                 'company_id' => (string) $company->id,
@@ -117,6 +129,8 @@ class GetStartedController extends Controller
 
         return view('get-started.billing', [
             'plan' => $plan,
+            'years' => $years,
+            'amount' => $amount,
             'company' => $company,
             'admin' => $admin,
             'razorpayKey' => config('services.razorpay.key'),

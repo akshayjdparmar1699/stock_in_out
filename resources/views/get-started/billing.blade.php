@@ -70,12 +70,15 @@
                         <p class="font-semibold text-gray-900">{{ $plan->name }}</p>
                         <p class="text-xs text-gray-400">
                             {{ $plan->hasUnlimitedBranches() ? __('Unlimited branches') : __('1 branch') }} &middot;
-                            {{ $plan->isFreeTrial() ? __(':days-day trial', ['days' => $plan->trial_days]) : ($plan->billing_period === 'yearly' ? __('Billed yearly') : __('Billed monthly')) }}
+                            {{ $plan->isFreeTrial() ? __(':days-day trial', ['days' => $plan->trial_days]) : ($years === 3 ? __('Billed once for 3 years') : __('Billed yearly')) }}
                         </p>
+                        @if (! $plan->isFreeTrial() && $years === 3)
+                            <p class="text-xs text-green-600 font-medium mt-0.5">{{ __('30% off the regular 3-year price') }}</p>
+                        @endif
                     </div>
-                    <p class="text-2xl font-extrabold text-gray-900">&#8377;{{ number_format($plan->price) }}
+                    <p class="text-2xl font-extrabold text-gray-900">&#8377;{{ number_format($amount) }}
                         @unless ($plan->isFreeTrial())
-                            <span class="text-sm font-normal text-gray-400">/{{ $plan->billing_period === 'yearly' ? __('yr') : __('mo') }}</span>
+                            <span class="text-sm font-normal text-gray-400">/{{ $years === 3 ? __('3 yrs') : __('yr') }}</span>
                         @endunless
                     </p>
                 </div>
@@ -85,7 +88,7 @@
                 </p>
 
                 <button id="pay-button" type="button" class="mt-6 w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold text-sm rounded-lg py-3 transition-colors">
-                    {{ __('Pay :amount now', ['amount' => '₹'.number_format($plan->price)]) }}
+                    {{ __('Pay :amount now', ['amount' => '₹'.number_format($amount)]) }}
                 </button>
 
                 <p id="pay-error" class="hidden text-sm text-red-600 text-center mt-3"></p>

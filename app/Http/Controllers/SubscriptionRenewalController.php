@@ -32,13 +32,14 @@ class SubscriptionRenewalController extends Controller
         $currentPlan = $subscription->plan;
 
         // An INCOMPLETE subscription never got past checkout at all — the
-        // company/user exist, but no payment (not even the trial's ₹2) ever
-        // went through, for whatever plan they originally picked. There is
-        // nothing to "choose" here: resume checkout for that exact plan,
-        // even if it's the free-trial one. The picker below is only for a
-        // trial that was actually used and has since lapsed (the free-trial
-        // plan's price is a one-time anti-abuse charge, not a recurring
-        // price, so it can't sensibly be "renewed" once genuinely spent).
+        // company/user exist, but no payment ever went through, for
+        // whatever paid plan they originally picked (the free trial is
+        // ₹0 and never reaches checkout, so it can't end up INCOMPLETE —
+        // this only matters for legacy rows from before the trial was
+        // free). There is nothing to "choose" here: resume checkout for
+        // that exact plan. The picker below is only for a trial that was
+        // actually used and has since lapsed, which can't be "renewed"
+        // since it isn't a recurring price to begin with.
         $isAbandonedCheckout = $subscription->status === Subscription::STATUS_INCOMPLETE;
 
         if ($currentPlan->isFreeTrial() && ! $isAbandonedCheckout && ! $request->filled('plan')) {

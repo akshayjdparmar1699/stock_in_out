@@ -88,7 +88,7 @@
             <div class="relative max-w-3xl mx-auto text-center">
                 <span class="hidden lg:inline-flex items-center gap-2 text-xs font-medium bg-white/10 rounded-full px-3 py-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-[#FFB020]"></span>
-                    {{ __('Start for :price, upgrade when you are ready', ['price' => '₹'.$trialPlan->price]) }}
+                    {{ $trialPlan->price > 0 ? __('Start for :price, upgrade when you are ready', ['price' => '₹'.$trialPlan->price]) : __('Start free, upgrade when you are ready') }}
                 </span>
 
                 <p class="lg:hidden text-xs font-semibold tracking-wide text-[#FFB020]">{{ __('STEP 1 OF 3') }}</p>
@@ -99,8 +99,13 @@
                 </h1>
 
                 <p class="mt-4 text-white/80 text-sm lg:text-base max-w-xl mx-auto">
-                    <span class="lg:hidden">{{ __('Try everything for :days days for just :price.', ['days' => $trialPlan->trial_days, 'price' => '₹'.$trialPlan->price]) }}</span>
-                    <span class="hidden lg:inline">{{ __('Try everything for :days days for just :price. Upgrade as your branches and team grow.', ['days' => $trialPlan->trial_days, 'price' => '₹'.$trialPlan->price]) }}</span>
+                    @if ($trialPlan->price > 0)
+                        <span class="lg:hidden">{{ __('Try everything for :days days for just :price.', ['days' => $trialPlan->trial_days, 'price' => '₹'.$trialPlan->price]) }}</span>
+                        <span class="hidden lg:inline">{{ __('Try everything for :days days for just :price. Upgrade as your branches and team grow.', ['days' => $trialPlan->trial_days, 'price' => '₹'.$trialPlan->price]) }}</span>
+                    @else
+                        <span class="lg:hidden">{{ __('Try everything free for :days days.', ['days' => $trialPlan->trial_days]) }}</span>
+                        <span class="hidden lg:inline">{{ __('Try everything free for :days days. Upgrade as your branches and team grow.', ['days' => $trialPlan->trial_days]) }}</span>
+                    @endif
                 </p>
             </div>
         </div>
@@ -155,7 +160,7 @@
                         <div class="mt-5 flex items-end gap-1.5 flex-wrap">
                             <span class="text-3xl font-extrabold" :class="{{ $selectedCond }} ? 'text-white' : 'text-gray-900'">
                                 @if ($plan->isFreeTrial())
-                                    &#8377;{{ number_format($plan->price) }}
+                                    {{ $plan->price > 0 ? '₹'.number_format($plan->price) : __('Free') }}
                                 @else
                                     <span x-show="term === 1">&#8377;{{ number_format($plan->priceForYears(1)) }}</span>
                                     <span x-show="term === 3" style="display: none;">&#8377;{{ number_format($plan->priceForYears(3)) }}</span>
@@ -199,7 +204,7 @@
                         <button type="button" @click="selectedPlan = {{ $plan->id }}"
                             class="mt-6 w-full py-2.5 rounded-lg font-semibold text-sm transition-colors"
                             :class="{{ $selectedCond }} ? '{{ $isGold ? 'bg-[#FFB020] text-brand-900 hover:brightness-95' : 'bg-white text-brand-700 hover:bg-brand-50' }}' : 'bg-white border-2 border-brand-600 text-brand-700 hover:bg-brand-50'">
-                            {{ $plan->isFreeTrial() ? __('Start trial for :price', ['price' => '₹'.$plan->price]) : __('Choose :name', ['name' => $plan->name]) }}
+                            {{ $plan->isFreeTrial() ? ($plan->price > 0 ? __('Start trial for :price', ['price' => '₹'.$plan->price]) : __('Start free trial')) : __('Choose :name', ['name' => $plan->name]) }}
                         </button>
                     </div>
                 @endforeach
@@ -207,7 +212,7 @@
 
             <!-- Trust row -->
             <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-8 text-sm text-gray-500">
-                <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{{ __('Trial is just :price', ['price' => '₹'.$trialPlan->price]) }}</span>
+                <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{{ $trialPlan->price > 0 ? __('Trial is just :price', ['price' => '₹'.$trialPlan->price]) : __('No card needed for the trial') }}</span>
                 <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{{ __('Cancel anytime') }}</span>
                 <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>{{ __('Your data stays safe when you upgrade') }}</span>
             </div>
@@ -244,7 +249,7 @@
                             <td class="px-6 py-3.5 text-gray-700">{{ __('Price') }}</td>
                             @foreach ($compareCols as $col)
                                 <td class="px-6 py-3.5 {{ $col->is_popular ? 'bg-brand-50/60 font-semibold text-brand-700' : '' }}">
-                                    &#8377;{{ number_format($col->price) }}{{ $col->isFreeTrial() ? '' : ' / '.__('year') }}
+                                    {{ $col->isFreeTrial() && $col->price == 0 ? __('Free') : '₹'.number_format($col->price).($col->isFreeTrial() ? '' : ' / '.__('year')) }}
                                 </td>
                             @endforeach
                         </tr>
@@ -366,8 +371,11 @@
                     ['q' => __('What happens after :days days?', ['days' => $trialPlan->trial_days]), 'a' => __('Your free trial ends and you choose a paid plan to keep working. All your bills, stock and customers stay exactly as they are.')],
                     ['q' => __('Can I upgrade my plan later?'), 'a' => __('Yes. Upgrade any time you need more branches, staff or logins. Your existing data moves over automatically.')],
                     ['q' => __('What does "1 branch" mean in Silver?'), 'a' => __('You can run one shop or godown with full billing and stock. Gold and Platinum let you add more branches as you grow.')],
-                    ['q' => __('Why does the free trial cost :price?', ['price' => '₹'.$trialPlan->price]), 'a' => __('It is a small charge just to verify your payment method and keep the trial free of spam signups — not a subscription charge.')],
                 ];
+
+                if ($trialPlan->price > 0) {
+                    $faqs[] = ['q' => __('Why does the free trial cost :price?', ['price' => '₹'.$trialPlan->price]), 'a' => __('It is a small charge just to verify your payment method and keep the trial free of spam signups — not a subscription charge.')];
+                }
             @endphp
 
             <!-- Desktop grid -->
@@ -402,7 +410,7 @@
                 <div class="min-w-0">
                     <p class="text-xs text-gray-400">{{ __('Selected plan') }}</p>
                     <p class="font-semibold text-gray-900 text-sm lg:text-base truncate">
-                        <span x-text="plan.name"></span> &middot; <span x-text="price > 0 ? ('₹' + price.toLocaleString('en-IN') + ' ' + period) : ('₹0 ' + period)"></span>
+                        <span x-text="plan.name"></span> &middot; <span x-text="price > 0 ? ('₹' + price.toLocaleString('en-IN') + ' ' + period) : ('{{ __('Free') }} ' + period)"></span>
                         <span class="hidden lg:inline"> &middot; <span x-text="plan.branchText"></span></span>
                     </p>
                 </div>

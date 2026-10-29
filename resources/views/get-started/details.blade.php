@@ -57,7 +57,7 @@
                 <h1 class="text-2xl lg:text-3xl font-bold text-gray-900">{{ __('Tell us about your business') }}</h1>
                 <p class="text-gray-500 text-sm mt-2">
                     {{ __('You picked :name', ['name' => $plan->name]) }}
-                    &middot; <span class="font-medium text-brand-700">{{ $plan->isFreeTrial() ? __(':price for :days days', ['price' => '₹'.$plan->price, 'days' => $plan->trial_days]) : '₹'.number_format($plan->priceForYears($years)).' / '.($plan->billing_period === 'yearly' ? ($years === 3 ? __('3 years') : __('year')) : __('month')) }}</span>
+                    &middot; <span class="font-medium text-brand-700">{{ $plan->isFreeTrial() ? ($plan->price > 0 ? __(':price for :days days', ['price' => '₹'.$plan->price, 'days' => $plan->trial_days]) : __('Free for :days days', ['days' => $plan->trial_days])) : '₹'.number_format($plan->priceForYears($years)).' / '.($plan->billing_period === 'yearly' ? ($years === 3 ? __('3 years') : __('year')) : __('month')) }}</span>
                 </p>
             </div>
 
@@ -131,7 +131,7 @@
                 </div>
 
                 <button type="submit" class="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold text-sm rounded-lg py-3 transition-colors">
-                    {{ __('Continue to payment') }}
+                    {{ $plan->isFreeTrial() && $plan->price == 0 ? __('Start my free trial') : __('Continue to payment') }}
                 </button>
 
                 <p class="text-xs text-gray-400 text-center">

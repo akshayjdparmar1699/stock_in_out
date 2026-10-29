@@ -79,9 +79,8 @@ class GetStartedController extends Controller
                 ->with('status', __('Welcome! Your trial has started.'));
         }
 
-        // Every plan right now carries a price (even the trial, as a small
-        // anti-abuse/payment-method-verification charge), so it goes
-        // through checkout. The company is created now (status
+        // Every paid plan reaches here (the trial is free and already
+        // returned above). The company is created now (status
         // "incomplete" — no access yet) so the Razorpay order's notes only
         // need to carry IDs; access turns on once payment is verified.
         $company = $this->createCompany($data, $plan);
@@ -207,8 +206,9 @@ class GetStartedController extends Controller
         ]);
 
         if ($plan->isFreeTrial()) {
-            // The trial's price is just a payment-method verification charge
-            // — it still runs as a time-boxed trial, not a paid period.
+            // The trial is free and normally never reaches checkout (see
+            // storeDetails()'s zero-price branch) — this only exists as a
+            // safety net in case this method is ever reached for one anyway.
             $subscription->update([
                 'status' => Subscription::STATUS_TRIALING,
                 'trial_ends_at' => now()->addDays($plan->trial_days),

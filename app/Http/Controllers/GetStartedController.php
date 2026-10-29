@@ -23,12 +23,20 @@ class GetStartedController extends Controller
     private const SESSION_KEY = 'get_started.pending';
 
     /**
-     * Step 1 of the public signup flow: plan selection.
+     * Step 1 of the public signup flow: plan selection. A `?plan=<key>`
+     * query string (e.g. the landing page's "Start free trial" button
+     * linking here with `plan=trial`) preselects that plan's card instead
+     * of the usual most-popular default.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
+        $plans = Plan::where('is_active', true)->orderBy('sort_order')->get();
+
+        $preselected = $plans->firstWhere('key', $request->query('plan'));
+
         return view('get-started.plan', [
-            'plans' => Plan::where('is_active', true)->orderBy('sort_order')->get(),
+            'plans' => $plans,
+            'selectedPlanId' => $preselected?->id ?? $plans->firstWhere('is_popular', true)?->id ?? $plans->first()->id,
         ]);
     }
 

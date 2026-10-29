@@ -16,7 +16,7 @@
     @endphp
     <body class="font-sans text-gray-900 antialiased bg-gray-50"
         x-data="{
-            selectedPlan: {{ $plans->firstWhere('is_popular', true)?->id ?? $plans->first()->id }},
+            selectedPlan: {{ $selectedPlanId }},
             term: 1,
             plans: {{ \Illuminate\Support\Js::from($plans->map(fn ($p) => [
                 'id' => $p->id,

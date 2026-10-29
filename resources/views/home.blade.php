@@ -35,7 +35,8 @@
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l3 3m0 0l-3 3m3-3H3" /></svg>
                         {{ __('Login') }}
                     </a>
-                    <a href="#contact" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg">{{ __('Book free demo') }}</a>
+                    <a href="{{ route('get-started', ['plan' => \App\Models\Plan::KEY_FREE_TRIAL]) }}" class="inline-flex items-center px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-lg">{{ __('Free trial') }}</a>
+                    <a href="#contact" class="inline-flex items-center px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg">{{ __('Book free demo') }}</a>
                 </div>
 
                 <div class="flex lg:hidden items-center gap-2">
@@ -53,9 +54,12 @@
                 <a href="#phone-and-computer" class="block text-sm font-medium text-gray-700">{{ __('Phone and computer') }}</a>
                 <a href="#questions" class="block text-sm font-medium text-gray-700">{{ __('Questions') }}</a>
                 <a href="#contact" class="block text-sm font-medium text-gray-700">{{ __('Contact') }}</a>
-                <div class="flex items-center gap-3 pt-2 border-t border-gray-100">
-                    <a href="{{ route('login') }}" class="flex-1 text-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700">{{ __('Login') }}</a>
-                    <a href="#contact" class="flex-1 text-center px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-semibold">{{ __('Book free demo') }}</a>
+                <div class="space-y-2 pt-2 border-t border-gray-100">
+                    <a href="{{ route('get-started', ['plan' => \App\Models\Plan::KEY_FREE_TRIAL]) }}" class="block text-center px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-semibold">{{ __('Free trial') }}</a>
+                    <div class="flex items-center gap-3">
+                        <a href="{{ route('login') }}" class="flex-1 text-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700">{{ __('Login') }}</a>
+                        <a href="#contact" class="flex-1 text-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700">{{ __('Book free demo') }}</a>
+                    </div>
                 </div>
             </div>
         </header>
@@ -77,9 +81,10 @@
                         {{ __('Make a bill in seconds and send it on WhatsApp. Your stock goes down by itself, and you always know who owes you money. Works on your phone and your computer.') }}
                     </p>
 
-                    <div class="mt-7 flex flex-wrap gap-3">
-                        <a href="#contact" class="inline-flex items-center px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-lg">{{ __('Book a free demo') }}</a>
-                        <a href="#how-it-works" class="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 hover:bg-white text-gray-700 font-semibold text-sm rounded-lg">
+                    <div class="mt-7 flex flex-wrap items-center gap-3">
+                        <a href="{{ route('get-started', ['plan' => \App\Models\Plan::KEY_FREE_TRIAL]) }}" class="inline-flex items-center px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-lg">{{ __('Start free trial') }}</a>
+                        <a href="#contact" class="inline-flex items-center px-6 py-3 border border-gray-300 hover:bg-white text-gray-700 font-semibold text-sm rounded-lg">{{ __('Book a free demo') }}</a>
+                        <a href="#how-it-works" class="inline-flex items-center gap-2 px-2 py-3 text-gray-600 hover:text-gray-900 font-semibold text-sm">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653z" /></svg>
                             {{ __('See how it works') }}
                         </a>
@@ -736,8 +741,9 @@
                     <h2 class="text-xl lg:text-2xl font-bold text-white">{{ __('See it working with your own items') }}</h2>
                     <p class="mt-1.5 text-white/80 text-sm">{{ __('We set up a free demo with your products and customers, so you can try billing before you decide.') }}</p>
                 </div>
-                <div class="flex gap-3 shrink-0">
-                    <a href="#contact" class="inline-flex items-center px-5 py-2.5 bg-white text-brand-700 font-semibold text-sm rounded-lg">{{ __('Book free demo') }}</a>
+                <div class="flex flex-wrap gap-3 shrink-0">
+                    <a href="{{ route('get-started', ['plan' => \App\Models\Plan::KEY_FREE_TRIAL]) }}" class="inline-flex items-center px-5 py-2.5 bg-white text-brand-700 font-semibold text-sm rounded-lg">{{ __('Free trial') }}</a>
+                    <a href="#contact" class="inline-flex items-center px-5 py-2.5 border border-white/50 text-white font-semibold text-sm rounded-lg">{{ __('Book free demo') }}</a>
                     <a href="{{ route('login') }}" class="inline-flex items-center px-5 py-2.5 border border-white/50 text-white font-semibold text-sm rounded-lg">{{ __('Login') }}</a>
                 </div>
             </div>

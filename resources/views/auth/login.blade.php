@@ -1,17 +1,5 @@
 <x-guest-layout>
-    <div x-data="{ tab: 'login', showPassword: false }">
-        <div class="flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-7">
-            <button type="button" @click="tab = 'login'"
-                :class="tab === 'login' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'"
-                class="flex-1 text-sm font-medium rounded-lg py-2 transition">
-                {{ __('Log in') }}
-            </button>
-            <a href="{{ route('get-started') }}"
-                class="flex-1 text-center text-sm font-medium rounded-lg py-2 transition text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm">
-                {{ __('Start free trial') }}
-            </a>
-        </div>
-
+    <div x-data="{ showPassword: false }">
         <div class="mb-8">
             <h2 class="text-xl font-semibold text-gray-900">{{ __('Welcome back') }}</h2>
             <p class="text-sm text-gray-500 mt-1">{{ __('Sign in to manage your branch.') }}</p>
@@ -62,9 +50,9 @@
 
         <div class="relative mt-7 pt-6 border-t border-gray-100 text-center">
             <p class="text-xs text-gray-400 mb-4">{{ __('New to :app?', ['app' => config('app.name')]) }}</p>
-            <a href="{{ route('get-started') }}"
+            <a href="{{ route('get-started', ['plan' => \App\Models\Plan::KEY_FREE_TRIAL]) }}"
                 class="block w-full text-center bg-amber-400 hover:bg-amber-500 text-amber-950 font-semibold text-sm rounded-lg px-4 py-2.5 transition">
-                {{ __('Start your free trial') }}
+                {{ __('Start your 14-day free trial') }}
             </a>
         </div>
     </div>

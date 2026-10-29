@@ -221,9 +221,11 @@ Route::middleware(['auth', 'verified', 'super_admin'])->group(function () {
     Route::get('/companies', [CompanyController::class, 'index'])->name('companies.index');
     Route::get('/companies/create', [CompanyController::class, 'create'])->name('companies.create');
     Route::post('/companies', [CompanyController::class, 'store'])->name('companies.store');
+    Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->name('companies.destroy');
 
     Route::get('/leads', [LeadController::class, 'index'])->name('leads.index');
     Route::patch('/leads/{lead}/contacted', [LeadController::class, 'markContacted'])->name('leads.contacted');
+    Route::delete('/leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
 });
 
 Route::middleware('auth')->group(function () {

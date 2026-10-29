@@ -44,4 +44,11 @@ class LeadController extends Controller
 
         return back();
     }
+
+    public function destroy(Lead $lead): RedirectResponse
+    {
+        $lead->delete();
+
+        return back()->with('status', __('Inquiry deleted.'));
+    }
 }

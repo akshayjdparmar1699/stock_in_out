@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
 
 class Company extends Model
 {
@@ -85,5 +86,50 @@ class Company extends Model
         }
 
         return $currentCount() < $limit;
+    }
+
+    /**
+     * Permanently deletes this company and everything that belongs to it —
+     * branches, items, suppliers, users, invoices/purchases (and their
+     * line items/payments, via DB cascade), subscriptions and role
+     * permissions. Customers and staff members have no company/branch
+     * column of their own (only the branch_customer/branch_staff_member
+     * pivots), so they're deleted only if nothing ties them to any OTHER
+     * company's branch — otherwise they're left alone.
+     *
+     * Deletion order respects the schema's restrictOnDelete constraints
+     * (invoices/purchases on branch_id; items/suppliers/branches on
+     * company_id), mirroring App\Console\Commands\PurgeOtherCompanies.
+     */
+    public function eraseEverything(): void
+    {
+        DB::transaction(function () {
+            $branchIds = $this->branches()->pluck('id');
+            $otherBranchIds = Branch::where('company_id', '!=', $this->id)->pluck('id');
+
+            Invoice::whereIn('branch_id', $branchIds)->delete();
+            Purchase::whereIn('branch_id', $branchIds)->delete();
+
+            // Cascades: item_stocks, stock_movements (-> stock_batches ->
+            // stock_batch_allocations), branch_customer, branch_staff_member,
+            // expenses, app_notifications, branch_supplier. Nulls users.branch_id.
+            Branch::whereIn('id', $branchIds)->delete();
+
+            Item::where('company_id', $this->id)->delete();
+            Supplier::where('company_id', $this->id)->delete();
+
+            Customer::whereDoesntHave('branches', fn ($q) => $q->whereIn('branches.id', $otherBranchIds))
+                ->whereDoesntHave('invoices', fn ($q) => $q->whereIn('invoices.branch_id', $otherBranchIds))
+                ->get()->each->delete();
+
+            StaffMember::whereDoesntHave('branches', fn ($q) => $q->whereIn('branches.id', $otherBranchIds))
+                ->whereDoesntHave('expenses', fn ($q) => $q->whereIn('expenses.branch_id', $otherBranchIds))
+                ->get()->each->delete();
+
+            User::where('company_id', $this->id)->delete();
+
+            // Cascades: subscriptions (-> subscription_payments), role_permissions.
+            $this->delete();
+        });
     }
 }

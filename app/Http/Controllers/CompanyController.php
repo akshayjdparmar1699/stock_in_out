@@ -63,4 +63,24 @@ class CompanyController extends Controller
         return redirect()->route('companies.index')
             ->with('status', "Company \"{$company->name}\" created with branch \"{$branch->name}\" — share the admin email/password with them to log in.");
     }
+
+    /**
+     * Permanently deletes a company and everything that belongs to it (see
+     * Company::eraseEverything()). Company #1 is this platform's own real
+     * business (Om Sai Aalubhandar) — it's excluded here the same way
+     * app:purge-other-companies always keeps it, so a misclick here can't
+     * take down the operator's own account.
+     */
+    public function destroy(Company $company): RedirectResponse
+    {
+        if ($company->id === 1) {
+            return back()->with('status', __('This company cannot be deleted from here.'));
+        }
+
+        $name = $company->name;
+        $company->eraseEverything();
+
+        return redirect()->route('companies.index')
+            ->with('status', __('Company ":name" and all of its data have been deleted.', ['name' => $name]));
+    }
 }

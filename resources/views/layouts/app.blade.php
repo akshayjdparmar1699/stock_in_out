@@ -27,11 +27,14 @@
             <!-- Desktop sidebar -->
             @include('layouts.navigation')
 
-            @unless (Auth::user()->isSuperAdmin())
+            @if (Auth::user()->isSuperAdmin())
+                <!-- Mobile bottom tab bar (Companies + Leads only — nothing else exists for a super admin) -->
+                @include('layouts.partials.mobile-bottom-nav-super-admin')
+            @else
                 <!-- Mobile bottom tab bar + "More" sheet -->
                 @include('layouts.partials.mobile-bottom-nav')
                 @include('layouts.partials.mobile-more-sheet')
-            @endunless
+            @endif
 
             <div class="lg:pl-64 flex flex-col min-h-dvh">
                 <!-- Top bar -->
@@ -92,7 +95,7 @@
                 @endif
 
                 <!-- Page Content -->
-                <main class="flex-1 {{ Auth::user()->isSuperAdmin() ? '' : 'pb-20 lg:pb-0' }}">
+                <main class="flex-1 pb-20 lg:pb-0">
                     {{ $slot }}
                 </main>
             </div>

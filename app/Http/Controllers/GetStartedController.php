@@ -22,6 +22,8 @@ class GetStartedController extends Controller
 {
     private const SESSION_KEY = 'get_started.pending';
 
+    private const SESSION_GOOGLE_KEY = 'google_pending';
+
     /**
      * Step 1 of the public signup flow: plan selection. A `?plan=<key>`
      * query string (e.g. the landing page's "Start free trial" button
@@ -49,22 +51,49 @@ class GetStartedController extends Controller
 
         $years = in_array($request->integer('years'), Plan::YEARS_OPTIONS, true) ? $request->integer('years') : 1;
 
-        return view('get-started.details', ['plan' => $plan, 'years' => $years]);
+        return view('get-started.details', [
+            'plan' => $plan,
+            'years' => $years,
+            'googlePending' => $request->session()->get(self::SESSION_GOOGLE_KEY),
+        ]);
     }
 
     public function storeDetails(Request $request): RedirectResponse
     {
         $plan = Plan::where('is_active', true)->findOrFail($request->integer('plan_id'));
+        $googlePending = $request->session()->get(self::SESSION_GOOGLE_KEY);
 
-        $data = $request->validate([
+        $rules = [
             'company_name' => ['required', 'string', 'max:255'],
             'branch_name' => ['required', 'string', 'max:255'],
-            'admin_name' => ['required', 'string', 'max:255'],
-            'admin_email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class.',email'],
             'admin_phone' => ['nullable', 'string', 'max:20'],
-            'admin_password' => ['required', 'confirmed', Rules\Password::defaults()],
             'years' => ['nullable', 'integer', Rule::in(Plan::YEARS_OPTIONS)],
-        ]);
+        ];
+
+        if (! $googlePending) {
+            $rules['admin_name'] = ['required', 'string', 'max:255'];
+            $rules['admin_email'] = ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class.',email'];
+            $rules['admin_password'] = ['required', 'confirmed', Rules\Password::defaults()];
+        }
+
+        $data = $request->validate($rules);
+
+        if ($googlePending) {
+            // The "unique" rule above only runs against submitted form
+            // fields, so a Google-identified signup needs its own check —
+            // the identity came from the session, not this request.
+            if (User::where('email', $googlePending['email'])->exists()) {
+                $request->session()->forget(self::SESSION_GOOGLE_KEY);
+
+                return redirect()->route('get-started.details', ['plan' => $plan->id, 'years' => $data['years'] ?? 1])
+                    ->withErrors(['admin_email' => __('An account with this email already exists. Please log in instead.')]);
+            }
+
+            $data['admin_name'] = $googlePending['name'];
+            $data['admin_email'] = $googlePending['email'];
+            $data['google_id'] = $googlePending['google_id'];
+            $request->session()->forget(self::SESSION_GOOGLE_KEY);
+        }
 
         // The trial has no multi-year concept at all (see plan.blade.php) —
         // force 1 regardless of what was submitted, rather than trusting a
@@ -247,7 +276,8 @@ class GetStartedController extends Controller
             'branch_id' => null,
             'name' => $data['admin_name'],
             'email' => $data['admin_email'],
-            'password' => Hash::make($data['admin_password']),
+            'password' => isset($data['admin_password']) ? Hash::make($data['admin_password']) : null,
+            'google_id' => $data['google_id'] ?? null,
             'role' => User::ROLE_ADMIN,
             'email_verified_at' => now(),
         ]);

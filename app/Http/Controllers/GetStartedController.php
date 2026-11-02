@@ -66,7 +66,7 @@ class GetStartedController extends Controller
         $rules = [
             'company_name' => ['required', 'string', 'max:255'],
             'branch_name' => ['required', 'string', 'max:255'],
-            'admin_phone' => ['nullable', 'string', 'max:20'],
+            'admin_phone' => ['required', 'string', 'max:20'],
             'years' => ['nullable', 'integer', Rule::in(Plan::YEARS_OPTIONS)],
         ];
 

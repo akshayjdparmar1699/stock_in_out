@@ -110,8 +110,8 @@
                     </div>
 
                     <div>
-                        <x-input-label for="admin_phone" :value="__('Phone (optional)')" />
-                        <x-text-input id="admin_phone" name="admin_phone" type="tel" class="mt-1 block w-full" :value="old('admin_phone')" placeholder="{{ __('10-digit mobile number') }}" />
+                        <x-input-label for="admin_phone" :value="__('Phone')" />
+                        <x-text-input id="admin_phone" name="admin_phone" type="tel" class="mt-1 block w-full" :value="old('admin_phone')" required placeholder="{{ __('10-digit mobile number') }}" />
                     </div>
                 @else
                     <div class="border-t border-gray-100 pt-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -120,8 +120,8 @@
                             <x-text-input id="admin_name" name="admin_name" type="text" class="mt-1 block w-full" :value="old('admin_name')" required placeholder="{{ __('Full name') }}" />
                         </div>
                         <div>
-                            <x-input-label for="admin_phone" :value="__('Phone (optional)')" />
-                            <x-text-input id="admin_phone" name="admin_phone" type="tel" class="mt-1 block w-full" :value="old('admin_phone')" placeholder="{{ __('10-digit mobile number') }}" />
+                            <x-input-label for="admin_phone" :value="__('Phone')" />
+                            <x-text-input id="admin_phone" name="admin_phone" type="tel" class="mt-1 block w-full" :value="old('admin_phone')" required placeholder="{{ __('10-digit mobile number') }}" />
                         </div>
                     </div>
 

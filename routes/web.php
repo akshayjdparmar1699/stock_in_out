@@ -8,6 +8,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\GetStartedController;
+use App\Http\Controllers\GstrReportController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\RazorpayWebhookController;
 use App\Http\Controllers\InvoiceController;
@@ -214,6 +215,11 @@ Route::middleware(['auth', 'verified', 'not_super_admin', 'subscription.check'])
         Route::get('/profit-loss', [SalesReportController::class, 'profitLoss'])->name('profit-loss');
         Route::get('/profit-loss/pdf', [SalesReportController::class, 'profitLossPdf'])->name('profit-loss.pdf');
         Route::get('/item-wise-profit', [SalesReportController::class, 'itemWiseProfit'])->name('item-wise-profit');
+    });
+
+    Route::prefix('gst-reports')->name('gst-reports.')->middleware('admin')->group(function () {
+        Route::get('/gstr1', [GstrReportController::class, 'index'])->name('gstr1');
+        Route::get('/gstr1/csv', [GstrReportController::class, 'csv'])->name('gstr1.csv');
     });
 });
 

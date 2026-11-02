@@ -89,6 +89,13 @@
                         <span class="text-xs font-medium text-center">{{ __('Sales & Reports') }}</span>
                     </a>
 
+                    <a href="{{ route('gst-reports.gstr1') }}" class="{{ $moreLinkClass(request()->routeIs('gst-reports.*')) }}">
+                        <svg class="{{ $moreIconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span class="text-xs font-medium text-center">{{ __('GSTR-1 Report') }}</span>
+                    </a>
+
                     <a href="{{ route('branches.index') }}" class="{{ $moreLinkClass(request()->routeIs('branches.*')) }}">
                         <svg class="{{ $moreIconClass }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64M6 3.75h12M6.75 21V3.75m10.5 17.25V3.75M4.5 21V9.75A2.25 2.25 0 016.75 7.5h10.5a2.25 2.25 0 012.25 2.25V21" />

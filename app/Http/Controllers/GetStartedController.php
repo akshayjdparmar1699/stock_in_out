@@ -269,6 +269,7 @@ class GetStartedController extends Controller
             'company_id' => $company->id,
             'name' => $data['branch_name'],
             'code' => $this->uniqueBranchCode($data['branch_name']),
+            'phone' => $data['admin_phone'],
         ]);
 
         User::create([
